@@ -1,0 +1,24 @@
+// dentro do componente Vue 2 (Options API)
+import { mapColumnsFromDB } from 'src/services/mapaAtributo'
+
+export default {
+  data () {
+    return {
+      cdTabela: 215, // EXEMPLO: informe a tabela da tela atual
+      columns: [
+        { dataField: 'nm_grupo_conta' },
+        { dataField: 'dt_usuario' },
+        { dataField: 'nm_obs_plano_conta' },
+        // ...outras
+      ],
+    }
+  },
+  async created () {
+    try {
+      this.columns = await mapColumnsFromDB(this.cdTabela, this.columns)
+    } catch (e) {
+      console.error('Erro ao mapear colunas:', e)
+      // segue com as colunas “cruas” se a PR falhar
+    }
+  }
+}

@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="utf-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+
+  <link rel="icon" href="<%= BASE_URL %>favicon.ico" />
+  <title>Egis</title>
+  <base href="/">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+  <!-- ... -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/cldrjs/0.5.0/cldr.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/cldrjs/0.5.0/cldr/event.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/cldrjs/0.5.0/cldr/supplemental.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/globalize/1.3.0/globalize.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/globalize/1.3.0/globalize/message.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/globalize/1.3.0/globalize/number.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/globalize/1.3.0/globalize/currency.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/globalize/1.3.0/globalize/date.min.js"></script>
+  <!-- DevExtreme library -->
+  <script src="https://cdn3.devexpress.com/jslib/20.1.7/js/dx.all.js"></script>
+  <!-- Dictionary files for German and Russian languages -->
+  <script src="https://cdn3.devexpress.com/jslib/20.1.7/js/localization/dx.messages.pt.js"></script>
+  <!-- Common and language-specific CLDR data -->
+  <script src="https://unpkg.com/devextreme-cldr-data/supplemental.js"></script>
+  <script src="https://unpkg.com/devextreme-cldr-data/pt.js"></script>
+  <script src="https://unpkg.com/core-js@2.4.1/client/shim.min.js"></script>
+  <script src="https://unpkg.com/systemjs@0.21.3/dist/system.js"></script>
+  <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+  <script src="https://meet.jit.si/libs/lib-jitsi-meet.min.js"></script>
+  <script src="https://meet.jit.si/external_api.js"></script>
+
+  <!-- Add to home screen for Android and modern mobile browsers -->
+  <!-- <link rel="manifest" href="<%= htmlWebpackPlugin.files.publicPath %>static/manifest.json">
+    <link rel="manifest" href="/static/manifest.json">  -->
+
+<body class="dx-viewport">
+  <script>
+    DevExpress.localization.locale(navigator.language);
+    DevExpress.localization.forceIsoDateParsing = true;
+  </script>
+  <noscript>
+    <strong>Desculpe..., mas Egis não funciona corretamente sem o JavaScript
+      habilitado. Ative-o para continuar..</strong>
+  </noscript>
+  <div id="app"></div>
+  <!-- built files will be auto injected -->
+</body>
+</head>
+<script>
+  $(function () {
+    Globalize.locale(navigator.language);
+  });
+</script>
+
+</html>

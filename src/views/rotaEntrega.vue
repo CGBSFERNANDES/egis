@@ -1,0 +1,118 @@
+<template>
+  <div>
+    <DxMap
+      :zoom="14"
+      :height="440"
+      :controls="true"
+      :markers="markersData"
+      :routes="routesData"
+      width="100%"
+      provider="bing"
+    />
+    <div class="options">
+      <div class="caption">Options</div>
+      <div class="option">
+        <span>Set mode </span>
+        <DxSelectBox
+          :items="routeModes"
+          :on-value-changed="updateRoutesMode"
+          value="driving"
+        />
+      </div>
+      <div class="option">
+        <span>Route color </span>
+        <DxSelectBox
+          :items="routeColors"
+          :on-value-changed="updateRoutesColor"
+          value="blue"
+        />
+      </div>
+    </div>
+  </div>
+</template>
+<script>
+
+import DxMap from 'devextreme-vue/map';
+import DxSelectBox from 'devextreme-vue/select-box';
+
+
+const markersData = [{
+  location: [-23.458077, -46.564031],
+  tooltip: {
+    text: 'Ponto de Partida!'
+  },
+}];
+
+const routesData = [{
+  weight: 6,
+  color: 'green',
+  opacity: 0.8,
+  mode: '',
+  locations: [
+    [-23.458077,-46.564031],
+    [-23.435294, -46.493756],
+    [-23.441143,-46.393925]
+    
+    ]
+    
+}];
+
+export default {
+  components: {
+    DxMap,
+    DxSelectBox,
+  },
+  data() {
+    return {
+      markersData,
+      routesData,
+      routeModes: ['driving', 'walking'],
+      routeColors: ['blue', 'green', 'red'],
+    };
+  },
+  methods: {
+    updateRoutesMode({ value: mode }) {
+      this.routesData = this.routesData.map((item) => {
+        item.mode = mode;
+        return item;
+      });
+    },
+    updateRoutesColor({ value: color }) {
+      this.routesData = this.routesData.map((item) => {
+        item.color = color;
+        return item;
+      });
+    },
+  },
+};
+</script>
+<style>
+.options {
+  padding: 20px;
+  background-color: rgba(191, 191, 191, 0.15);
+  margin-top: 20px;
+}
+
+.caption {
+  font-size: 18px;
+  font-weight: 500;
+}
+
+.option {
+  margin-top: 10px;
+  display: flex;
+  align-items: center;
+}
+
+.option > span {
+  display: inline-block;
+  width: 90px;
+}
+
+.option > .dx-selectbox {
+  width: 100%;
+  max-width: 350px;
+  display: inline-block;
+  vertical-align: middle;
+}
+</style>

@@ -1,0 +1,49 @@
+bash do lado do powershell
+
+//Comando para puxar atulização (Get)
+git pull 
+
+//Comando para subir alteração
+git add .   //salva no computador local..
+git commit -m "[26/09/2025] "
+git push //subir a alteracao
+
+
+//base form
+  --> display-data.vue (grid básica) 
+  --> 
+  .....................................
+  
+//Form 
+  lookup de vendedor
+  quasar
+
+  ler uma tabela de visita
+  agenda igual ao comtas a pagar
+
+ // 
+
+
+ // payload tabela
+const tabela = await getPayloadTabela(payload)
+
+// pesquisa (grid)
+const linhas = await getRowsFromPesquisa(body)
+
+// lookup direta
+const rows = await lookup(`SELECT ...`)
+
+// salvar form
+await salvarDadosForm(payload)
+
+// exec “fixa”
+const carteira = await execProcedure('pr_mapa_carteira_cliente_aberto', payload)
+
+// exec dinâmica (nome_procedure vindo do seu estado/tela)
+const retorno = await execProcedure(this.nome_procedure, payloadExec)
+
+// colunas do grid (DevExtreme) com enriquecimento do mapa
+this.columns = await getColumnsForMenu(this.cd_menu, {
+  cd_tabela: this.cd_tabela,
+  cd_parametro: 1 // se quiser variar
+})

@@ -1,0 +1,2133 @@
+<template>
+  <div>
+    <meta
+      name="viewport"
+      content="width=device-width,initial-scale=1,user-scalable=no"
+    />
+    <div class="row items-center">
+      <btnVoltarHome />
+      <transition name="slide-fade">
+        <h2 class="content-block col-8" v-show="tituloMenu">
+          {{ tituloMenu }}
+          <q-badge
+            v-if="qt_registro > 0"
+            align="middle"
+            rounded
+            color="red"
+            :label="qt_registro"
+          />
+        </h2>
+      </transition>
+      <q-space />
+      <q-chip
+        v-if="cd_menu"
+        dense
+        rounded
+        color="deep-purple-7"
+        class="q-mt-sm q-ml-sm margin-menu"
+        size="16px"
+        text-color="white"
+        :label="cd_menu"
+      />
+    </div>
+    <!-- Cliente -->
+    <div class="margin1">
+      <cliente
+        ref="clienteComponente"
+        :cd_usuario="cd_usuario"
+        @SelectCliente="SelecionaCliente($event)"
+        @limpaCliente="cleanCliente($event)"
+        :ic_pesquisa="true"
+        :ic_pesquisa_contato="false"
+        :config_grid="{
+          columnAutoWidth: true,
+        }"
+      />
+    </div>
+    <!-- Cliente -->
+    <div class="row">
+      <q-select
+        rounded
+        outlined
+        bottom-slots
+        class="margin1 col-2 opcoes"
+        v-model="forma_pagamento"
+        :options="lookup_forma_pagamento"
+        option-value="cd_forma_pagamento"
+        option-label="nm_forma_pagamento"
+        label="Pagamento"
+        @input="CalculaDesconto()"
+        use-input
+        @filter="filterFnFormaPagamento"
+      >
+        <template v-slot:prepend>
+          <q-icon name="attach_money"></q-icon>
+        </template>
+        <template v-slot:hint>
+          <transition name="slide-fade">
+            <div
+              style="font-weight: bold"
+              v-if="forma_pagamento && forma_pagamento.pc_desconto_pedido > 0"
+            >
+              {{
+                `${
+                  forma_pagamento && forma_pagamento.pc_desconto_pedido
+                }% de Desconto`
+              }}
+            </div>
+          </transition>
+        </template>
+        <template v-slot:no-option>
+          <q-item>
+            <q-item-section class="text-grey"> Sem Opções </q-item-section>
+          </q-item>
+        </template>
+      </q-select>
+
+      <q-input
+        class="margin1 col-2 opcoes"
+        rounded
+        outlined
+        stack-label
+        type="date"
+        v-model="dt_entrega"
+        label="Data de Entrega"
+      >
+        <template v-slot:prepend>
+          <q-icon name="event"></q-icon>
+        </template>
+      </q-input>
+      <q-input
+        class="margin1 col-2 opcoes"
+        rounded
+        outlined
+        stack-label
+        type="time"
+        v-model="hr_entrega"
+        label="Horário"
+      >
+        <template v-slot:prepend>
+          <q-icon name="event"></q-icon>
+        </template>
+      </q-input>
+      <q-input
+        class="margin1 col-2 opcoes"
+        rounded
+        outlined
+        v-model="ds_descricao"
+        label="Observação"
+      >
+        <template v-slot:prepend>
+          <q-icon name="folder"></q-icon>
+        </template>
+      </q-input>
+      <q-select
+        v-if="false"
+        rounded
+        outlined
+        bottom-slots
+        class="margin1 col-2 opcoes"
+        v-model="frete"
+        :options="lookup_forma_frete"
+        option-value="cd_tipo_frete"
+        option-label="nm_tipo_frete"
+        label="Tipo de Frete"
+        use-input
+        @filter="filterFnTipoFrete"
+      >
+        <template v-slot:prepend>
+          <q-icon name="local_shipping"></q-icon>
+        </template>
+        <template v-slot:no-option>
+          <q-item>
+            <q-item-section class="text-grey"> Sem Opções </q-item-section>
+          </q-item>
+        </template>
+      </q-select>
+      <q-select
+        rounded
+        outlined
+        bottom-slots
+        class="margin1 col-2 opcoes"
+        v-model="condicao_pagamento"
+        :options="lookup_condicao_pagamento"
+        option-value="cd_condicao_pagamento"
+        option-label="nm_condicao_pagamento"
+        label="Condição Pag"
+        use-input
+        @filter="filterFnCondicaoPagamento"
+      >
+        <template v-slot:prepend>
+          <q-icon name="attach_money"></q-icon>
+        </template>
+        <template v-slot:no-option>
+          <q-item>
+            <q-item-section class="text-grey"> Sem Opções </q-item-section>
+          </q-item>
+        </template>
+      </q-select>
+      <q-select
+        rounded
+        outlined
+        bottom-slots
+        class="margin1 col-2 opcoes"
+        v-model="transportadora"
+        :options="lookup_transportadora"
+        option-value="cd_transportadora"
+        option-label="nm_transportadora"
+        label="Transportadora"
+        use-input
+        @filter="filterFnTransportadora"
+      >
+        <template v-slot:prepend>
+          <q-icon name="local_shipping"></q-icon>
+        </template>
+        <template v-slot:no-option>
+          <q-item>
+            <q-item-section class="text-grey"> Sem Opções </q-item-section>
+          </q-item>
+        </template>
+      </q-select>
+
+      <q-input
+        class="margin1 col-2 opcoes"
+        rounded
+        outlined
+        v-model="nm_referencia_consulta"
+        label="Referência"
+      >
+        <template v-slot:prepend>
+          <q-icon name="folder"></q-icon>
+        </template>
+      </q-input>
+      <q-select
+        rounded
+        outlined
+        bottom-slots
+        class="margin1 col-2 opcoes"
+        v-model="tipo_local_entrega"
+        :options="lookup_tipo_local_entrega"
+        option-value="cd_tipo_local_entrega"
+        option-label="nm_tipo_local_entrega"
+        label="Local de Entrega"
+        use-input
+        @filter="filterFnTipoLocalEntrega"
+      >
+        <template v-slot:prepend>
+          <q-icon name="location_on"></q-icon>
+        </template>
+        <template v-slot:no-option>
+          <q-item>
+            <q-item-section class="text-grey"> Sem Opções </q-item-section>
+          </q-item>
+        </template>
+      </q-select>
+      <q-select
+        rounded
+        outlined
+        bottom-slots
+        class="margin1 col-2 opcoes"
+        v-model="tipo_proposta"
+        :options="lookup_tipo_proposta"
+        option-value="cd_tipo_proposta"
+        option-label="nm_tipo_proposta"
+        label="Tipo de Proposta"
+        use-input
+        @filter="filterFnTipoLocalEntrega"
+      >
+        <template v-slot:prepend>
+          <q-icon name="bookmark"></q-icon>
+        </template>
+        <template v-slot:no-option>
+          <q-item>
+            <q-item-section class="text-grey"> Sem Opções </q-item-section>
+          </q-item>
+        </template>
+      </q-select>
+      <q-input
+        class="margin1 col-2 opcoes"
+        rounded
+        outlined
+        v-model="vl_frete"
+        label="Valor Frete"
+        type="number"
+        min="0"
+        prefix="R$ "
+      >
+        <template v-slot:prepend>
+          <q-icon name="attach_money"></q-icon>
+        </template>
+      </q-input>
+      <q-input
+        class="margin1 col-2 opcoes"
+        rounded
+        outlined
+        v-model="vl_sinal"
+        label="Valor Adiantamento"
+        type="number"
+        min="0"
+        prefix="R$ "
+      >
+        <template v-slot:prepend>
+          <q-icon name="attach_money"></q-icon>
+        </template>
+      </q-input>
+      <q-toggle
+        class="margin1"
+        label="Operação Triangular"
+        v-model="ic_operacao_triangular"
+        color="primary"
+        true-value="S"
+        false-value="N"
+        checked-icon="check"
+        unchecked-icon="clear"
+      />
+
+      <q-input
+        v-if="ic_mostra_desconto"
+        class="margin1 col-2 opcoes"
+        rounded
+        outlined
+        v-model="pc_desconto"
+        label="Desconto (%)"
+        suffix="%"
+        :rules="[
+          (val) =>
+            val === '' ||
+            (parseFloat(val) >= 0 && parseFloat(val) <= 99.99) ||
+            'Digite um valor entre 0 e 99.99',
+        ]"
+        @input="validaPCDesconto"
+      >
+        <template v-slot:prepend>
+          <q-icon name="money_off"></q-icon>
+        </template>
+      </q-input>
+
+      <q-input
+        v-if="ic_mostra_desconto"
+        class="margin1 col-2 opcoes"
+        rounded
+        outlined
+        v-model="vl_desconto"
+        label="Desconto ($)"
+        prefix="R$ "
+        :rules="[
+          (val) =>
+            val === 0
+              ? true
+              : parseFloat(val) < 0
+              ? 'Digite um valor positivo'
+              : true,
+        ]"
+        @input="validaVLDesconto"
+      >
+        <template v-slot:prepend>
+          <q-icon name="money_off"></q-icon>
+        </template>
+      </q-input>
+
+      <div class="margin1">
+        <q-btn-dropdown
+          rounded
+          color="primary"
+          :label="`Total ${this.vl_liquido}`"
+        >
+          <q-list class="text-weight-bold">
+            <q-item clickable v-close-popup>
+              <q-item-section>
+                <q-item-label>{{ `Produtos` }}</q-item-label>
+              </q-item-section>
+              <q-item-section side>
+                <q-item-label>{{ `${this.produtos}` }}</q-item-label>
+              </q-item-section>
+            </q-item>
+
+            <q-item clickable v-close-popup>
+              <q-item-section>
+                <q-item-label>{{ `Total Produto` }}</q-item-label>
+              </q-item-section>
+              <q-item-section side>
+                <q-item-label>{{
+                  `${this.vl_total_produto_formatado}`
+                }}</q-item-label>
+              </q-item-section>
+            </q-item>
+
+            <q-item clickable v-close-popup>
+              <q-item-section>
+                <q-item-label>{{ `Desconto` }}</q-item-label>
+              </q-item-section>
+              <q-item-section side>
+                <q-item-label>{{
+                  `${this.vl_total_desconto_formatado}`
+                }}</q-item-label>
+              </q-item-section>
+            </q-item>
+
+            <q-item clickable v-close-popup>
+              <q-item-section>
+                <q-item-label>{{ `Imposto` }}</q-item-label>
+              </q-item-section>
+              <q-item-section side>
+                <q-item-label>{{ `${this.vl_imposto}` }}</q-item-label>
+              </q-item-section>
+            </q-item>
+
+            <q-item clickable v-close-popup>
+              <q-item-section>
+                <q-item-label>{{ `Total` }}</q-item-label>
+              </q-item-section>
+              <q-item-section side>
+                <q-item-label>{{ `${this.valor_formatado}` }}</q-item-label>
+              </q-item-section>
+            </q-item>
+
+            <q-item
+              v-if="vl_desconto_pedido"
+              style="color: red"
+              clickable
+              v-close-popup
+            >
+              <q-item-section>
+                <q-item-label>{{ `Desconto` }}</q-item-label>
+              </q-item-section>
+              <q-item-section side>
+                <q-item-label>{{ `${this.vl_desconto_pedido}` }}</q-item-label>
+              </q-item-section>
+            </q-item>
+
+            <q-item
+              v-if="valor_liquido"
+              style="color: red"
+              clickable
+              v-close-popup
+            >
+              <q-item-section>
+                <q-item-label>{{ `Líquido` }}</q-item-label>
+              </q-item-section>
+              <q-item-section side>
+                <q-item-label>{{ `${this.valor_liquido}` }}</q-item-label>
+              </q-item-section>
+            </q-item>
+          </q-list>
+        </q-btn-dropdown>
+      </div>
+
+      <div style="display: block">
+        <q-btn
+          round
+          class="margin1"
+          text-color="white"
+          color="primary"
+          icon="shopping_bag"
+          @click="onCesta()"
+        >
+          <q-tooltip
+            anchor="bottom middle"
+            self="top middle"
+            :offset="[10, 10]"
+          >
+            Cesta de Proposta
+          </q-tooltip>
+        </q-btn>
+        <q-btn
+          round
+          class="margin1"
+          color="red"
+          text-color="white"
+          icon="delete"
+          @click="onCancelar()"
+        >
+          <q-tooltip
+            anchor="bottom middle"
+            self="top middle"
+            :offset="[10, 10]"
+          >
+            Cancelar
+          </q-tooltip>
+        </q-btn>
+        <q-btn
+          round
+          class="margin1"
+          color="orange-9"
+          text-color="white"
+          icon="print"
+          :loading="loadingPDF"
+          @click="onPDF()"
+        >
+          <q-tooltip
+            anchor="bottom middle"
+            self="top middle"
+            :offset="[10, 10]"
+          >
+            Gerar PDF
+          </q-tooltip>
+        </q-btn>
+        <q-btn
+          round
+          class="margin1"
+          color="green"
+          text-color="white"
+          icon="description"
+          @click="onEnviarProposta()"
+        >
+          <q-tooltip
+            anchor="bottom middle"
+            self="top middle"
+            :offset="[10, 10]"
+          >
+            Enviar Proposta
+          </q-tooltip>
+        </q-btn>
+        <q-btn
+          v-if="false"
+          class="margin1"
+          icon="img:/whatsapp.svg"
+          round
+          @click="onEnviarWhatsApp(d)"
+          color="green"
+        >
+          <q-tooltip> Enviar WhatsApp </q-tooltip>
+        </q-btn>
+        <q-btn
+          v-if="1 == 2"
+          round
+          class="margin1"
+          color="black"
+          text-color="white"
+          icon="request_page"
+          @click="onFaturar()"
+        >
+          <q-tooltip
+            anchor="bottom middle"
+            self="top middle"
+            :offset="[10, 10]"
+          >
+            Faturar
+          </q-tooltip>
+        </q-btn>
+      </div>
+    </div>
+    <div v-show="mostraGrid">
+      <!-- Grid -->
+      <div v-if="loadingDataSourceConfig == true" class="row">
+        <q-spinner-facebook class="col margin1" color="orange-9" size="6em" />
+        <q-tooltip :offset="[0, 8]">Carregando...</q-tooltip>
+      </div>
+      <div v-show="!loadingDataSourceConfig">
+        <transition name="slide-fade">
+          <dx-data-grid
+            id="gridPadrao"
+            ref="gridPadrao"
+            v-show="!ic_grid_cesta"
+            class="margin1 dx-card wide-card-gc"
+            :data-source="dataSourceConfig"
+            :columns="columns"
+            :summary="total"
+            key-expr="cd_controle"
+            :selection="{ mode: 'single' }"
+            :show-borders="true"
+            :focused-row-enabled="true"
+            :column-auto-width="true"
+            :column-hiding-enabled="false"
+            :remote-operations="false"
+            :word-wrap-enabled="false"
+            :allow-column-reordering="true"
+            :allow-column-resizing="true"
+            :row-alternation-enabled="false"
+            :repaint-changes-only="true"
+            :autoNavigateToFocusedRow="true"
+            :cacheEnable="false"
+            @cell-prepared="onCellPrepared"
+            @exporting="onExporting"
+            @focused-cell-Changing="attQtd($event)"
+            @editor-preparing="onEditorPreparing($event)"
+          >
+            <DxGroupPanel :visible="true" empty-panel-text="agrupar..." />
+
+            <DxEditing
+              :allow-updating="true"
+              :allow-adding="false"
+              :allow-deleting="false"
+              :select-text-on-edit-start="true"
+              mode="batch"
+            />
+
+            <DxMasterDetail
+              v-if="masterDetail == true"
+              :enabled="true"
+              template="masterDetailTemplate"
+            />
+
+            <template #masterDetailTemplate="{ data: dataSourceConfig }">
+              {{ dataSourceConfig.data }}
+            </template>
+
+            <DxGrouping :auto-expand-all="true" v-if="filterGrid == true" />
+            <DxExport :enabled="true" v-if="filterGrid == true" />
+
+            <DxPaging :enable="true" :page-size="10" />
+
+            <DxStateStoring
+              :enabled="true"
+              type="localStorage"
+              storage-key="storage"
+            />
+            <DxSelection mode="multiple" v-if="multipleSelection == true" />
+            <DxSelection mode="single" v-else />
+            <DxPager
+              :show-page-size-selector="true"
+              :allowed-page-sizes="pageSizes"
+              :show-info="true"
+            />
+            <DxFilterRow :visible="false" v-if="filterGrid == true" />
+            <DxHeaderFilter
+              :visible="true"
+              :allow-search="true"
+              :width="400"
+              v-if="filterGrid == true"
+              :height="400"
+            />
+            <DxSearchPanel
+              :visible="true"
+              :width="300"
+              placeholder="Procurar..."
+              v-if="filterGrid == true"
+            />
+            <DxFilterPanel :visible="true" v-if="filterGrid == true" />
+            <DxColumnFixing :enabled="false" v-if="filterGrid == true" />
+            <DxColumnChooser
+              :enabled="true"
+              mode="select"
+              v-if="filterGrid == true"
+            />
+          </dx-data-grid>
+        </transition>
+      </div>
+    </div>
+    <!-- aqui -->
+    <transition name="slide-fade">
+      <div
+        id="cesta"
+        class="margin1 borda-bloco shadow-2"
+        v-show="ic_grid_cesta"
+      >
+        <div v-if="complemento_impressao">
+          <h2 class="content-block" style="display: block">
+            {{ tituloMenu }}
+            <div
+              class="margin1 row"
+              style="
+                font-weight: bold;
+                font-size: 14px;
+                display: flex;
+                flex-wrap: wrap;
+              "
+            >
+              <!-- <div class="margin1 borda-bloco col-2">{{ `Quantidade: ${this.qtd ? this.qtd : ""}`}}</div> -->
+              <div class="margin1 borda-bloco col-2">
+                {{ `Produtos: ${this.produtos ? this.produtos : ""}` }}
+              </div>
+              <div class="margin1 borda-bloco col-2">
+                {{
+                  `Total Bruto: ${
+                    this.valor_formatado ? this.valor_formatado : ""
+                  }`
+                }}
+              </div>
+              <div class="margin1 borda-bloco col-2">
+                {{ `Imposto: ${this.vl_imposto ? this.vl_imposto : ""}` }}
+              </div>
+              <div class="margin1 borda-bloco col-2">
+                {{ `Total Líq: ${this.vl_liquido ? this.vl_liquido : ""}` }}
+              </div>
+              <div class="margin1 borda-bloco col-2">
+                {{
+                  `Pagamento: ${
+                    this.forma_pagamento.nm_forma_pagamento
+                      ? this.forma_pagamento.nm_forma_pagamento
+                      : ""
+                  }`
+                }}
+              </div>
+              <div class="margin1 borda-bloco col-2">
+                {{ `Entrega: ${this.dt_entrega ? this.dt_entrega : ""}` }}
+              </div>
+              <div class="margin1 borda-bloco col-2">
+                {{ `Horário: ${this.hr_entrega ? this.hr_entrega : ""}` }}
+              </div>
+              <br />
+              <div
+                v-if="vl_desconto_pedido"
+                style="color: red"
+                class="margin1 borda-bloco col"
+              >
+                {{ `Desconto: ${this.vl_desconto_pedido}` }}<br />
+              </div>
+              <div v-if="valor_liquido" class="margin1 borda-bloco col">
+                {{ `Líquido: ${this.valor_liquido}` }}<br />
+              </div>
+            </div>
+          </h2>
+          <div class="margin1" style="font-weight: bold; font-size: 18px">
+            {{ `Observação: ${this.ds_descricao}` }}
+          </div>
+          <div class="margin1" style="font-weight: bold; font-size: 18px">
+            {{ `Desconto (%): ${this.pc_desconto}` }}
+          </div>
+          <div class="margin1" style="font-weight: bold; font-size: 18px">
+            {{ `Desconto ($): ${this.vl_desconto}` }}
+          </div>
+        </div>
+        <div class="card-cesta row">
+          <q-card
+            class="margin1 borda-bloco shadow-2 col-3 bg-grey-4"
+            v-for="(i, index) in dataCesta"
+            :key="index"
+          >
+            <q-card-section class="row items-center">
+              <q-space />
+              <q-btn
+                round
+                text-color="white"
+                color="red"
+                icon="delete"
+                size="sm"
+                @click="onExcluirItemCesta(i)"
+              >
+                <q-tooltip
+                  anchor="bottom middle"
+                  self="top middle"
+                  :offset="[10, 10]"
+                >
+                  Excluir item da Cesta
+                </q-tooltip>
+              </q-btn>
+            </q-card-section>
+            <q-card-section>
+              {{ `Código: ${i.CODIGO}` }} <br />
+              {{ `Produto: ${i.DESCRICAO}` }} <br />
+              {{ `Un: ${i.sg_unidade_medida}` }} <br />
+              {{ `Qtd: ${i.qt_digitacao}` }} <br />
+              {{ `Total Bruto: ${i.vl_total_item_formatado}` }} <br />
+              {{ `Imposto: ${i.vl_total_icms_formatado}` }} <br />
+              {{ `Total Liq: ${i.vl_unitario_liq_formatado}` }} <br />
+            </q-card-section>
+          </q-card>
+        </div>
+      </div>
+    </transition>
+    <q-dialog v-if="!complemento_impressao" maximized persistent>
+      <carregando :corID="'orange-9'" mensagemID="Aguarde..."></carregando>
+    </q-dialog>
+  </div>
+</template>
+
+<script>
+import {
+  DxDataGrid,
+  DxFilterRow,
+  DxPager,
+  DxPaging,
+  DxExport,
+  DxGroupPanel,
+  DxEditing,
+  DxGrouping,
+  DxColumnChooser,
+  DxColumnFixing,
+  DxHeaderFilter,
+  DxFilterPanel,
+  DxSelection,
+  DxStateStoring,
+  DxMasterDetail,
+  DxSearchPanel,
+} from "devextreme-vue/data-grid";
+import { exportDataGrid } from "devextreme/excel_exporter";
+import ExcelJS from "exceljs";
+import saveAs from "file-saver";
+import funcao from "../http/funcoes-padroes";
+import Incluir from "../http/incluir_registro";
+import Procedimento from "../http/procedimento";
+import Menu from "../http/menu";
+import Lookup from "../http/lookup";
+import formataData from "../http/formataData";
+import notify from "devextreme/ui/notify";
+import select from "../http/select";
+
+var dados = [];
+let filename = "DataGrid.xlsx";
+var sParametroApi = "";
+
+export default {
+  data() {
+    return {
+      cd_empresa: localStorage.cd_empresa,
+      cd_usuario: localStorage.cd_usuario,
+      cd_cliente: localStorage.cd_cliente,
+      cd_modulo: localStorage.cd_modulo,
+      cd_menu: localStorage.cd_menu,
+      cd_api: localStorage.cd_api,
+      api: "",
+      mostraGrid: false,
+      //Somas
+      valor: 0,
+      valor_formatado: 0,
+      vl_total_produto: 0,
+      vl_total_produto_formatado: 0,
+      vl_total_desconto: 0,
+      vl_total_desconto_formatado: 0,
+      vl_imposto: 0,
+      vl_liquido: 0,
+      valor_liquido: 0,
+      qtd: 0,
+      produtos: 0,
+      vl_desconto_pedido: 0,
+      //////////////////////
+      loadingPDF: false,
+      loadingDataSourceConfig: false,
+      masterDetail: false,
+      filterGrid: true,
+      multipleSelection: false,
+      ic_mostra_desconto: false,
+      ic_grid_cesta: false,
+      complemento_impressao: false,
+      pageSizes: [10, 20, 50, 100],
+      data_hoje: new Date(),
+      dataSourceConfig: [],
+      dataCesta: [],
+      qt_registro: "",
+      columns: [],
+      total: {},
+      tituloMenu: "",
+      forma_pagamento: "",
+      lookup_forma_pagamento: [],
+      lookup_forma_pagamento_completo: [],
+      frete: "",
+      lookup_forma_frete: [],
+      lookup_forma_frete_completo: [],
+      condicao_pagamento: "",
+      lookup_condicao_pagamento: [],
+      lookup_condicao_pagamento_completo: [],
+      transportadora: "",
+      lookup_transportadora: [],
+      lookup_transportadora_completo: [],
+      nm_referencia_consulta: "",
+      vl_frete: "0",
+      vl_sinal: "0",
+      tipo_local_entrega: "",
+      lookup_tipo_local_entrega: [],
+      lookup_tipo_local_entrega_completo: [],
+      ic_operacao_triangular: "N",
+      tipo_proposta: [],
+      lookup_tipo_proposta: [],
+      lookup_tipo_proposta_completo: [],
+      dt_entrega: "",
+      hr_entrega: "",
+      ds_descricao: "",
+      pc_desconto: 0,
+      vl_desconto: 0,
+    };
+  },
+
+  components: {
+    DxDataGrid,
+    DxFilterRow,
+    DxPager,
+    DxPaging,
+    DxExport,
+    DxGroupPanel,
+    DxEditing,
+    DxGrouping,
+    DxColumnChooser,
+    DxColumnFixing,
+    DxHeaderFilter,
+    DxFilterPanel,
+    DxSelection,
+    DxStateStoring,
+    DxMasterDetail,
+    DxSearchPanel,
+    carregando: () => import("../components/carregando.vue"),
+    cliente: () => import("./cliente.vue"),
+    BtnVoltarHome: () => import("../components/btnVoltarHome.vue"),
+  },
+
+  async created() {
+    let lookup_forma_pagamento = await Lookup.montarSelect(
+      this.cd_empresa,
+      2774
+    );
+    this.lookup_forma_pagamento = JSON.parse(
+      JSON.parse(JSON.stringify(lookup_forma_pagamento.dataset))
+    );
+    this.lookup_forma_pagamento = this.lookup_forma_pagamento.filter((e) => {
+      return e.ic_selecao_pedido === "S" && !!e.nm_forma_pagamento;
+    });
+    this.lookup_forma_pagamento.sort((a, b) =>
+      a.nm_forma_pagamento.localeCompare(b.nm_forma_pagamento)
+    );
+    this.lookup_forma_pagamento_completo = this.lookup_forma_pagamento;
+    ////////////////////////
+    let lookup_forma_frete = await Lookup.montarSelect(this.cd_empresa, 200);
+    this.lookup_forma_frete = JSON.parse(
+      JSON.parse(JSON.stringify(lookup_forma_frete.dataset))
+    );
+    this.lookup_forma_frete = this.lookup_forma_frete.filter((t) => {
+      return !!t.nm_tipo_frete;
+    });
+    this.lookup_forma_frete.sort((a, b) =>
+      a.nm_tipo_frete.localeCompare(b.nm_tipo_frete)
+    );
+    this.lookup_forma_frete_completo = this.lookup_forma_frete;
+    ////////////////////////
+    let lookup_condicao_pagamento = await Lookup.montarSelect(
+      this.cd_empresa,
+      308
+    );
+    this.lookup_condicao_pagamento = JSON.parse(
+      JSON.parse(JSON.stringify(lookup_condicao_pagamento.dataset))
+    );
+    this.lookup_condicao_pagamento = this.lookup_condicao_pagamento.filter(
+      (e) => {
+        return (
+          (e.ic_ativo === "S" && e.ic_tipo_cond_pagamento === "T") ||
+          (e.ic_tipo_cond_pagamento === "V" &&
+            e.ic_ecommerce === "S" &&
+            !!e.nm_condicao_pagamento)
+        );
+      }
+    );
+    this.lookup_condicao_pagamento.sort((a, b) =>
+      a.nm_condicao_pagamento.localeCompare(b.nm_condicao_pagamento)
+    );
+    this.lookup_condicao_pagamento_completo = this.lookup_condicao_pagamento;
+    ////////////////////////
+    let lookup_transportadora = await Lookup.montarSelect(this.cd_empresa, 297);
+    this.lookup_transportadora = JSON.parse(
+      JSON.parse(JSON.stringify(lookup_transportadora.dataset))
+    );
+    this.lookup_transportadora = this.lookup_transportadora.filter((t) => {
+      return !!t.nm_transportadora;
+    });
+    this.lookup_transportadora.sort((a, b) =>
+      a.nm_transportadora.localeCompare(b.nm_transportadora)
+    );
+    this.lookup_transportadora_completo = this.lookup_transportadora;
+    ////////////////////////
+    let data_tipo_local_entrega = await Lookup.montarSelect(
+      this.cd_empresa,
+      250
+    );
+    this.lookup_tipo_local_entrega = JSON.parse(
+      JSON.parse(JSON.stringify(data_tipo_local_entrega.dataset))
+    );
+    this.lookup_tipo_local_entrega.sort((a, b) =>
+      a.nm_tipo_local_entrega.localeCompare(b.nm_tipo_local_entrega)
+    );
+    this.lookup_tipo_local_entrega_completo = this.lookup_tipo_local_entrega;
+    ////////////////////////
+    let data_tipo_proposta = await Lookup.montarSelect(this.cd_empresa, 396);
+    this.lookup_tipo_proposta = JSON.parse(
+      JSON.parse(JSON.stringify(data_tipo_proposta.dataset))
+    );
+    this.lookup_tipo_proposta.sort((a, b) =>
+      a.nm_tipo_proposta.localeCompare(b.nm_tipo_proposta)
+    );
+    this.lookup_tipo_proposta_completo = this.lookup_tipo_proposta;
+    ////////////////////////
+    this.dt_entrega = formataData.AnoMesDia(this.data_hoje);
+    this.carregaDados();
+    if (localStorage.dataCesta) {
+      await this.$refs.clienteComponente.SelecionaCliente(
+        JSON.parse(localStorage.clienteSelecionado)
+      );
+    }
+  },
+
+  computed: {
+    gridPadrao() {
+      return this.$refs["gridPadrao"].instance;
+    },
+  },
+
+  watch: {
+    dataCesta() {
+      this.attDataCesta();
+    },
+    async dataSourceConfig() {
+      if (this.dataSourceConfig.length > 0 && localStorage.dataCesta) {
+        await funcao.sleep(1);
+        await this.$nextTick();
+        await funcao.sleep(1);
+        await this.$nextTick();
+        this.dataCesta = JSON.parse(localStorage.dataCesta);
+        this.attDataCesta();
+        this.dataCesta.map(async (item) => {
+          await this.calculaValoresIndividual(item);
+        });
+      }
+    },
+  },
+
+  methods: {
+    async carregaDados(showNotify) {
+      localStorage.cd_identificacao = 0;
+      await this.showMenu();
+      if (showNotify !== true) {
+        notify("Aguarde... estamos montando a consulta para você!");
+      }
+      let sApis = sParametroApi;
+      if (!sApis == "") {
+        try {
+          this.loadingDataSourceConfig = true;
+          this.dataSourceConfig = await Procedimento.montarProcedimento(
+            this.cd_empresa,
+            this.cd_cliente,
+            this.api,
+            sApis
+          );
+          this.loadingDataSourceConfig = false;
+        } catch (error) {
+          this.loadingDataSourceConfig = false;
+          // eslint-disable-next-line no-console
+          console.error(error);
+        }
+
+        this.qt_registro = this.dataSourceConfig.length;
+      }
+    },
+    async showMenu() {
+      this.cd_api = localStorage.cd_api || "0";
+      this.api = localStorage.nm_identificacao_api || "0";
+      localStorage.cd_parametro = 0;
+      this.cd_menu = this.cd_menu == "0" ? 7718 : this.cd_menu;
+      this.cd_api = this.cd_api == "0" ? 868 : this.cd_api;
+      this.api = this.api == "0" ? "868/1345" : this.api;
+      dados = await Menu.montarMenu(this.cd_empresa, this.cd_menu, this.cd_api); //'titulo';
+
+      sParametroApi = dados.nm_api_parametro;
+
+      if (
+        !dados.nm_identificacao_api == "" &&
+        !dados.nm_identificacao_api == this.api
+      ) {
+        this.api = dados.nm_identificacao_api;
+      }
+
+      this.tituloMenu = dados.nm_menu_titulo; //await Menu.montarMenu(cd_empresa, cd_menu); //'titulo';
+      //this.menu = dados.nm_menu;
+      filename = this.tituloMenu + ".xlsx";
+      //dados da coluna
+      this.columns = JSON.parse(JSON.parse(JSON.stringify(dados.coluna)));
+      this.columns.map((e) => {
+        e.encodeHtml = false;
+        if (
+          e.dataField == "qt_digitacao" ||
+          e.dataField == "VL_PRODUTO" ||
+          e.dataField == "sg_unidade_medida" ||
+          e.dataField == "os" ||
+          e.dataField == "pos" ||
+          e.dataField == "cd_pedido_compra_cliente" ||
+          e.dataField == "cd_item_pedido_compra_cliente"
+        ) {
+          e.allowEditing = true;
+        } else {
+          e.allowEditing = false;
+        }
+      });
+      //dados do total
+      this.total = JSON.parse(JSON.parse(JSON.stringify(dados.coluna_total)));
+      //
+    },
+    async onEnviarProposta() {
+      try {
+        await this.$refs.gridPadrao.instance.saveEditData();
+        await funcao.sleep(1);
+      } catch {
+        notify("Salvando Proposta");
+      }
+      //Validação para NÃO salvar item com VL_PRODUTO = 0
+      this.dataCesta.map((item) => {
+        if (item.VL_PRODUTO == 0) {
+          return notify("Existem produto(s) com valores zerados!");
+        }
+      });
+      var json_envia_pedido = {
+        cd_forma_pagamento: this.forma_pagamento
+          ? this.forma_pagamento.cd_forma_pagamento
+          : null,
+        cd_tipo_frete: this.frete ? this.frete.cd_tipo_frete : null,
+        cd_condicao_pagamento: this.condicao_pagamento
+          ? this.condicao_pagamento.cd_condicao_pagamento
+          : null,
+        cd_transportadora: this.transportadora
+          ? this.transportadora.cd_transportadora
+          : null,
+        nm_referencia_consulta: this.nm_referencia_consulta,
+        vl_frete: this.vl_frete ? parseFloat(this.vl_frete) : 0,
+        vl_sinal: this.vl_sinal ? parseFloat(this.vl_sinal) : 0,
+        cd_tipo_local_entrega: this.tipo_local_entrega
+          ? this.tipo_local_entrega.cd_tipo_local_entrega
+          : null,
+        cd_tipo_proposta: this.tipo_proposta
+          ? this.tipo_proposta.cd_tipo_proposta
+          : null,
+        ic_operacao_triangular: this.ic_operacao_triangular,
+        dt_entrega: this.dt_entrega,
+        hr_entrega: this.hr_entrega,
+        ds_descricao: this.ds_descricao,
+        pc_desconto: this.pc_desconto,
+        vl_desconto: this.vl_desconto,
+        vl_total_desconto: this.vl_total_desconto,
+        cd_cliente: this.cd_cliente,
+        cd_usuario: this.cd_usuario,
+        cd_contato: localStorage.cd_contato,
+        grid: this.dataCesta,
+      };
+      let [result_pedido] = await Incluir.incluirRegistro(
+        "956/1469", //this.api,
+        json_envia_pedido
+      ); //pr_egisnet_pedido_fabrica
+      if (result_pedido != undefined && result_pedido.cd_consulta) {
+        notify(`Proposta ${result_pedido.cd_consulta} enviada com sucesso`);
+      } else if (result_pedido.Msg) {
+        notify(`${result_pedido.Msg}`);
+      } else {
+        notify("Não foi possível enviar a proposta");
+      }
+      this.cleanCliente();
+      await this.onCancelar();
+      this.carregaDados(true);
+      localStorage.removeItem("clienteSelecionado");
+      localStorage.removeItem("dataCesta");
+    },
+    async onEnviarWhatsApp() {
+      //console.log('Funcionalidade WhatsApp em desenvolvimento...')
+    },
+    async onFaturar() {
+      //console.log('Faturar')
+    },
+    async onCancelar() {
+      this.ic_grid_cesta = true;
+      await funcao.sleep(1000);
+      await this.carregaDados(true);
+      //await this.gridPadrao.cancelEditData();
+      await funcao.sleep(1000);
+      this.dataCesta = [];
+      this.ic_grid_cesta = false;
+      this.ic_mostra_desconto = false;
+      this.complemento_impressao = false;
+      this.limpaTotais();
+    },
+    async onCesta() {
+      try {
+        await this.$refs.gridPadrao.instance.saveEditData();
+        await funcao.sleep(1);
+      } catch {
+        notify("Aguarde...");
+      }
+      await this.$nextTick();
+      await funcao.sleep(1);
+      await this.$nextTick();
+      await funcao.sleep(1);
+      this.ic_grid_cesta = !this.ic_grid_cesta;
+    },
+    async onExcluirItemCesta(item) {
+      this.dataCesta = this.dataCesta.filter(
+        (i) => i.cd_controle !== item.cd_controle
+      );
+      localStorage.dataCesta = JSON.stringify(this.dataCesta);
+      this.attDataCesta();
+      this.$refs.gridPadrao.instance.cellValue(
+        item.rowIndex,
+        "qt_digitacao",
+        0
+      );
+      this.dataCesta.map(async (item) => {
+        await this.calculaValoresIndividual(item);
+      });
+    },
+    async SelecionaCliente(e) {
+      localStorage.clienteSelecionado = JSON.stringify(e);
+      this.ic_mostra_desconto =
+        e.ic_desconto_pedido_egisnet === "S" ? true : false;
+      let forma_pag_json = {
+        cd_empresa: this.cd_empresa,
+        cd_tabela: 120,
+        order: "D",
+        where: [{ cd_cliente: e.cd_cliente }],
+      };
+      let [forma_pagamento_cliente] = await select.montarSelect(
+        this.cd_empresa,
+        forma_pag_json
+      );
+      [forma_pagamento_cliente] = forma_pagamento_cliente.dataset
+        ? JSON.parse(
+            JSON.parse(JSON.stringify(forma_pagamento_cliente.dataset))
+          )
+        : [null];
+      if (forma_pagamento_cliente) {
+        let [form_pag] = this.lookup_forma_pagamento.filter(
+          (fp) =>
+            fp.cd_forma_pagamento == forma_pagamento_cliente.cd_forma_pagamento
+        );
+        this.forma_pagamento = form_pag;
+      }
+      if (e.cd_condicao_pagamento) {
+        let [cond_pag] = this.lookup_condicao_pagamento.filter(
+          (cp) => cp.cd_condicao_pagamento == e.cd_condicao_pagamento
+        );
+        this.condicao_pagamento = cond_pag;
+      }
+
+      if (e.cd_transportadora) {
+        let [transp] = this.lookup_transportadora.filter(
+          (tr) => tr.cd_transportadora == e.cd_transportadora
+        );
+        this.transportadora = transp;
+      }
+      if (e.cd_tipo_local_entrega) {
+        let [local_entrega] = this.lookup_tipo_local_entrega.filter(
+          (tr) => tr.cd_tipo_local_entrega == e.cd_tipo_local_entrega
+        );
+        this.cd_tipo_local_entrega = local_entrega;
+      }
+      if (e.cd_tipo_proposta) {
+        let [tipo_proposta] = this.lookup_tipo_proposta.filter(
+          (tr) => tr.cd_tipo_proposta == e.cd_tipo_proposta
+        );
+        this.tipo_proposta = tipo_proposta;
+      }
+      //this.forma_pagamento = this.lookup_forma_pagamento.filter((p) => p.cd_forma_pagamento == e.cd_forma_pagamento)
+      localStorage.cd_tabela_preco = e.cd_tabela_preco;
+      this.cd_cliente = e.cd_cliente;
+      await this.carregaDados();
+      this.mostraGrid = true;
+    },
+    cleanCliente() {
+      this.forma_pagamento = "";
+      this.condicao_pagamento = "";
+      this.transportadora = "";
+      this.nm_referencia_consulta = "";
+      this.vl_frete = "0";
+      this.vl_sinal = "0";
+      this.tipo_local_entrega = "";
+      this.tipo_proposta = "";
+      this.ic_operacao_triangular = "N";
+      this.dataSourceConfig = [];
+      this.qt_registro = 0;
+    },
+    CalculaDesconto() {
+      if (this.forma_pagamento && this.forma_pagamento.pc_desconto_pedido) {
+        this.vl_desconto_pedido =
+          (this.valor / 100) *
+          parseFloat(this.forma_pagamento.pc_desconto_pedido);
+        this.valor_liquido =
+          this.valor -
+          this.valor *
+            (parseFloat(this.forma_pagamento.pc_desconto_pedido) / 100);
+
+        this.valor_liquido = this.valor_liquido.toLocaleString("pt-BR", {
+          style: "currency",
+          currency: "BRL",
+        });
+        this.vl_desconto_pedido = this.vl_desconto_pedido.toLocaleString(
+          "pt-BR",
+          {
+            style: "currency",
+            currency: "BRL",
+          }
+        );
+      } else {
+        this.vl_desconto_pedido = 0;
+        this.valor_liquido = 0;
+      }
+    },
+    async onPDF() {
+      await this.onCesta();
+      await funcao.sleep(1);
+      if (this.dataCesta.length > 0) {
+        try {
+          this.complemento_impressao = true;
+          this.dt_entrega = formataData.DiaMesAno(this.dt_entrega);
+          this.ic_grid_cesta = true;
+          await funcao.sleep(1000);
+          this.loadingPDF = true;
+          let html = document.getElementById("cesta");
+          //Configura o PDF que será baixado.
+          let config = {
+            orientation: "p",
+            unit: "mm",
+            format: [1480, 1880], //y 1480
+            putOnlyUsedFonts: false,
+            nm_pdf: this.tituloMenu,
+          };
+          //Cria o documento PDF
+          await funcao.ExportHTML(html, "A", config);
+          this.loadingPDF = false;
+          await funcao.sleep(10);
+          this.complemento_impressao = false;
+        } catch {
+          this.complemento_impressao = false;
+        }
+        this.dt_entrega = formataData.AnoMesDia(this.data_hoje);
+      } else {
+        notify("Insira pelo menos um item para gerar o relatório");
+      }
+    },
+    attDataCesta() {
+      this.limpaTotais();
+      this.produtos = this.dataCesta.length;
+      this.dataCesta.map((c) => {
+        c.vl_total_icms = parseFloat(c.vl_icms_st) * parseFloat(c.qt_digitacao);
+        c.vl_unitario_icms =
+          parseFloat(c.VL_PRODUTO) + parseFloat(c.vl_icms_st);
+        c.vl_unitario_liq =
+          parseFloat(c.VL_PRODUTO) * parseFloat(c.qt_digitacao);
+        c.qt_peso_bruto = isNaN(c.qt_peso_bruto_fixo)
+          ? 0
+          : c.qt_peso_bruto_fixo * c.qt_digitacao;
+        c.vl_total_kg = c.qt_peso_bruto * c.VL_PRODUTO;
+        c.vl_total_item =
+          c.ic_peso_produto == "S" && parseFloat(c.qt_digitacao) > 0
+            ? c.vl_total_kg
+            : parseFloat(c.qt_digitacao) * parseFloat(c.VL_PRODUTO) +
+              parseFloat(c.qt_digitacao) * parseFloat(c.vl_icms_st);
+        c.VL_PRODUTO_formatado = c.VL_PRODUTO.toLocaleString("pt-BR", {
+          style: "currency",
+          currency: "BRL",
+        });
+        c.vl_total_item_formatado = parseFloat(c.vl_total_item).toLocaleString(
+          "pt-BR",
+          {
+            style: "currency",
+            currency: "BRL",
+          }
+        );
+        c.vl_icms_st_formatado = parseFloat(c.vl_icms_st).toLocaleString(
+          "pt-BR",
+          {
+            style: "currency",
+            currency: "BRL",
+          }
+        );
+        c.vl_total_icms_formatado = parseFloat(c.vl_total_icms).toLocaleString(
+          "pt-BR",
+          {
+            style: "currency",
+            currency: "BRL",
+          }
+        );
+        c.vl_unitario_icms_formatado = parseFloat(
+          c.vl_unitario_icms
+        ).toLocaleString("pt-BR", {
+          style: "currency",
+          currency: "BRL",
+        });
+        c.vl_unitario_liq_formatado = parseFloat(
+          c.vl_unitario_liq
+        ).toLocaleString("pt-BR", {
+          style: "currency",
+          currency: "BRL",
+        });
+        this.vl_total_produto +=
+          c.ic_peso_produto == "S" ? c.vl_total_item : c.vl_unitario_liq;
+        this.valor += c.vl_total_item + c.vl_total_icms;
+        this.vl_imposto += c.vl_total_icms;
+        this.vl_liquido += c.vl_total_item;
+      });
+      this.vl_total_produto_formatado = this.vl_total_produto.toLocaleString(
+        "pt-BR",
+        {
+          style: "currency",
+          currency: "BRL",
+        }
+      );
+      if (this.vl_desconto > 0) {
+        this.validaVLDesconto(this.vl_desconto);
+      } else if (this.pc_desconto > 0) {
+        this.validaPCDesconto(this.pc_desconto);
+      } else {
+        this.valor_formatado = this.valor.toLocaleString("pt-BR", {
+          style: "currency",
+          currency: "BRL",
+        });
+      }
+
+      this.vl_imposto = this.vl_imposto.toLocaleString("pt-BR", {
+        style: "currency",
+        currency: "BRL",
+      });
+      this.vl_liquido = this.vl_liquido.toLocaleString("pt-BR", {
+        style: "currency",
+        currency: "BRL",
+      });
+      localStorage.dataCesta = JSON.stringify(this.dataCesta);
+    },
+
+    async onEditorPreparing(e) {
+      if (e.parentType === "dataRow") {
+        e.editorOptions.onKeyDown = async (evt) => {
+          // Se pressionou Enter, simula Tab (move para próxima célula)
+          if (evt.event.key === "Enter") {
+            await funcao.sleep(1);
+            if (
+              e.row.data.qt_digitacao == null ||
+              e.row.data.qt_digitacao == undefined ||
+              e.row.data.qt_digitacao < 0
+            ) {
+              this.$refs.gridPadrao.instance.cellValue(
+                e.row.rowIndex,
+                "qt_digitacao",
+                0.0
+              );
+              this.$refs.gridPadrao.instance.cellValue(
+                e.row.rowIndex,
+                "vl_total_item",
+                0.0
+              );
+              this.$refs.gridPadrao.instance.cellValue(
+                e.row.rowIndex,
+                "vl_total_liquido",
+                0.0
+              );
+              this.$refs.gridPadrao.instance.cellValue(
+                e.row.rowIndex,
+                "vl_total_icms",
+                0.0
+              );
+              this.dataCesta = this.dataCesta.filter(
+                (dropItem) => dropItem.cd_controle === e.row.data.cd_controle
+              );
+              e.row.data.qt_digitacao = 0;
+            }
+            if (typeof e.row.data.qt_digitacao === "string") {
+              e.row.data.qt_digitacao = funcao.RealParaInt(
+                e.row.data.qt_digitacao
+              );
+            }
+            if (typeof e.row.data.VL_PRODUTO === "string") {
+              e.row.data.VL_PRODUTO = funcao.RealParaInt(e.row.data.VL_PRODUTO);
+            }
+            if (typeof e.row.data.vl_icms_st === "string") {
+              e.row.data.vl_icms_st = funcao.RealParaInt(e.row.data.vl_icms_st);
+            }
+            if (
+              e.row.data.qt_digitacao == 0 &&
+              this.dataCesta.find(
+                (e) => e.cd_controle === e.row.data.cd_controle
+              )
+            ) {
+              this.dataCesta = this.dataCesta.filter(
+                (dropItem) => dropItem.cd_controle !== e.row.data.cd_controle
+              );
+              this.$refs.gridPadrao.instance.cellValue(
+                e.row.rowIndex,
+                "qt_digitacao",
+                0.0
+              );
+              this.$refs.gridPadrao.instance.cellValue(
+                e.row.rowIndex,
+                "vl_total_item",
+                0.0
+              );
+              this.$refs.gridPadrao.instance.cellValue(
+                e.row.rowIndex,
+                "vl_total_liquido",
+                0.0
+              );
+              this.$refs.gridPadrao.instance.cellValue(
+                e.row.rowIndex,
+                "vl_total_icms",
+                0.0
+              );
+            }
+            if (e.row.data.qt_digitacao > 0) {
+              ////Verifica se a qtdade digitada é maior que o disponível
+              const cd_controle_linha = e.row.data.cd_controle;
+              if (
+                e.row.data.qt_digitacao > e.row.data.Disponivel &&
+                e.row.data.Disponivel > 0 &&
+                e.row.data.ic_libera_estoque !== "S"
+              ) {
+                this.$refs.gridPadrao.instance.cellValue(
+                  e.row.rowIndex,
+                  "qt_digitacao",
+                  e.row.data.Disponivel
+                );
+                e.row.data.qt_digitacao = e.row.data.Disponivel;
+              }
+              if (
+                this.dataCesta.length == 0 ||
+                !this.dataCesta.find((e) => e.cd_controle === cd_controle_linha)
+              ) {
+                this.dataCesta.push({
+                  ...e.row.data,
+                  rowIndex: e.row.rowIndex,
+                });
+              } else {
+                let alterouQtd = this.dataCesta.find(
+                  (e) => e.cd_controle === cd_controle_linha
+                );
+                alterouQtd.index = this.dataCesta.findIndex(
+                  (e) => e.cd_controle === cd_controle_linha
+                );
+                let peso_calculado = isNaN(e.row.data.qt_peso_bruto_fixo)
+                  ? 0
+                  : e.row.data.qt_peso_bruto_fixo * e.row.data.qt_digitacao;
+                let vl_total_em_kg = peso_calculado * e.row.data.VL_PRODUTO;
+                this.$refs.gridPadrao.instance.cellValue(
+                  e.row.rowIndex,
+                  "qt_peso_bruto",
+                  peso_calculado
+                );
+                this.$refs.gridPadrao.instance.cellValue(
+                  e.row.rowIndex,
+                  "vl_total_kg",
+                  vl_total_em_kg
+                );
+                if (alterouQtd.os != e.row.data.os) {
+                  this.dataCesta[alterouQtd.index].os = e.row.data.os;
+                  this.attDataCesta();
+                }
+                if (alterouQtd.pos != e.row.data.pos) {
+                  this.dataCesta[alterouQtd.index].pos = e.row.data.pos;
+                  this.attDataCesta();
+                }
+                if (
+                  alterouQtd.cd_pedido_compra_cliente !=
+                  e.row.data.cd_pedido_compra_cliente
+                ) {
+                  this.dataCesta[alterouQtd.index].cd_pedido_compra_cliente =
+                    e.row.data.cd_pedido_compra_cliente;
+                  this.attDataCesta();
+                }
+                if (
+                  alterouQtd.cd_item_pedido_compra_cliente !=
+                  e.row.data.cd_item_pedido_compra_cliente
+                ) {
+                  this.dataCesta[
+                    alterouQtd.index
+                  ].cd_item_pedido_compra_cliente =
+                    e.row.data.cd_item_pedido_compra_cliente;
+                  this.attDataCesta();
+                }
+                this.dataCesta[alterouQtd.index].os = e.row.data.os;
+                this.dataCesta[alterouQtd.index].pos = e.row.data.pos;
+                this.dataCesta[alterouQtd.index].cd_pedido_compra_cliente =
+                  e.row.data.cd_pedido_compra_cliente;
+                this.dataCesta[alterouQtd.index].cd_item_pedido_compra_cliente =
+                  e.row.data.cd_item_pedido_compra_cliente;
+                if (alterouQtd.qt_digitacao != e.row.data.qt_digitacao) {
+                  this.dataCesta[alterouQtd.index].qt_digitacao =
+                    e.row.data.qt_digitacao;
+                  this.attDataCesta();
+                }
+                if (alterouQtd.VL_PRODUTO != e.row.data.VL_PRODUTO) {
+                  this.dataCesta[alterouQtd.index].VL_PRODUTO =
+                    e.row.data.VL_PRODUTO;
+                  this.attDataCesta();
+                }
+              }
+              //Regra Unidade de Medida (Calculo de conversao) --Alinhar com o Fabiano
+              var vl_total_item = 0;
+              var vl_total_liquido = 0;
+              var vl_total_icms = 0;
+              if (typeof e.row.data.qt_multiplo_embalagem > 1) {
+                vl_total_item =
+                  e.row.data.qt_digitacao.toFixed(2) *
+                    e.row.data.VL_PRODUTO.toFixed(2) +
+                  e.row.data.qt_digitacao.toFixed(2) *
+                    e.row.data.vl_icms_st *
+                    e.row.data.qt_multiplo_embalagem;
+                vl_total_liquido =
+                  e.row.data.qt_digitacao.toFixed(2) *
+                  e.row.data.VL_PRODUTO.toFixed(2) *
+                  e.row.data.qt_multiplo_embalagem;
+                vl_total_icms =
+                  e.row.data.qt_digitacao.toFixed(2) *
+                  e.row.data.vl_icms_st *
+                  e.row.data.qt_multiplo_embalagem;
+              } else {
+                vl_total_item =
+                  e.row.data.qt_digitacao.toFixed(2) *
+                    e.row.data.VL_PRODUTO.toFixed(2) +
+                  e.row.data.qt_digitacao.toFixed(2) * e.row.data.vl_icms_st;
+                vl_total_liquido =
+                  e.row.data.qt_digitacao.toFixed(2) *
+                  e.row.data.VL_PRODUTO.toFixed(2);
+                vl_total_icms =
+                  e.row.data.qt_digitacao.toFixed(2) * e.row.data.vl_icms_st;
+              }
+              this.$refs.gridPadrao.instance.cellValue(
+                e.row.rowIndex,
+                "vl_total_item",
+                vl_total_item
+              );
+              this.$refs.gridPadrao.instance.cellValue(
+                e.row.rowIndex,
+                "vl_total_liquido",
+                vl_total_liquido
+              );
+              this.$refs.gridPadrao.instance.cellValue(
+                e.row.rowIndex,
+                "vl_total_icms",
+                vl_total_icms
+              );
+            }
+          }
+        };
+      }
+    },
+
+    async attQtd(e) {
+      await funcao.sleep(1);
+      e.rows.map((i) => {
+        if (
+          i.data.qt_digitacao == null ||
+          i.data.qt_digitacao == undefined ||
+          i.data.qt_digitacao < 0
+        ) {
+          this.$refs.gridPadrao.instance.cellValue(
+            i.rowIndex,
+            "qt_digitacao",
+            0.0
+          );
+          this.$refs.gridPadrao.instance.cellValue(
+            i.rowIndex,
+            "vl_total_item",
+            0.0
+          );
+          this.$refs.gridPadrao.instance.cellValue(
+            i.rowIndex,
+            "vl_total_liquido",
+            0.0
+          );
+          this.$refs.gridPadrao.instance.cellValue(
+            i.rowIndex,
+            "vl_total_icms",
+            0.0
+          );
+          this.dataCesta = this.dataCesta.filter(
+            (dropItem) => dropItem.cd_controle === i.data.cd_controle
+          );
+          i.data.qt_digitacao = 0;
+        }
+        if (typeof i.data.qt_digitacao === "string") {
+          i.data.qt_digitacao = funcao.RealParaInt(i.data.qt_digitacao);
+        }
+        if (typeof i.data.VL_PRODUTO === "string") {
+          i.data.VL_PRODUTO = funcao.RealParaInt(i.data.VL_PRODUTO);
+        }
+        if (typeof i.data.vl_icms_st === "string") {
+          i.data.vl_icms_st = funcao.RealParaInt(i.data.vl_icms_st);
+        }
+        if (
+          i.data.qt_digitacao == 0 &&
+          this.dataCesta.find((e) => e.cd_controle === i.data.cd_controle)
+        ) {
+          this.dataCesta = this.dataCesta.filter(
+            (dropItem) => dropItem.cd_controle !== i.data.cd_controle
+          );
+          this.$refs.gridPadrao.instance.cellValue(
+            i.rowIndex,
+            "qt_digitacao",
+            0.0
+          );
+          this.$refs.gridPadrao.instance.cellValue(
+            i.rowIndex,
+            "vl_total_item",
+            0.0
+          );
+          this.$refs.gridPadrao.instance.cellValue(
+            i.rowIndex,
+            "vl_total_liquido",
+            0.0
+          );
+          this.$refs.gridPadrao.instance.cellValue(
+            i.rowIndex,
+            "vl_total_icms",
+            0.0
+          );
+        }
+        if (i.data.qt_digitacao > 0) {
+          ////Verifica se a qtdade digitada é maior que o disponível
+          if (
+            i.data.qt_digitacao > i.data.Disponivel &&
+            i.data.Disponivel > 0 &&
+            i.data.ic_libera_estoque !== "S"
+          ) {
+            this.$refs.gridPadrao.instance.cellValue(
+              i.rowIndex,
+              "qt_digitacao",
+              i.data.Disponivel
+            );
+            i.data.qt_digitacao = i.data.Disponivel;
+          }
+          if (
+            this.dataCesta.length == 0 ||
+            !this.dataCesta.find((e) => e.cd_controle === i.data.cd_controle)
+          ) {
+            this.dataCesta.push({ ...i.data, rowIndex: i.rowIndex });
+          } else {
+            let alterouQtd = this.dataCesta.find(
+              (e) => e.cd_controle === i.data.cd_controle
+            );
+            alterouQtd.index = this.dataCesta.findIndex(
+              (e) => e.cd_controle === i.data.cd_controle
+            );
+            let peso_calculado = isNaN(i.data.qt_peso_bruto_fixo)
+              ? 0
+              : i.data.qt_peso_bruto_fixo * i.data.qt_digitacao;
+            let vl_total_em_kg = peso_calculado * i.data.VL_PRODUTO;
+            this.$refs.gridPadrao.instance.cellValue(
+              i.rowIndex,
+              "qt_peso_bruto",
+              peso_calculado
+            );
+            this.$refs.gridPadrao.instance.cellValue(
+              i.rowIndex,
+              "vl_total_kg",
+              vl_total_em_kg
+            );
+            if (alterouQtd.os != i.data.os) {
+              this.dataCesta[alterouQtd.index].os = i.data.os;
+              this.attDataCesta();
+            }
+            if (alterouQtd.pos != i.data.pos) {
+              this.dataCesta[alterouQtd.index].pos = i.data.pos;
+              this.attDataCesta();
+            }
+            if (
+              alterouQtd.cd_pedido_compra_cliente !=
+              i.data.cd_pedido_compra_cliente
+            ) {
+              this.dataCesta[alterouQtd.index].cd_pedido_compra_cliente =
+                i.data.cd_pedido_compra_cliente;
+              this.attDataCesta();
+            }
+            if (
+              alterouQtd.cd_item_pedido_compra_cliente !=
+              i.data.cd_item_pedido_compra_cliente
+            ) {
+              this.dataCesta[alterouQtd.index].cd_item_pedido_compra_cliente =
+                i.data.cd_item_pedido_compra_cliente;
+              this.attDataCesta();
+            }
+            this.dataCesta[alterouQtd.index].os = i.data.os;
+            this.dataCesta[alterouQtd.index].pos = i.data.pos;
+            this.dataCesta[alterouQtd.index].cd_pedido_compra_cliente =
+              i.data.cd_pedido_compra_cliente;
+            this.dataCesta[alterouQtd.index].cd_item_pedido_compra_cliente =
+              i.data.cd_item_pedido_compra_cliente;
+            if (alterouQtd.qt_digitacao != i.data.qt_digitacao) {
+              this.dataCesta[alterouQtd.index].qt_digitacao =
+                i.data.qt_digitacao;
+              this.attDataCesta();
+            }
+            if (alterouQtd.VL_PRODUTO != i.data.VL_PRODUTO) {
+              this.dataCesta[alterouQtd.index].VL_PRODUTO = i.data.VL_PRODUTO;
+              this.attDataCesta();
+            }
+          }
+          //Regra Unidade de Medida (Calculo de conversao) --Alinhar com o Fabiano
+          var vl_total_item = 0;
+          var vl_total_liquido = 0;
+          var vl_total_icms = 0;
+          if (typeof i.data.qt_multiplo_embalagem > 1) {
+            vl_total_item =
+              i.data.qt_digitacao.toFixed(2) * i.data.VL_PRODUTO.toFixed(2) +
+              i.data.qt_digitacao.toFixed(2) *
+                i.data.vl_icms_st *
+                i.data.qt_multiplo_embalagem;
+            vl_total_liquido =
+              i.data.qt_digitacao.toFixed(2) *
+              i.data.VL_PRODUTO.toFixed(2) *
+              i.data.qt_multiplo_embalagem;
+            vl_total_icms =
+              i.data.qt_digitacao.toFixed(2) *
+              i.data.vl_icms_st *
+              i.data.qt_multiplo_embalagem;
+          } else {
+            vl_total_item =
+              i.data.qt_digitacao.toFixed(2) * i.data.VL_PRODUTO.toFixed(2) +
+              i.data.qt_digitacao.toFixed(2) * i.data.vl_icms_st;
+            vl_total_liquido =
+              i.data.qt_digitacao.toFixed(2) * i.data.VL_PRODUTO.toFixed(2);
+            vl_total_icms = i.data.qt_digitacao.toFixed(2) * i.data.vl_icms_st;
+          }
+          this.$refs.gridPadrao.instance.cellValue(
+            i.rowIndex,
+            "vl_total_item",
+            vl_total_item
+          );
+          this.$refs.gridPadrao.instance.cellValue(
+            i.rowIndex,
+            "vl_total_liquido",
+            vl_total_liquido
+          );
+          this.$refs.gridPadrao.instance.cellValue(
+            i.rowIndex,
+            "vl_total_icms",
+            vl_total_icms
+          );
+        }
+      });
+      this.CalculaDesconto();
+    },
+
+    async calculaValoresIndividual(item) {
+      await this.$nextTick();
+      await funcao.sleep(1);
+      await this.$nextTick();
+      await funcao.sleep(1);
+      if (
+        item.qt_digitacao > item.Disponivel &&
+        item.Disponivel > 0 &&
+        item.ic_libera_estoque !== "S"
+      ) {
+        this.$refs.gridPadrao.instance.cellValue(
+          item.rowIndex,
+          "qt_digitacao",
+          item.Disponivel
+        );
+        item.qt_digitacao = item.Disponivel;
+      }
+      if (this.dataCesta.find((e) => e.cd_controle === item.cd_controle)) {
+        let alterouQtd = this.dataCesta.find(
+          (e) => e.cd_controle === item.cd_controle
+        );
+        alterouQtd.index = this.dataCesta.findIndex(
+          (e) => e.cd_controle === item.cd_controle
+        );
+        let peso_calculado = isNaN(item.qt_peso_bruto_fixo)
+          ? 0
+          : item.qt_peso_bruto_fixo * item.qt_digitacao;
+        let vl_total_em_kg = peso_calculado * item.VL_PRODUTO;
+        this.$refs.gridPadrao.instance.cellValue(
+          item.rowIndex,
+          "qt_digitacao",
+          item.qt_digitacao
+        );
+        this.$refs.gridPadrao.instance.cellValue(
+          item.rowIndex,
+          "qt_peso_bruto",
+          peso_calculado
+        );
+        this.$refs.gridPadrao.instance.cellValue(
+          item.rowIndex,
+          "vl_total_kg",
+          vl_total_em_kg
+        );
+        if (alterouQtd.os != item.os) {
+          this.dataCesta[alterouQtd.index].os = item.os;
+          this.attDataCesta();
+        }
+        if (alterouQtd.pos != item.pos) {
+          this.dataCesta[alterouQtd.index].pos = item.pos;
+          this.attDataCesta();
+        }
+        if (
+          alterouQtd.cd_pedido_compra_cliente != item.cd_pedido_compra_cliente
+        ) {
+          this.dataCesta[alterouQtd.index].cd_pedido_compra_cliente =
+            item.cd_pedido_compra_cliente;
+          this.attDataCesta();
+        }
+        if (
+          alterouQtd.cd_item_pedido_compra_cliente !=
+          item.cd_item_pedido_compra_cliente
+        ) {
+          this.dataCesta[alterouQtd.index].cd_item_pedido_compra_cliente =
+            item.cd_item_pedido_compra_cliente;
+          this.attDataCesta();
+        }
+        this.dataCesta[alterouQtd.index].os = item.os;
+        this.dataCesta[alterouQtd.index].pos = item.pos;
+        this.dataCesta[alterouQtd.index].cd_pedido_compra_cliente =
+          item.cd_pedido_compra_cliente;
+        this.dataCesta[alterouQtd.index].cd_item_pedido_compra_cliente =
+          item.cd_item_pedido_compra_cliente;
+        if (alterouQtd.qt_digitacao != item.qt_digitacao) {
+          this.dataCesta[alterouQtd.index].qt_digitacao = item.qt_digitacao;
+          this.attDataCesta();
+        }
+        if (alterouQtd.VL_PRODUTO != item.VL_PRODUTO) {
+          this.dataCesta[alterouQtd.index].VL_PRODUTO = item.VL_PRODUTO;
+          this.attDataCesta();
+        }
+      }
+      //Regra Unidade de Medida (Calculo de conversao) --Alinhar com o Fabiano
+      var vl_total_item = 0;
+      var vl_total_liquido = 0;
+      var vl_total_icms = 0;
+      if (typeof item.qt_multiplo_embalagem > 1) {
+        vl_total_item =
+          item.qt_digitacao.toFixed(2) * item.VL_PRODUTO.toFixed(2) +
+          item.qt_digitacao.toFixed(2) *
+            item.vl_icms_st *
+            item.qt_multiplo_embalagem;
+        vl_total_liquido =
+          item.qt_digitacao.toFixed(2) *
+          item.VL_PRODUTO.toFixed(2) *
+          item.qt_multiplo_embalagem;
+        vl_total_icms =
+          item.qt_digitacao.toFixed(2) *
+          item.vl_icms_st *
+          item.qt_multiplo_embalagem;
+      } else {
+        vl_total_item =
+          item.qt_digitacao.toFixed(2) * item.VL_PRODUTO.toFixed(2) +
+          item.qt_digitacao.toFixed(2) * item.vl_icms_st;
+        vl_total_liquido =
+          item.qt_digitacao.toFixed(2) * item.VL_PRODUTO.toFixed(2);
+        vl_total_icms = item.qt_digitacao.toFixed(2) * item.vl_icms_st;
+      }
+      this.$refs.gridPadrao.instance.cellValue(
+        item.rowIndex,
+        "vl_total_item",
+        vl_total_item
+      );
+      this.$refs.gridPadrao.instance.cellValue(
+        item.rowIndex,
+        "vl_total_liquido",
+        vl_total_liquido
+      );
+      this.$refs.gridPadrao.instance.cellValue(
+        item.rowIndex,
+        "vl_total_icms",
+        vl_total_icms
+      );
+    },
+
+    validaPCDesconto(val) {
+      // Remove caracteres não numéricos exceto ponto
+      let valorDesconto = String(val).replace(/[^0-9.]/g, "");
+      // Limita para 99.99
+      let num = parseFloat(valorDesconto);
+      if (num > 99.99) num = 99.99;
+      if (num < 0) num = 0;
+      // Atualiza o v-model se necessário
+      if (num !== parseFloat(val)) {
+        this.pc_desconto = num ? num.toFixed(2) : "";
+      }
+
+      // Aplica o desconto digitado
+      if (num > 0) {
+        this.vl_total_desconto = (this.vl_total_produto / 100) * num;
+        this.vl_desconto = this.vl_total_desconto;
+        this.vl_total_desconto_formatado =
+          this.vl_total_desconto.toLocaleString("pt-BR", {
+            style: "currency",
+            currency: "BRL",
+          });
+      } else {
+        this.vl_total_desconto = 0;
+        this.vl_total_desconto_formatado = 0;
+      }
+      // Aplico desconto no total
+      let valor_sem_formatacao = this.valor;
+      valor_sem_formatacao =
+        this.vl_total_desconto > 0
+          ? this.valor - this.vl_total_desconto
+          : this.valor;
+      this.valor_formatado = valor_sem_formatacao.toLocaleString("pt-BR", {
+        style: "currency",
+        currency: "BRL",
+      });
+    },
+    validaVLDesconto(val) {
+      let desconto = parseFloat(val) || 0;
+      let total = parseFloat(this.vl_total_produto) || 0;
+      if (desconto > total) {
+        this.vl_desconto = 0;
+        notify("O desconto não pode ser maior que o valor total dos itens!");
+      }
+      // Aplica o desconto digitado
+      if (desconto > 0) {
+        this.vl_total_desconto = desconto;
+        this.pc_desconto = ((desconto * 100) / this.vl_total_produto).toFixed(
+          2
+        );
+        this.vl_total_desconto_formatado =
+          this.vl_total_desconto.toLocaleString("pt-BR", {
+            style: "currency",
+            currency: "BRL",
+          });
+      } else {
+        this.vl_total_desconto = 0;
+        this.vl_total_desconto_formatado = 0;
+      }
+      // Aplico desconto no total
+      let valor_sem_formatacao = this.valor;
+      valor_sem_formatacao =
+        this.vl_total_desconto > 0
+          ? this.valor - this.vl_total_desconto
+          : this.valor;
+      this.valor_formatado = valor_sem_formatacao.toLocaleString("pt-BR", {
+        style: "currency",
+        currency: "BRL",
+      });
+    },
+    limpaTotais() {
+      this.valor = 0;
+      this.qtd = 0;
+      this.produtos = 0;
+      this.valor_liquido = 0;
+      this.valor_formatado = 0;
+      this.vl_total_produto = 0;
+      this.vl_total_produto_formatado = 0;
+      this.vl_total_desconto = 0;
+      this.vl_total_desconto_formatado = 0;
+      this.vl_imposto = 0;
+      this.vl_liquido = 0;
+      this.vl_desconto_pedido = 0;
+    },
+    filterFnTransportadora(val, update) {
+      if (val === "") {
+        update(() => {
+          this.lookup_transportadora = this.lookup_transportadora_completo;
+        });
+        return;
+      }
+
+      update(() => {
+        const needle = val.toLowerCase();
+        this.lookup_transportadora = this.lookup_transportadora_completo.filter(
+          (v) => v.nm_transportadora.toLowerCase().indexOf(needle) > -1
+        );
+      });
+    },
+    filterFnFormaPagamento(val, update) {
+      if (val === "") {
+        update(() => {
+          this.lookup_forma_pagamento = this.lookup_forma_pagamento_completo;
+        });
+        return;
+      }
+
+      update(() => {
+        const needle = val.toLowerCase();
+        this.lookup_forma_pagamento =
+          this.lookup_forma_pagamento_completo.filter(
+            (v) => v.nm_forma_pagamento.toLowerCase().indexOf(needle) > -1
+          );
+      });
+    },
+    filterFnTipoFrete(val, update) {
+      if (val === "") {
+        update(() => {
+          this.lookup_forma_frete = this.lookup_forma_frete_completo;
+        });
+        return;
+      }
+
+      update(() => {
+        const needle = val.toLowerCase();
+        this.lookup_forma_frete = this.lookup_forma_frete_completo.filter(
+          (v) => v.nm_tipo_frete.toLowerCase().indexOf(needle) > -1
+        );
+      });
+    },
+    filterFnCondicaoPagamento(val, update) {
+      if (val === "") {
+        update(() => {
+          this.lookup_condicao_pagamento =
+            this.lookup_condicao_pagamento_completo;
+        });
+        return;
+      }
+
+      update(() => {
+        const needle = val.toLowerCase();
+        this.lookup_condicao_pagamento =
+          this.lookup_condicao_pagamento_completo.filter(
+            (v) => v.nm_condicao_pagamento.toLowerCase().indexOf(needle) > -1
+          );
+      });
+    },
+    filterFnTipoLocalEntrega(val, update) {
+      if (val === "") {
+        update(() => {
+          this.lookup_tipo_local_entrega =
+            this.lookup_tipo_local_entrega_completo;
+        });
+        return;
+      }
+
+      update(() => {
+        const needle = val.toLowerCase();
+        this.lookup_tipo_local_entrega =
+          this.lookup_tipo_local_entrega_completo.filter(
+            (v) => v.nm_tipo_local_entrega.toLowerCase().indexOf(needle) > -1
+          );
+      });
+    },
+    filterFnTipoProposta(val, update) {
+      if (val === "") {
+        update(() => {
+          this.lookup_tipo_proposta = this.lookup_tipo_proposta_completo;
+        });
+        return;
+      }
+
+      update(() => {
+        const needle = val.toLowerCase();
+        this.lookup_tipo_proposta = this.lookup_tipo_proposta_completo.filter(
+          (v) => v.nm_tipo_proposta.toLowerCase().indexOf(needle) > -1
+        );
+      });
+    },
+    onCellPrepared(e) {
+      let paintRow = this.dataSourceConfig.slice(0, 10);
+      if (e.rowType === "data" && e.rowIndex <= 10) {
+        if (paintRow.find((el) => el.cd_controle === e.data.cd_controle)) {
+          e.cellElement.style.cssText = "background-color: #73ADEB";
+        }
+      }
+    },
+    onExporting(e) {
+      const workbook = new ExcelJS.Workbook();
+      const worksheet = workbook.addWorksheet("Employees");
+
+      exportDataGrid({
+        component: e.component,
+        worksheet: worksheet,
+        autoFilterEnabled: true,
+      }).then(function () {
+        // https://github.com/exceljs/exceljs#writing-xlsx
+        workbook.xlsx.writeBuffer().then(function (buffer) {
+          saveAs(
+            new Blob([buffer], { type: "application/octet-stream" }),
+            filename
+          );
+        });
+      });
+      e.cancel = true;
+    },
+  },
+};
+</script>
+
+<style scoped>
+@import url("./views.css");
+.card-cesta {
+  display: flex;
+  flex-wrap: wrap;
+  font-weight: bold;
+}
+
+.opcoes {
+  display: flex;
+  flex-wrap: wrap;
+  width: calc(100% / 8);
+}
+
+@media (max-width: 800px) {
+  .opcoes {
+    display: flex;
+    flex-wrap: wrap;
+    width: 100%;
+  }
+}
+</style>
