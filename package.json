@@ -6,6 +6,9 @@
     "serve": "node scripts/update-build.js && vue-cli-service serve",
     "build": "node scripts/update-build.js && vue-cli-service build",
     "lint": "vue-cli-service lint",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "check": "npm run lint && npm run format:check",
     "build-themes": "devextreme build",
     "postinstall": "npm run build-themes"
   },
@@ -70,6 +73,7 @@
     "globalize": "^1.6.0",
     "postcss-rtl": "^1.2.3",
     "sass-loader": "^7.1.0",
+    "prettier": "^2.8.8",
     "vue-cli-plugin-quasar": "~3.0.1",
     "vue-template-compiler": "^2.6.10"
   },
