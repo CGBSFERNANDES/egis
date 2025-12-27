@@ -42,12 +42,12 @@ Vue.prototype.$appInfo = appInfo;
 
 Vue.use(VueGoogleMaps, {
   load: {
-    key: "AIzaSyDE35BHw4UsWyGAzA4Gimr6pdleTvIbcs8",
-    //key: "AIzaSyAJ05alJH5dsKJ1W1jTtgWAHSku4A3o_70",
+    key: VUE_APP_GOOGLE_API_KEY,
+    //key: VUE_APP_GOOGLE_API_KEY,
     //
-    libraries: "places",
+    libraries: 'places',
   },
-});
+})
 
 Vue.use(VueGeolocation);
 

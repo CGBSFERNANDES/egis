@@ -1617,7 +1617,7 @@ export default {
       this.qt_distancia = 0;
       this.qt_tempo = 0;
       const loader = new Loader({
-        apiKey: "AIzaSyDE35BHw4UsWyGAzA4Gimr6pdleTvIbcs8",
+        apiKey: VUE_APP_GOOGLE_API_KEY,
         version: "weekly",
       });
       const mapDiv = document.getElementById("mapRomaneio");
