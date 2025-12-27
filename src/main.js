@@ -42,7 +42,7 @@ Vue.prototype.$appInfo = appInfo;
 
 Vue.use(VueGoogleMaps, {
   load: {
-    key: VUE_APP_GOOGLE_API_KEY,
+    key: process.env.VUE_APP_GOOGLE_API_KEY,
     //key: VUE_APP_GOOGLE_API_KEY,
     //
     libraries: 'places',

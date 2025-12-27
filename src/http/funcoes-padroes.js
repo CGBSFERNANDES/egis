@@ -828,7 +828,7 @@ export default {
   //----------------------------------------------------------------------------------------------------------
   async CalculaKM(lat1, lon1, lat2, lon2) {
     const loader = new Loader({
-      apiKey: VUE_APP_GOOGLE_API_KEY,
+      apiKey: process.env.VUE_APP_GOOGLE_API_KEY,
       version: 'weekly',
     })
     const mapDiv = {};
