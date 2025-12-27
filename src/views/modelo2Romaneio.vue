@@ -1331,6 +1331,7 @@ import {
   DxColumnFixing,
 } from "devextreme-vue/data-grid";
 import formataData from "../http/formataData";
+import { getGoogleMapsApiKey } from "../utils/googleMaps";
 
 export default {
   name: "modelo2Romaneio",
@@ -1617,7 +1618,7 @@ export default {
       this.qt_distancia = 0;
       this.qt_tempo = 0;
       const loader = new Loader({
-        apiKey: VUE_APP_GOOGLE_API_KEY,
+        apiKey: getGoogleMapsApiKey(),
         version: "weekly",
       });
       const mapDiv = document.getElementById("mapRomaneio");

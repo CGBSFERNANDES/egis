@@ -13,6 +13,7 @@ import * as VueGoogleMaps from "vue2-google-maps";
 import VueGeolocation from "vue-browser-geolocation";
 import Localbase from "localbase";
 import './boot/axios';
+import { getGoogleMapsApiKey } from "./utils/googleMaps";
 
 let db = new Localbase("db");
 
@@ -42,9 +43,7 @@ Vue.prototype.$appInfo = appInfo;
 
 Vue.use(VueGoogleMaps, {
   load: {
-    key: VUE_APP_GOOGLE_API_KEY,
-    //key: VUE_APP_GOOGLE_API_KEY,
-    //
+    key: getGoogleMapsApiKey(),
     libraries: 'places',
   },
 })

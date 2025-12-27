@@ -6,6 +6,7 @@ import notify from "devextreme/ui/notify";
 import { jsPDF } from "jspdf";
 import axios from "axios";
 import formatadata from "../http/formataData.js";
+import { getGoogleMapsApiKey } from "../utils/googleMaps";
 
 //const urlCNPJ = "http://localhost:3000/servicocnpj/";
 const urlCNPJ = "http://52.91.242.64/cnpj/pesquisa/";
@@ -828,7 +829,7 @@ export default {
   //----------------------------------------------------------------------------------------------------------
   async CalculaKM(lat1, lon1, lat2, lon2) {
     const loader = new Loader({
-      apiKey: VUE_APP_GOOGLE_API_KEY,
+      apiKey: getGoogleMapsApiKey(),
       version: 'weekly',
     })
     const mapDiv = {};
