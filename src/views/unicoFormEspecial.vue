@@ -296,42 +296,40 @@
       <q-card 
          class="dlg-form-card dlg-form-premium"         
       >
-        <q-card-section class="row items-center no-wrap q-gutter-md">
-                    <!-- COLUNA ESQUERDA: ÍCONE / IDENTIDADE VISUAL -->
-
-         <!-- COLUNA ESQUERDA: ÍCONE / IDENTIDADE VISUAL -->
-  <div
-    class="col-auto flex flex-center bg-deep-purple-1 q-pa-lg"
-    style="border-radius: 60px; margin-top: -10px"
-  >
-    <q-icon      
-      name="tune" size="56px" color="deep-purple-7" />
-  </div>
-        <div class="col"
-         style="margin-top: -20px"
-        >
-          <div class="text-h6">
-            {{ modulo }}
+        <q-card-section class="dlg-form-card__hero row items-center no-wrap q-gutter-md">
+          <div class="col-auto">
+            <div class="dlg-form-card__hero-icon">
+              <q-icon name="tune" size="48px" color="white" />
+            </div>
           </div>
-          <div class="text-h6">
-            {{ tituloMenu || title }} —
-            {{
-               formSomenteLeitura
-               ? "Consulta de registro"
-               : formMode === "I"
-               ? "Novo registro"
-               : "Editar registro"
-              }}
-           </div>
-           
-        </div>
-          <!-- DIREITA: FECHAR -->
-          <div class="col-auto"> 
-            <q-btn icon="close" flat round dense @click="fecharForm()" />
-             </div> 
+          <div class="col">
+            <div class="dlg-form-card__eyebrow">
+              {{ modulo }}
+            </div>
+            <div class="dlg-form-card__title">
+              {{ tituloMenu || title }} —
+              {{
+                 formSomenteLeitura
+                 ? "Consulta de registro"
+                 : formMode === "I"
+                 ? "Novo registro"
+                 : "Editar registro"
+                }}
+            </div>
+          </div>
+          <div class="col-auto">
+            <q-btn
+              icon="close"
+              flat
+              round
+              dense
+              class="dlg-form-card__close"
+              @click="fecharForm()"
+            />
+          </div>
         </q-card-section>
 
-        <q-separator />
+        <q-separator class="dlg-form-card__divider" />
 
         <q-card-section class="dlg-form-card__body">
           <!-- área para renderizador dinâmico (form_especial.js) -->
@@ -349,9 +347,9 @@
         v-model="activeTabsheet"
         dense
         align="left"
-        class="text-deep-orange-9"
-        active-color="deep-purple-7"
-        
+        class="tabsheets-form"
+        active-color="deep-orange-6"
+        indicator-color="cyan-6"
       >
         <q-tab
          v-for="(t, idx) in tabsheetsForm"
@@ -10692,16 +10690,16 @@ setRowsFullToSession (rows) {
 }
 
 .leitura-azul {
-  background-color: #e7f1ff !important;
-  color: #0d47a1;
+  background-color: #e0f7fa !important;
+  color: #00838f;
 }
 /* pode ser global ou no <style scoped> do SFC */
 .leitura-azul .q-field__control {
-  background: #e7f1ff !important;
+  background: #e0f7fa !important;
 }
 .leitura-azul .q-field__native,
 .leitura-azul .q-field__label {
-  color: #0d47a1 !important;
+  color: #00838f !important;
 }
 
 .viewport {
@@ -10848,13 +10846,84 @@ setRowsFullToSession (rows) {
 .tabs-form {
   width: 100%;
 }
-.tabsheets-form .tabsheets-form__tab {
+.tabsheets-form {
+  width: 100%;
+  background: linear-gradient(90deg, rgba(123, 31, 162, 0.08), rgba(0, 172, 193, 0.06));
+  border-radius: 14px;
+  padding: 4px 6px;
+}
+.tabsheets-form .q-tabs__content {
+  gap: 8px;
+}
+.tabsheets-form .q-tab {
   flex: 1 1 0;
   min-width: 0;
-   justify-content: center; /* centraliza o texto */
+  justify-content: center;
+  color: var(--pf-muted, #334155);
+  border-radius: 12px;
+  transition: all 0.18s ease;
 }
-.tabsheets-form .tabsheets-form__tab--active {
-  border-bottom: 3px solid var(--q-color-deep-orange-9);
+.tabsheets-form .q-tab:hover {
+  background: rgba(0, 172, 193, 0.08);
+  color: var(--pf-brand, #7b1fa2);
+}
+.tabsheets-form .q-tab.q-tab--active {
+  color: #fff;
+  background: linear-gradient(135deg, #7b1fa2, #00acc1);
+  box-shadow: 0 12px 30px rgba(123, 31, 162, 0.18);
+}
+.tabsheets-form .q-tab__indicator {
+  height: 4px;
+  border-radius: 6px;
+  background: linear-gradient(90deg, #f4511e, #00acc1);
+}
+
+.dlg-form-card__hero {
+  background: linear-gradient(120deg, #7b1fa2, #00acc1 55%, #f4511e);
+  color: #fff;
+  border-radius: 18px 18px 12px 12px;
+  box-shadow: 0 18px 44px rgba(123, 31, 162, 0.25);
+  margin: 0 14px 12px;
+  padding: 20px 20px 18px;
+}
+
+.dlg-form-card__hero-icon {
+  width: 82px;
+  height: 82px;
+  border-radius: 24px;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.32), rgba(255, 255, 255, 0.12));
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  box-shadow: 0 12px 44px rgba(0, 0, 0, 0.25);
+}
+.dlg-form-card__hero-icon .q-icon {
+  font-weight: 900;
+  opacity: 0.95;
+}
+
+.dlg-form-card__eyebrow {
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 800;
+  opacity: 0.9;
+}
+
+.dlg-form-card__title {
+  font-size: 22px;
+  line-height: 30px;
+  font-weight: 800;
+}
+
+.dlg-form-card__close {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.dlg-form-card__divider {
+  margin: 0 18px;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0), rgba(255, 255, 255, 0.6), rgba(255, 255, 255, 0));
+  height: 2px;
 } 
 
 .dlg-form-card {
@@ -11007,21 +11076,21 @@ setRowsFullToSession (rows) {
 
 /* ===== READONLY/AUTONUM (sem edição) ===== */
 .leitura-azul.q-field--filled .q-field__control {
-  background: #e7f1ff !important;
+  background: #e0f7fa !important;
 }
 
 .leitura-azul .q-field__native,
 .leitura-azul .q-field__label,
 .leitura-azul .q-field__append .q-icon,
 .leitura-azul .q-field__prepend .q-icon {
-  color: #0d47a1 !important;
+  color: #00838f !important;
 }
 
 /* ===== LOOKUP (azul claro) - precisa :deep por causa do scoped ===== */
 
 /* Fundo azul claro no filled */
 :deep(.campo-azul.q-field--filled .q-field__control) {
-  background-color: #e6f2ff !important;
+  background-color: rgba(0, 172, 193, 0.08) !important;
 }
 
 /* Tira overlay escuro do filled (hover/focus) */
@@ -11033,13 +11102,13 @@ setRowsFullToSession (rows) {
 /* Texto/label */
 :deep(.campo-azul .q-field__label),
 :deep(.campo-azul .q-field__native) {
-  color: #1565c0 !important;
+  color: #008ba3 !important;
 }
 
 /* Ícones (lupa / append) */
 :deep(.campo-azul .q-field__append .q-icon),
 :deep(.campo-azul .q-field__prepend .q-icon) {
-  color: #1565c0 !important;
+  color: #008ba3 !important;
 }
 
 .takeover-grid .area-filhas {
@@ -11154,23 +11223,24 @@ setRowsFullToSession (rows) {
   --pf-text: #0f172a;
   --pf-muted: rgba(15, 23, 42, 0.62);
 
-  --pf-line: rgba(15, 23, 42, 0.14);
-  --pf-line2: rgba(15, 23, 42, 0.24);
+  --pf-line: rgba(15, 23, 42, 0.12);
+  --pf-line2: rgba(15, 23, 42, 0.20);
 
-  --pf-brand: #1565c0;
-  --pf-brand-soft: rgba(21, 101, 192, 0.12);
-  --pf-hover: rgba(21, 101, 192, 0.07);
+  --pf-brand: #7b1fa2;          /* purple-7 */
+  --pf-brand-soft: rgba(123, 31, 162, 0.14);
+  --pf-highlight: #00acc1;      /* cyan-6 */
+  --pf-hover: rgba(0, 172, 193, 0.08);
 
-  --pf-required: #ff8f00;
-  --pf-required-soft: rgba(255, 143, 0, 0.14);
+  --pf-required: #f4511e;       /* deep-orange-6 */
+  --pf-required-soft: rgba(244, 81, 30, 0.14);
 
-  --pf-readonly: rgba(2, 6, 23, 0.06);
+  --pf-readonly: rgba(2, 6, 23, 0.05);
 
-  --pf-radius: 12px;
-  --pf-ring: 0 0 0 4px rgba(21, 101, 192, 0.18);
-  --pf-shadow: 0 18px 50px rgba(2, 6, 23, 0.10);
+  --pf-radius: 14px;
+  --pf-ring: 0 0 0 4px rgba(0, 172, 193, 0.18);
+  --pf-shadow: 0 20px 48px rgba(15, 23, 42, 0.12);
 
-  background: #fff !important;
+  background: linear-gradient(135deg, rgba(123, 31, 162, 0.06), rgba(0, 172, 193, 0.05)) !important;
 }
 
 /* Card do dialog com presença */
@@ -11178,6 +11248,7 @@ setRowsFullToSession (rows) {
   background: #fff !important;
   border-radius: 18px !important;
   box-shadow: var(--pf-shadow) !important;
+  border: 1px solid rgba(123, 31, 162, 0.08);
 }
 
 /* =========================================================
@@ -11188,7 +11259,7 @@ setRowsFullToSession (rows) {
 :deep(.q-dialog__inner.dlg-form-branco .q-field .q-field__control) {
   border-radius: var(--pf-radius) !important;
   box-shadow: inset 0 0 0 1px var(--pf-line) !important;
-  transition: transform .12s ease, box-shadow .15s ease;
+  transition: transform .12s ease, box-shadow .15s ease, background-color .15s ease;
 }
 
 /* FILLED: o fundo de verdade está no :before */
@@ -11226,7 +11297,7 @@ setRowsFullToSession (rows) {
 /* Focus */
 :deep(.q-dialog__inner.dlg-form-branco .q-field--focused .q-field__control) {
   transform: translateY(-1px);
-  box-shadow: inset 0 0 0 1px rgba(21, 101, 192, 0.55), var(--pf-ring) !important;
+  box-shadow: inset 0 0 0 1px rgba(0, 172, 193, 0.68), var(--pf-ring) !important;
 }
 :deep(.q-dialog__inner.dlg-form-branco .q-field--filled.q-field--focused .q-field__control:before) {
   background: var(--pf-brand-soft) !important;
@@ -11234,7 +11305,7 @@ setRowsFullToSession (rows) {
 
 /* Required */
 :deep(.q-dialog__inner.dlg-form-branco .q-field--required .q-field__control) {
-  box-shadow: inset 0 0 0 1px rgba(255, 143, 0, 0.42) !important;
+  box-shadow: inset 0 0 0 1px rgba(244, 81, 30, 0.48) !important;
 }
 :deep(.q-dialog__inner.dlg-form-branco .q-field--filled.q-field--required .q-field__control:before) {
   background: var(--pf-required-soft) !important;
@@ -11262,7 +11333,7 @@ setRowsFullToSession (rows) {
 }
 :deep(.q-dialog__inner.dlg-form-branco .q-field:hover .q-field__append .q-icon),
 :deep(.q-dialog__inner.dlg-form-branco .q-field:hover .q-field__prepend .q-icon) {
-  color: rgba(21, 101, 192, 0.92) !important;
+  color: var(--pf-brand) !important;
   transform: scale(1.07);
 }
 
@@ -11311,7 +11382,29 @@ setRowsFullToSession (rows) {
   box-shadow: inset 0 0 0 1px rgba(15,23,42,.12) !important;
 }
 :deep(.q-dialog__inner.dlg-form-branco .q-field--focused .q-field__control) {
-  box-shadow: inset 0 0 0 1px rgba(21,101,192,.55), 0 0 0 4px rgba(21,101,192,.18) !important;
+  box-shadow: inset 0 0 0 1px rgba(0,172,193,.68), 0 0 0 4px rgba(123,31,162,.16) !important;
+}
+
+:deep(.dlg-form-card__body .q-field) {
+  background: #ffffff !important;
+  border-radius: 14px;
+}
+:deep(.dlg-form-card__body .q-field--filled .q-field__control),
+:deep(.dlg-form-card__body .q-field--outlined .q-field__control),
+:deep(.dlg-form-card__body .q-field--standout .q-field__control) {
+  background: #ffffff !important;
+}
+:deep(.dlg-form-card__body .q-field__control:before),
+:deep(.dlg-form-card__body .q-field__control:after) {
+  background: transparent !important;
+}
+:deep(.dlg-form-card__body .q-field__label) {
+  color: #455a64 !important;
+  font-weight: 650;
+}
+:deep(.dlg-form-card__body .q-field__native),
+:deep(.dlg-form-card__body .q-field__input) {
+  color: #1f2937 !important;
 }
 
 /* =========================================================
@@ -11321,16 +11414,21 @@ setRowsFullToSession (rows) {
   --pf-text: #0f172a;
   --pf-muted: rgba(15, 23, 42, 0.62);
 
-  --pf-line: rgba(15, 23, 42, 0.14);
-  --pf-line2: rgba(15, 23, 42, 0.22);
+  --pf-line: rgba(15, 23, 42, 0.12);
+  --pf-line2: rgba(15, 23, 42, 0.20);
 
-  --pf-brand: #1565c0;
-  --pf-brand-soft: rgba(21, 101, 192, 0.10);
-  --pf-hover: rgba(21, 101, 192, 0.06);
+  --pf-brand: #7b1fa2;
+  --pf-brand-soft: rgba(123, 31, 162, 0.14);
+  --pf-highlight: #00acc1;
+  --pf-hover: rgba(0, 172, 193, 0.08);
 
-  --pf-radius: 12px;
-  --pf-ring: 0 0 0 4px rgba(21, 101, 192, 0.18);
-  --pf-shadow: 0 18px 50px rgba(2, 6, 23, 0.10);
+  --pf-required: #f4511e;
+  --pf-required-soft: rgba(244, 81, 30, 0.14);
+  --pf-readonly: rgba(2, 6, 23, 0.05);
+
+  --pf-radius: 14px;
+  --pf-ring: 0 0 0 4px rgba(0, 172, 193, 0.18);
+  --pf-shadow: 0 20px 48px rgba(15, 23, 42, 0.12);
 }
 
 /* Card do dialog com presença */
@@ -11338,13 +11436,14 @@ setRowsFullToSession (rows) {
   background: #fff !important;
   border-radius: 18px !important;
   box-shadow: var(--pf-shadow) !important;
+  border: 1px solid rgba(123, 31, 162, 0.08);
 }
 
 /* Base do campo (filled/outlined) */
 :global(.dlg-form-branco .q-field .q-field__control) {
   border-radius: var(--pf-radius) !important;
   box-shadow: inset 0 0 0 1px var(--pf-line) !important;
-  transition: transform .12s ease, box-shadow .15s ease;
+  transition: transform .12s ease, box-shadow .15s ease, background-color .15s ease;
 }
 
 /* >>> O FUNDO do FILLED é o :before. Se não setar aqui, fica cinza. */
@@ -11381,7 +11480,7 @@ setRowsFullToSession (rows) {
 /* Focus (efeito “uix”) */
 :global(.dlg-form-branco .q-field--focused .q-field__control) {
   transform: translateY(-1px);
-  box-shadow: inset 0 0 0 1px rgba(21, 101, 192, 0.55), var(--pf-ring) !important;
+  box-shadow: inset 0 0 0 1px rgba(0, 172, 193, 0.68), var(--pf-ring) !important;
 }
 :global(.dlg-form-branco .q-field--filled.q-field--focused .q-field__control:before) {
   background: var(--pf-brand-soft) !important;
@@ -11395,10 +11494,9 @@ setRowsFullToSession (rows) {
 }
 :global(.dlg-form-branco .q-field:hover .q-field__append .q-icon),
 :global(.dlg-form-branco .q-field:hover .q-field__prepend .q-icon) {
-  color: rgba(21, 101, 192, 0.92) !important;
+  color: var(--pf-brand) !important;
   transform: scale(1.07);
 }
 
 
 </style>
-
