@@ -184,6 +184,15 @@ dados = [
       content: () => import(/* webpackChunkName: "display-data" */ './views/selecao-modulo-card'),
     },
   },
+  {
+    path: '/',
+    name: 'modulo-composicao',
+    meta: { requiresAuth: true },
+    components: {
+      layout: defaultLayout,
+      content: () => import(/* webpackChunkName: "display-data" */ './views/moduloComposicao'),
+    },
+  },
 
   {
     path: '/',

@@ -183,7 +183,7 @@
               class="q-ml-md"
               dropdown-icon=""
             >
-              <q-list style="min-width: 240px" class="lista-menu">
+              <q-list style="min-width: 360px" class="lista-menu">
                 <q-item clickable v-close-popup @click="onAvisoModuloClick">
                   <q-item-section avatar>
                     <!-- Ícone DEVEXTREME: fields -->
@@ -203,6 +203,10 @@
                   </q-item-section>
                 </q-item>
               </q-list>
+              <q-separator />
+              <div class="aniversariantes-dropdown q-pa-sm">
+                <lista-aniversariantes />
+              </div>
             </q-btn-dropdown>
           </div>
         </dx-item>
@@ -533,6 +537,7 @@ export default {
     DxToolbar,
     DxItem,
     UserPanel,
+    ListaAniversariantes: () => import('./listaAniversariantes.vue'),
     selecaoData: () => import('../views/selecao-periodo'),
     DigisacWebchat: () => import('../components/webChat.vue'),
     grid: () => import('../views/grid.vue'),
@@ -1286,5 +1291,11 @@ export default {
 
 .q-btn-dropdown__arrow {
   display: none !important;
+}
+
+.aniversariantes-dropdown {
+  max-height: 420px;
+  width: 360px;
+  overflow-y: auto;
 }
 </style>
