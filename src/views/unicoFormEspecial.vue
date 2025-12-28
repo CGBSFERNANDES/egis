@@ -10934,7 +10934,7 @@ setRowsFullToSession (rows) {
   background: rgba(255, 255, 255, 0.08);
 }
 
-}
+
 
 .dlg-form-card__title {
   font-size: 22px;

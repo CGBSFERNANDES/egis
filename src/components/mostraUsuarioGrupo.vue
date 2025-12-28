@@ -9,7 +9,7 @@
           icon="arrow_back"
           class="q-mr-sm seta-form"
           aria-label="Voltar"
-          @click="onVoltar"
+          @click="abaAtiva = 'grupos'"
         />
         <span>Grupo de Usuário</span>
 
@@ -81,8 +81,8 @@
             class="col-12 col-sm-6 col-md-4 col-lg-3"
           >
             <q-card class="cursor-pointer card-hover" @click="selecionarGrupo(g)">
-              <q-card-section class="text-center">
-                <div class="row justify-center q-mb-sm">
+              <q-card-section class="grupo-top text-center">
+                <div class="grupo-avatar row justify-center q-mb-sm">
                   <q-avatar size="56px" color="deep-orange-7" text-color="white">
                     {{ letra(g) }}
                   </q-avatar>
@@ -92,7 +92,7 @@
                   {{ nomeGrupo(g) || 'Grupo' }}
                 </div>
 
-                <div class="text-caption text-grey-7 q-mt-xs">
+                <div class="grupo-sub text-caption text-grey-7 q-mt-xs">
                   Código:
                   <b>
                     {{
@@ -106,7 +106,7 @@
 
               <q-separator />
 
-              <q-card-section class="text-center">
+              <q-card-section class="grupo-footer text-center">
                 <q-btn
                   flat
                   dense
@@ -176,7 +176,7 @@
               dense
               color="deep-purple-7"
               icon="arrow_back"
-              label="Voltar para grupos"
+              label="Voltar"
               @click="abaAtiva = 'grupos'"
             />
           </div>
@@ -186,45 +186,77 @@
           <q-spinner size="36px" />
         </q-inner-loading>
 
-        <q-table
-          v-if="!loadingModulos"
-          :rows="modulosFiltrados"
-          :columns="colunasModulos"
-          row-key="cd_modulo"
-          flat
-          dense
-          separator="horizontal"
-          :pagination="{ rowsPerPage: 10 }"
-          binary-state-sort
-          class="shadow-1"
-          :no-data-label="grupoSelecionado ? 'Nenhum módulo retornado para o grupo.' : 'Selecione um grupo para visualizar os módulos.'"
-        >
-          <template #body-cell-selecionado="props">
-            <q-td :props="props" class="text-center">
-              <q-checkbox
-                dense
-                color="deep-purple-7"
-                v-model="modulosSelecionados"
-                :val="Number(props.row.cd_modulo)"
-              />
-            </q-td>
-          </template>
-        </q-table>
+        <div v-if="!loadingModulos" class="q-mt-sm">
+          <dx-data-grid
+            v-if="grupoSelecionado"
+            :key="gridModuloKey"
+            :data-source="modulosFiltrados"
+            :key-expr="'cd_modulo'"
+            :column-auto-width="true"
+            :show-borders="false"
+            :hover-state-enabled="true"
+            :row-alternation-enabled="true"
+            :height="'60vh'"
+            :selected-row-keys="modulosSelecionados"
+            :no-data-text="grupoSelecionado ? 'Nenhum módulo retornado para o grupo.' : 'Selecione um grupo para listar módulos.'"
+            @selection-changed="onSelectionChanged"
+          >
+            <dx-scrolling mode="standard" />
+            <dx-selection
+              mode="multiple"
+              show-check-boxes-mode="always"
+              select-all-mode="allPages"
+            />
+            <dx-search-panel :visible="true" :width="300" placeholder="Filtrar..." />
+            <dx-paging :page-size="15" />
+            <dx-pager
+              :show-page-size-selector="true"
+              :allowed-page-sizes="[10, 15, 30, 50]"
+              :show-info="true"
+            />
+            
+            <template #tituloModulo>
+              <div class="text-subtitle2 text-grey-8">
+                {{ grupoSelecionado ? 'Selecione os módulos do grupo' : 'Selecione um grupo para listar módulos' }}
+              </div>
+            </template>
+
+            <dx-column
+              data-field="cd_modulo"
+              caption="Código"
+              data-type="number"
+              width="110"
+              :allow-filtering="true"
+              :allow-sorting="true"
+            />
+            <dx-column
+              data-field="nm_modulo"
+              caption="Módulo"
+              :allow-filtering="true"
+              :allow-sorting="true"
+            />
+            <dx-column
+              data-field="ic_grupo_modulo"
+              caption="Está no grupo?"
+              width="140"
+            />
+          </dx-data-grid>
+        </div>
 
         <div class="row justify-end q-gutter-sm q-mt-md">
           <q-btn
             outline
             color="deep-purple-7"
             icon="home"
-            label="Aplicar grupo e voltar"
+            label="Aplicar"
             :disable="!grupoSelecionado"
-            @click="aplicarGrupoSelecionado"
+            @click="abaAtiva = 'grupos'"
           />
           <q-btn
             unelevated
             color="deep-purple-7"
             icon="save"
-            label="Salvar módulos selecionados"
+            label="Salvar"
             :loading="salvandoModulos"
             :disable="!grupoSelecionado || loadingModulos"
             @click="salvarModulosSelecionados"
@@ -237,6 +269,17 @@
 
 <script>
 import axios from "axios";
+import {
+  DxDataGrid,
+  DxColumn,
+  DxSelection,
+  DxScrolling,
+  DxSearchPanel,
+  DxPager,
+  DxPaging,
+  DxToolbar,
+  DxItem,
+} from "devextreme-vue/data-grid";
 
 const api = axios.create({
   baseURL: "https://egiserp.com.br/api",
@@ -254,6 +297,17 @@ api.interceptors.request.use(cfg => {
 
 export default {
   name: "mostraUsuarioGrupo",
+  components: {
+    DxDataGrid,
+    DxColumn,
+    DxSelection,
+    DxScrolling,
+    DxSearchPanel,
+    DxPager,
+    DxPaging,
+    DxToolbar,
+    DxItem,
+  },
 
   data() {
     return {
@@ -265,6 +319,8 @@ export default {
       grupos: [],
       modulos: [],
       modulosSelecionados: [],
+      ultimoGrupoCarregado: null,
+      gridModuloKey: 0,
       grupoSelecionado: null,
       abaAtiva: "grupos",
       cd_usuario: Number(localStorage.cd_usuario || 0),
@@ -285,18 +341,14 @@ export default {
     });
     },
 
-    colunasModulos() {
-      return [
-        { name: "selecionado", label: "Selecionar", field: "cd_modulo", align: "center" },
-        { name: "cd_modulo", label: "Código", field: "cd_modulo", align: "left", sortable: true },
-        { name: "nm_modulo", label: "Módulo", field: "nm_modulo", align: "left", sortable: true },
-        { name: "ic_grupo_modulo", label: "Está no grupo?", field: "ic_grupo_modulo", align: "left" },
-      ];
-    },
-
     modulosFiltrados() {
       const termo = (this.filtroModulo || "").trim().toLowerCase();
-      const lista = Array.isArray(this.modulos) ? this.modulos : [];
+      const lista = Array.isArray(this.modulos)
+        ? this.modulos.map((m) => ({
+            ...m,
+            cd_modulo: Number(m.cd_modulo),
+          }))
+        : [];
       if (!termo) return lista;
 
       return lista.filter((m) => {
@@ -309,6 +361,19 @@ export default {
 
   created() {
     this.carregarGrupos();
+  },
+
+  watch: {
+    abaAtiva(novaAba) {
+      if (
+        novaAba === "modulos" &&
+        this.grupoSelecionado &&
+        !this.loadingModulos &&
+        this.modulos.length === 0
+      ) {
+        this.carregarModulosDoGrupo();
+      }
+    },
   },
 
   methods: {
@@ -371,6 +436,11 @@ export default {
         if (!this.grupoSelecionado && rows.length) {
           this.grupoSelecionado = rows[0];
         }
+
+        const codigoAtual = this.codigoGrupo(this.grupoSelecionado);
+        if (codigoAtual && codigoAtual !== this.ultimoGrupoCarregado) {
+          await this.carregarModulosDoGrupo();
+        }
       } catch (e) {
         console.error("[mostraUsuarioGrupo] erro ao carregar:", e);
         this.grupos = [];
@@ -394,6 +464,7 @@ export default {
       localStorage.cd_grupo_usuario = cd ?? "";
       localStorage.nm_grupo_usuario = nm ?? "";
 
+      this.gridModuloKey += 1;
       this.abaAtiva = "modulos";
       this.carregarModulosDoGrupo();
     },
@@ -443,6 +514,9 @@ export default {
         this.modulosSelecionados = rows
           .filter((m) => String(m.ic_grupo_modulo || "").toUpperCase() === "S")
           .map((m) => Number(m.cd_modulo));
+
+        this.ultimoGrupoCarregado = cd_grupo_usuario;
+        this.gridModuloKey += 1;
       } catch (error) {
         console.error("[mostraUsuarioGrupo] erro ao carregar módulos:", error);
         this.modulos = [];
@@ -457,9 +531,11 @@ export default {
     },
 
     async salvarModulosSelecionados() {
+      
       if (!this.grupoSelecionado) return;
 
       const cd_grupo_usuario = this.codigoGrupo(this.grupoSelecionado);
+      
       if (!cd_grupo_usuario) {
         this.$q?.notify?.({
           type: "warning",
@@ -483,16 +559,26 @@ export default {
           };
         });
 
+        const dados_registro = (modulosPayload || []).map(m => ({
+  cd_grupo_usuario: Number(cd_grupo_usuario),
+  cd_modulo: Number(m.cd_modulo),
+  ic_grupo_modulo: String(m.ic_grupo_modulo || 'N').toUpperCase()
+}))
+
+
         const body = [
           {
             ic_json_parametro: "S",
-            cd_parametro: 20,
+            cd_parametro: 30,
             cd_usuario: this.cd_usuario,
             cd_grupo_usuario,
             cd_empresa: localStorage.cd_empresa,
             modulos: modulosPayload,
+            dados_registro,
           },
         ];
+
+        console.log('modulosPayload', modulosPayload);
 
         const cfg = this.headerBanco
           ? { headers: { "x-banco": this.headerBanco } }
@@ -525,6 +611,12 @@ export default {
       localStorage.nm_grupo_usuario = nm ?? "";
 
       setTimeout(() => this.onVoltar(), 50);
+
+    },
+
+    onSelectionChanged(e) {
+      const keys = Array.isArray(e?.selectedRowKeys) ? e.selectedRowKeys : [];
+      this.modulosSelecionados = keys.map((k) => Number(k));
     },
 
     onVoltar() {
@@ -568,6 +660,64 @@ export default {
 .card-hover:hover{
   transform: translateY(-4px);
   box-shadow: 0 12px 28px rgba(0,0,0,.18);
+}
+
+.grupo-card{
+  width: 320px;              /* ajuste como quiser (ou 100% dentro da col) */
+  height: 220px;             /* altura fixa para todos */
+  display: flex;
+  flex-direction: column;
+  border-radius: 14px;
+}
+
+.grupo-top{
+  flex: 1;                   /* ocupa o “miolo” e empurra o rodapé pra baixo */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 18px 16px;
+  text-align: center;
+}
+
+.grupo-avatar{
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  font-weight: 700;
+  margin-bottom: 10px;
+  /* se você já usa cor via classe/inline, pode remover */
+}
+
+.grupo-title{
+  font-size: 15px;           /* tamanho fixo do nome */
+  font-weight: 700;
+  line-height: 1.2;
+  margin: 4px 0 6px;
+
+  /* ✅ trava em 2 linhas e coloca "..." */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.grupo-sub{
+  font-size: 12px;
+  opacity: 0.7;
+}
+
+.grupo-footer{
+  min-height: 54px;          /* rodapé com altura fixa */
+  padding: 10px 12px;
+}
+
+.grupo-footer .q-btn__content{
+  white-space: nowrap;
 }
 
 </style>
