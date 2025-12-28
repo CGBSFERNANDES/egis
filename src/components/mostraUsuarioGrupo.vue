@@ -21,30 +21,35 @@
       v-model="abaAtiva"
       dense
       align="left"
-      class="text-deep-purple-7 q-mb-sm"
+      class="text-deep-purple-7 q-mb-sm tabs-ajuste"
       active-color="deep-purple-7"
       indicator-color="deep-orange-7"
     >
-      <q-tab name="grupos" icon="group" label="Grupos" />
+      <q-tab name="grupos" icon="group" label="Grupos" 
+         class="tab-label-pad"/>
       <q-tab
         name="modulos"
         icon="view_module"
         label="Módulos"
+         class="tab-label-pad"
         :disable="!grupoSelecionado"
       />
       <q-tab
         name="menus"
         icon="menu_book"
         label="Menus"
+         class="tab-label-pad"
         :disable="!grupoSelecionado"
       />
       <q-tab
         name="usuarios"
         icon="people_alt"
         label="Usuários"
+         class="tab-label-pad"
         :disable="!grupoSelecionado"
       />
     </q-tabs>
+  
     <q-separator class="q-mb-md" />
 
     <q-tab-panels v-model="abaAtiva" animated>
@@ -293,7 +298,9 @@
               </div>
               <div class="text-caption text-grey-8">
                 Menus no grupo: <b>{{ menusDoGrupo.length }}</b>
-                <span class="q-ml-sm">| Disponíveis: <b>{{ menusDisponiveis.length }}</b></span>
+                <span
+                v-if="menusDisponiveis && menusDisponiveis.length"
+                 class="q-ml-sm">| Disponíveis: <b>{{ menusDisponiveis.length }}</b></span>
               </div>
             </div>
             <q-btn
@@ -602,6 +609,7 @@ export default {
       loadingMenus: false,
       salvandoMenus: false,
       loadingUsuarios: false,
+      menusDisponiveis: [],
       filtro: "",
       filtroModulo: "",
       filtroMenu: "",
@@ -1290,6 +1298,25 @@ export default {
 
 .grupo-footer .q-btn__content{
   white-space: nowrap;
+}
+
+.tabs-ajuste .q-tab__content {
+  flex-direction: row;
+}
+
+.tabs-ajuste .q-tab__icon {
+  margin-right: 8px; /* ajuste fino aqui */
+}
+
+.tab-label-pad {
+  padding: 0 10px;
+}
+
+.tab-label-pad .q-tab__label {
+  padding-left: 6px;
+  margin-left: 15px;
+  margin-right: 6px;
+  gap: 6px;
 }
 
 </style>
