@@ -32,6 +32,18 @@
         label="Módulos do grupo"
         :disable="!grupoSelecionado"
       />
+      <q-tab
+        name="menus"
+        icon="menu_book"
+        label="Menus"
+        :disable="!grupoSelecionado"
+      />
+      <q-tab
+        name="usuarios"
+        icon="people_alt"
+        label="Usuários"
+        :disable="!grupoSelecionado"
+      />
     </q-tabs>
     <q-separator class="q-mb-md" />
 
@@ -263,6 +275,279 @@
           />
         </div>
       </q-tab-panel>
+
+      <q-tab-panel name="menus" class="q-pa-none">
+        <q-banner
+          dense
+          class="bg-deep-purple-1 text-deep-purple-9 rounded-borders q-mb-md"
+          v-if="grupoSelecionado"
+        >
+          <div class="row items-center no-wrap">
+            <div class="col">
+              <div class="text-body1">
+                Grupo selecionado:
+                <b>{{ nomeGrupo(grupoSelecionado) }}</b>
+                <span class="text-caption text-grey-8 q-ml-sm">
+                  ({{ codigoGrupo(grupoSelecionado) }})
+                </span>
+              </div>
+              <div class="text-caption text-grey-8">
+                Menus no grupo: <b>{{ menusDoGrupo.length }}</b>
+                <span class="q-ml-sm">| Disponíveis: <b>{{ menusDisponiveis.length }}</b></span>
+              </div>
+            </div>
+            <q-btn
+              flat
+              dense
+              round
+              icon="refresh"
+              :loading="loadingMenus"
+              :disable="loadingMenus"
+              @click="carregarMenusDoGrupo"
+            >
+              <q-tooltip>Recarregar menus</q-tooltip>
+            </q-btn>
+          </div>
+        </q-banner>
+
+        <div class="row q-col-gutter-md q-mb-sm">
+          <div class="col-12 col-md-6">
+            <q-input
+              dense
+              outlined
+              v-model="filtroMenu"
+              placeholder="Filtrar menus..."
+              clearable
+              :disable="loadingMenus"
+            >
+              <template v-slot:prepend>
+                <q-icon name="search" />
+              </template>
+            </q-input>
+          </div>
+
+          <div class="col-12 col-md-6 text-right">
+            <q-btn
+              flat
+              dense
+              color="deep-purple-7"
+              icon="arrow_back"
+              label="Voltar"
+              @click="abaAtiva = 'grupos'"
+            />
+          </div>
+        </div>
+
+        <q-inner-loading :showing="loadingMenus">
+          <q-spinner size="36px" />
+        </q-inner-loading>
+
+        <div v-if="!loadingMenus" class="q-mt-sm">
+          <div class="row q-col-gutter-lg">
+            <div class="col-12 col-lg-6">
+              <div class="text-subtitle2 text-grey-8 q-mb-xs">Menus disponíveis</div>
+              <dx-data-grid
+                :key="gridMenuDisponivelKey"
+                :data-source="menusDisponiveisFiltrados"
+                :key-expr="'cd_menu'"
+                :column-auto-width="true"
+                :show-borders="false"
+                :hover-state-enabled="true"
+                :row-alternation-enabled="true"
+                :height="'50vh'"
+                :no-data-text="'Nenhum menu disponível.'"
+                :selected-row-keys="menusDisponiveisSelecionados"
+                @selection-changed="onMenusDisponiveisSelectionChanged"
+              >
+                <dx-scrolling mode="standard" />
+                <dx-selection
+                  mode="multiple"
+                  show-check-boxes-mode="always"
+                  select-all-mode="allPages"
+                />
+                <dx-search-panel :visible="true" :width="300" placeholder="Filtrar..." />
+                <dx-paging :page-size="10" />
+                <dx-pager
+                  :show-page-size-selector="true"
+                  :allowed-page-sizes="[10, 15, 30, 50]"
+                  :show-info="true"
+                />
+
+                <dx-column data-field="cd_modulo" caption="Cód. módulo" width="110" />
+                <dx-column data-field="nm_modulo" caption="Módulo" />
+                <dx-column data-field="cd_funcao" caption="Cód. função" width="110" />
+                <dx-column data-field="nm_funcao" caption="Função" />
+                <dx-column data-field="cd_menu" caption="Cód. menu" width="110" />
+                <dx-column data-field="nm_menu_titulo" caption="Menu" />
+              </dx-data-grid>
+            </div>
+
+            <div class="col-12 col-lg-6">
+              <div class="text-subtitle2 text-grey-8 q-mb-xs">Menus do grupo</div>
+              <dx-data-grid
+                :key="gridMenuSelecionadoKey"
+                :data-source="menusDoGrupoFiltrados"
+                :key-expr="'cd_menu'"
+                :column-auto-width="true"
+                :show-borders="false"
+                :hover-state-enabled="true"
+                :row-alternation-enabled="true"
+                :height="'50vh'"
+                :no-data-text="'Nenhum menu vinculado ao grupo.'"
+                :selected-row-keys="menusDoGrupoSelecionados"
+                @selection-changed="onMenusDoGrupoSelectionChanged"
+              >
+                <dx-scrolling mode="standard" />
+                <dx-selection
+                  mode="multiple"
+                  show-check-boxes-mode="always"
+                  select-all-mode="allPages"
+                />
+                <dx-search-panel :visible="true" :width="300" placeholder="Filtrar..." />
+                <dx-paging :page-size="10" />
+                <dx-pager
+                  :show-page-size-selector="true"
+                  :allowed-page-sizes="[10, 15, 30, 50]"
+                  :show-info="true"
+                />
+
+                <dx-column data-field="cd_modulo" caption="Cód. módulo" width="110" />
+                <dx-column data-field="nm_modulo" caption="Módulo" />
+                <dx-column data-field="cd_funcao" caption="Cód. função" width="110" />
+                <dx-column data-field="nm_funcao" caption="Função" />
+                <dx-column data-field="cd_menu" caption="Cód. menu" width="110" />
+                <dx-column data-field="nm_menu_titulo" caption="Menu" />
+              </dx-data-grid>
+            </div>
+          </div>
+
+          <div class="row items-center justify-between q-gutter-sm q-mt-md">
+            <div class="col-auto">
+              <q-btn
+                color="deep-purple-7"
+                icon="east"
+                label="Adicionar ao grupo"
+                :disable="menusDisponiveisSelecionados.length === 0 || loadingMenus"
+                @click="adicionarMenusAoGrupo"
+              />
+              <q-btn
+                outline
+                color="deep-orange-7"
+                icon="west"
+                class="q-ml-sm"
+                label="Remover do grupo"
+                :disable="menusDoGrupoSelecionados.length === 0 || loadingMenus"
+                @click="removerMenusDoGrupo"
+              />
+            </div>
+
+            <div class="col-auto">
+              <q-btn
+                unelevated
+                color="deep-purple-7"
+                icon="save"
+                label="Salvar menus"
+                :loading="salvandoMenus"
+                :disable="loadingMenus || !grupoSelecionado"
+                @click="salvarMenusSelecionados"
+              />
+            </div>
+          </div>
+        </div>
+      </q-tab-panel>
+
+      <q-tab-panel name="usuarios" class="q-pa-none">
+        <q-banner
+          dense
+          class="bg-deep-purple-1 text-deep-purple-9 rounded-borders q-mb-md"
+          v-if="grupoSelecionado"
+        >
+          <div class="row items-center no-wrap">
+            <div class="col">
+              <div class="text-body1">
+                Grupo selecionado:
+                <b>{{ nomeGrupo(grupoSelecionado) }}</b>
+                <span class="text-caption text-grey-8 q-ml-sm">
+                  ({{ codigoGrupo(grupoSelecionado) }})
+                </span>
+              </div>
+              <div class="text-caption text-grey-8">
+                Usuários no grupo: <b>{{ usuarios.length }}</b>
+              </div>
+            </div>
+            <q-btn
+              flat
+              dense
+              round
+              icon="refresh"
+              :loading="loadingUsuarios"
+              :disable="loadingUsuarios"
+              @click="carregarUsuariosDoGrupo"
+            >
+              <q-tooltip>Recarregar usuários</q-tooltip>
+            </q-btn>
+          </div>
+        </q-banner>
+
+        <div class="row q-col-gutter-md q-mb-sm">
+          <div class="col-12 col-md-6">
+            <q-input
+              dense
+              outlined
+              v-model="filtroUsuario"
+              placeholder="Filtrar usuários..."
+              clearable
+              :disable="loadingUsuarios"
+            >
+              <template v-slot:prepend>
+                <q-icon name="search" />
+              </template>
+            </q-input>
+          </div>
+
+          <div class="col-12 col-md-6 text-right">
+            <q-btn
+              flat
+              dense
+              color="deep-purple-7"
+              icon="arrow_back"
+              label="Voltar"
+              @click="abaAtiva = 'grupos'"
+            />
+          </div>
+        </div>
+
+        <q-inner-loading :showing="loadingUsuarios">
+          <q-spinner size="36px" />
+        </q-inner-loading>
+
+        <div v-if="!loadingUsuarios" class="q-mt-sm">
+          <dx-data-grid
+            :key="gridUsuariosKey"
+            :data-source="usuariosFiltrados"
+            :key-expr="'cd_usuario'"
+            :column-auto-width="true"
+            :show-borders="false"
+            :hover-state-enabled="true"
+            :row-alternation-enabled="true"
+            :height="'60vh'"
+            :no-data-text="'Nenhum usuário vinculado ao grupo.'"
+          >
+            <dx-scrolling mode="standard" />
+            <dx-search-panel :visible="true" :width="300" placeholder="Filtrar..." />
+            <dx-paging :page-size="15" />
+            <dx-pager
+              :show-page-size-selector="true"
+              :allowed-page-sizes="[10, 15, 30, 50]"
+              :show-info="true"
+            />
+
+            <dx-column data-field="cd_usuario" caption="Cód." width="100" />
+            <dx-column data-field="nm_usuario" caption="Usuário" />
+            <dx-column data-field="nm_fantasia_usuario" caption="Fantasia" />
+          </dx-data-grid>
+        </div>
+      </q-tab-panel>
     </q-tab-panels>
   </div>
 </template>
@@ -314,13 +599,25 @@ export default {
       loading: false,
       loadingModulos: false,
       salvandoModulos: false,
+      loadingMenus: false,
+      salvandoMenus: false,
+      loadingUsuarios: false,
       filtro: "",
       filtroModulo: "",
+      filtroMenu: "",
+      filtroUsuario: "",
       grupos: [],
       modulos: [],
+      menus: [],
+      usuarios: [],
       modulosSelecionados: [],
+      menusDoGrupoSelecionados: [],
+      menusDisponiveisSelecionados: [],
       ultimoGrupoCarregado: null,
       gridModuloKey: 0,
+      gridMenuDisponivelKey: 0,
+      gridMenuSelecionadoKey: 0,
+      gridUsuariosKey: 0,
       grupoSelecionado: null,
       abaAtiva: "grupos",
       cd_usuario: Number(localStorage.cd_usuario || 0),
@@ -335,10 +632,10 @@ export default {
       if (!f) return this.grupos;
 
       return this.grupos.filter((g) => {
-      const nome = String(this.nomeGrupo(g) || "").toLowerCase();
-      const cod = String(this.codigoGrupo(g) || "").toLowerCase();
-      return nome.includes(f) || cod.includes(f);
-    });
+        const nome = String(this.nomeGrupo(g) || "").toLowerCase();
+        const cod = String(this.codigoGrupo(g) || "").toLowerCase();
+        return nome.includes(f) || cod.includes(f);
+      });
     },
 
     modulosFiltrados() {
@@ -357,6 +654,48 @@ export default {
         return nome.includes(termo) || cod.includes(termo);
       });
     },
+
+    menusDisponiveisFiltrados() {
+      const termo = (this.filtroMenu || "").trim().toLowerCase();
+      const disponiveis = this.menus.filter((m) => Number(m.cd_menu_grupo_usuario) === 0);
+      if (!termo) return disponiveis;
+
+      return disponiveis.filter((m) => {
+        const nome = String(m.nm_menu_titulo || "").toLowerCase();
+        const cod = String(m.cd_menu || "").toLowerCase();
+        const modulo = String(m.nm_modulo || "").toLowerCase();
+        return nome.includes(termo) || cod.includes(termo) || modulo.includes(termo);
+      });
+    },
+
+    menusDoGrupo() {
+      return this.menus.filter((m) => Number(m.cd_menu_grupo_usuario) !== 0);
+    },
+
+    menusDoGrupoFiltrados() {
+      const termo = (this.filtroMenu || "").trim().toLowerCase();
+      const list = this.menusDoGrupo;
+      if (!termo) return list;
+
+      return list.filter((m) => {
+        const nome = String(m.nm_menu_titulo || "").toLowerCase();
+        const cod = String(m.cd_menu || "").toLowerCase();
+        const modulo = String(m.nm_modulo || "").toLowerCase();
+        return nome.includes(termo) || cod.includes(termo) || modulo.includes(termo);
+      });
+    },
+
+    usuariosFiltrados() {
+      const termo = (this.filtroUsuario || "").trim().toLowerCase();
+      if (!termo) return this.usuarios;
+
+      return this.usuarios.filter((u) => {
+        const nome = String(u.nm_usuario || "").toLowerCase();
+        const fantasia = String(u.nm_fantasia_usuario || "").toLowerCase();
+        const cod = String(u.cd_usuario || "").toLowerCase();
+        return nome.includes(termo) || fantasia.includes(termo) || cod.includes(termo);
+      });
+    },
   },
 
   created() {
@@ -372,6 +711,22 @@ export default {
         this.modulos.length === 0
       ) {
         this.carregarModulosDoGrupo();
+      }
+      if (
+        novaAba === "menus" &&
+        this.grupoSelecionado &&
+        !this.loadingMenus &&
+        this.menus.length === 0
+      ) {
+        this.carregarMenusDoGrupo();
+      }
+      if (
+        novaAba === "usuarios" &&
+        this.grupoSelecionado &&
+        !this.loadingUsuarios &&
+        this.usuarios.length === 0
+      ) {
+        this.carregarUsuariosDoGrupo();
       }
     },
   },
@@ -465,6 +820,13 @@ export default {
       localStorage.nm_grupo_usuario = nm ?? "";
 
       this.gridModuloKey += 1;
+      this.gridMenuDisponivelKey += 1;
+      this.gridMenuSelecionadoKey += 1;
+      this.gridUsuariosKey += 1;
+      this.menus = [];
+      this.usuarios = [];
+      this.menusDoGrupoSelecionados = [];
+      this.menusDisponiveisSelecionados = [];
       this.abaAtiva = "modulos";
       this.carregarModulosDoGrupo();
     },
@@ -530,6 +892,212 @@ export default {
       }
     },
 
+    async carregarMenusDoGrupo() {
+      if (!this.grupoSelecionado) return;
+
+      const cd_grupo_usuario = this.codigoGrupo(this.grupoSelecionado);
+      if (!cd_grupo_usuario) {
+        this.$q?.notify?.({
+          type: "warning",
+          message: "Selecione um grupo para carregar os menus.",
+        });
+        return;
+      }
+
+      this.loadingMenus = true;
+      this.menus = [];
+      this.menusDoGrupoSelecionados = [];
+      this.menusDisponiveisSelecionados = [];
+
+      try {
+        const body = [
+          {
+            ic_json_parametro: "S",
+            cd_parametro: 40,
+            cd_usuario: this.cd_usuario,
+            cd_grupo_usuario,
+            cd_empresa: localStorage.cd_empresa,
+          },
+        ];
+
+        const cfg = this.headerBanco
+          ? { headers: { "x-banco": this.headerBanco } }
+          : undefined;
+
+        const resp = await api.post(
+          "/exec/pr_egis_admin_processo_modulo",
+          body,
+          cfg
+        );
+
+        let rows = (resp && resp.data) ? resp.data : [];
+        if (rows && rows.dados) rows = rows.dados;
+        if (!Array.isArray(rows)) rows = rows ? [rows] : [];
+
+        this.menus = rows.map((m) => ({
+          ...m,
+          cd_menu: Number(m.cd_menu),
+          cd_modulo: Number(m.cd_modulo),
+          cd_menu_grupo_usuario: Number(m.cd_menu_grupo_usuario || 0),
+        }));
+
+        this.gridMenuDisponivelKey += 1;
+        this.gridMenuSelecionadoKey += 1;
+      } catch (error) {
+        console.error("[mostraUsuarioGrupo] erro ao carregar menus:", error);
+        this.menus = [];
+        this.$q?.notify?.({
+          type: "negative",
+          message: "Erro ao carregar menus do grupo. Veja o console.",
+        });
+      } finally {
+        this.loadingMenus = false;
+      }
+    },
+
+    onMenusDisponiveisSelectionChanged(e) {
+      const keys = Array.isArray(e?.selectedRowKeys) ? e.selectedRowKeys : [];
+      this.menusDisponiveisSelecionados = keys.map((k) => Number(k));
+    },
+
+    onMenusDoGrupoSelectionChanged(e) {
+      const keys = Array.isArray(e?.selectedRowKeys) ? e.selectedRowKeys : [];
+      this.menusDoGrupoSelecionados = keys.map((k) => Number(k));
+    },
+
+    adicionarMenusAoGrupo() {
+      if (this.menusDisponiveisSelecionados.length === 0) return;
+      const selecionados = new Set(this.menusDisponiveisSelecionados.map(Number));
+      this.menus = this.menus.map((m) => {
+        if (selecionados.has(Number(m.cd_menu))) {
+          return { ...m, cd_menu_grupo_usuario: m.cd_menu };
+        }
+        return m;
+      });
+      this.menusDisponiveisSelecionados = [];
+      this.gridMenuDisponivelKey += 1;
+      this.gridMenuSelecionadoKey += 1;
+    },
+
+    removerMenusDoGrupo() {
+      if (this.menusDoGrupoSelecionados.length === 0) return;
+      const selecionados = new Set(this.menusDoGrupoSelecionados.map(Number));
+      this.menus = this.menus.map((m) => {
+        if (selecionados.has(Number(m.cd_menu))) {
+          return { ...m, cd_menu_grupo_usuario: 0 };
+        }
+        return m;
+      });
+      this.menusDoGrupoSelecionados = [];
+      this.gridMenuDisponivelKey += 1;
+      this.gridMenuSelecionadoKey += 1;
+    },
+
+    async salvarMenusSelecionados() {
+      if (!this.grupoSelecionado) return;
+
+      const cd_grupo_usuario = this.codigoGrupo(this.grupoSelecionado);
+
+      if (!cd_grupo_usuario) {
+        this.$q?.notify?.({
+          type: "warning",
+          message: "Selecione um grupo antes de salvar os menus.",
+        });
+        return;
+      }
+
+      this.salvandoMenus = true;
+      try {
+        const body = [
+          {
+            ic_json_parametro: "S",
+            cd_parametro: 30,
+            cd_usuario: this.cd_usuario,
+            cd_grupo_usuario,
+            cd_empresa: localStorage.cd_empresa,
+            dados_registro: this.menus.map((m) => ({
+              cd_grupo_usuario: Number(cd_grupo_usuario),
+              cd_menu: Number(m.cd_menu),
+              ic_grupo_modulo: Number(m.cd_menu_grupo_usuario) !== 0 ? "S" : "N",
+            })),
+          },
+        ];
+
+        const cfg = this.headerBanco
+          ? { headers: { "x-banco": this.headerBanco } }
+          : undefined;
+
+        await api.post("/exec/pr_egis_admin_processo_modulo", body, cfg);
+
+        this.$q?.notify?.({
+          type: "positive",
+          message: "Menus enviados com sucesso.",
+        });
+      } catch (error) {
+        console.error("[mostraUsuarioGrupo] erro ao salvar menus:", error);
+        this.$q?.notify?.({
+          type: "negative",
+          message: "Não foi possível salvar os menus selecionados.",
+        });
+      } finally {
+        this.salvandoMenus = false;
+      }
+    },
+
+    async carregarUsuariosDoGrupo() {
+      if (!this.grupoSelecionado) return;
+
+      const cd_grupo_usuario = this.codigoGrupo(this.grupoSelecionado);
+      if (!cd_grupo_usuario) {
+        this.$q?.notify?.({
+          type: "warning",
+          message: "Selecione um grupo para carregar os usuários.",
+        });
+        return;
+      }
+
+      this.loadingUsuarios = true;
+      this.usuarios = [];
+
+      try {
+        const body = [
+          {
+            ic_json_parametro: "S",
+            cd_parametro: 50,
+            cd_usuario: this.cd_usuario,
+            cd_grupo_usuario,
+            cd_empresa: localStorage.cd_empresa,
+          },
+        ];
+
+        const cfg = this.headerBanco
+          ? { headers: { "x-banco": this.headerBanco } }
+          : undefined;
+
+        const resp = await api.post(
+          "/exec/pr_egis_admin_processo_modulo",
+          body,
+          cfg
+        );
+
+        let rows = (resp && resp.data) ? resp.data : [];
+        if (rows && rows.dados) rows = rows.dados;
+        if (!Array.isArray(rows)) rows = rows ? [rows] : [];
+
+        this.usuarios = rows;
+        this.gridUsuariosKey += 1;
+      } catch (error) {
+        console.error("[mostraUsuarioGrupo] erro ao carregar usuários:", error);
+        this.usuarios = [];
+        this.$q?.notify?.({
+          type: "negative",
+          message: "Erro ao carregar usuários do grupo. Veja o console.",
+        });
+      } finally {
+        this.loadingUsuarios = false;
+      }
+    },
+
     async salvarModulosSelecionados() {
       
       if (!this.grupoSelecionado) return;
@@ -559,11 +1127,11 @@ export default {
           };
         });
 
-        const dados_registro = (modulosPayload || []).map(m => ({
-  cd_grupo_usuario: Number(cd_grupo_usuario),
-  cd_modulo: Number(m.cd_modulo),
-  ic_grupo_modulo: String(m.ic_grupo_modulo || 'N').toUpperCase()
-}))
+        const dados_registro = (modulosPayload || []).map((m) => ({
+          cd_grupo_usuario: Number(cd_grupo_usuario),
+          cd_modulo: Number(m.cd_modulo),
+          ic_grupo_modulo: String(m.ic_grupo_modulo || "N").toUpperCase(),
+        }));
 
 
         const body = [
