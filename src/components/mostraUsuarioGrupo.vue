@@ -699,11 +699,15 @@ export default {
   line-height: 1.2;
   margin: 4px 0 6px;
 
-  /* ✅ trava em 2 linhas e coloca "..." */
+  /* padrão */
+  display: block;
+  overflow: hidden;
+
+  /* clamp moderno */
+  line-clamp: 2;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
-  overflow: hidden;
 }
 
 .grupo-sub{

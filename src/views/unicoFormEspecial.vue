@@ -296,25 +296,27 @@
       <q-card 
          class="dlg-form-card dlg-form-premium"         
       >
-        <q-card-section class="dlg-form-card__hero row items-center no-wrap q-gutter-md">
-          <div class="col-auto">
-            <div class="dlg-form-card__hero-icon">
-              <q-icon name="tune" size="48px" color="white" />
+        <q-card-section class="dlg-form-card__hero row items-center justify-between no-wrap q-gutter-md">
+          <div class="row items-center no-wrap q-gutter-md dlg-form-card__hero-main">
+            <div class="col-auto">
+              <div class="dlg-form-card__hero-icon">
+                <q-icon name="tune" size="48px" color="white" />
+              </div>
             </div>
-          </div>
-          <div class="col">
-            <div class="dlg-form-card__eyebrow">
-              {{ modulo }}
-            </div>
-            <div class="dlg-form-card__title">
-              {{ tituloMenu || title }} —
-              {{
-                 formSomenteLeitura
-                 ? "Consulta de registro"
-                 : formMode === "I"
-                 ? "Novo registro"
-                 : "Editar registro"
-                }}
+            <div class="col">
+              <div class="dlg-form-card__eyebrow">
+                {{ modulo }}
+              </div>
+              <div class="dlg-form-card__title">
+                {{ tituloMenu || title }} —
+                {{
+                   formSomenteLeitura
+                   ? "Consulta de registro"
+                   : formMode === "I"
+                   ? "Novo registro"
+                   : "Editar registro"
+                  }}
+              </div>
             </div>
           </div>
           <div class="col-auto">
@@ -10885,6 +10887,12 @@ setRowsFullToSession (rows) {
   box-shadow: 0 18px 44px rgba(123, 31, 162, 0.25);
   margin: 0 14px 12px;
   padding: 20px 20px 18px;
+  align-items: center;
+}
+
+.dlg-form-card__hero-main {
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
 .dlg-form-card__hero-icon {
@@ -11400,7 +11408,7 @@ setRowsFullToSession (rows) {
 
 /* fundo suave no body do dialog pra dar contraste com os inputs brancos */
 :deep(.q-dialog__inner.dlg-form-branco .dlg-form-card__body) {
-  background: #f7f9fc !important;
+  background: #ffffff !important;
   padding: 18px !important;
 }
 
@@ -11440,6 +11448,9 @@ setRowsFullToSession (rows) {
 :deep(.dlg-form-card__body .q-field__append) {
   order: 2;
   margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
 }
 :deep(.dlg-form-card__body .q-field__prepend) {
   order: 1;
@@ -11447,6 +11458,17 @@ setRowsFullToSession (rows) {
 :deep(.dlg-form-card__body .q-field__append .q-icon),
 :deep(.dlg-form-card__body .q-field__prepend .q-icon) {
   color: #607d8b !important;
+}
+
+/* organiza os ícones do select: seta antes do botão de limpar */
+:deep(.dlg-form-card__body .q-select .q-field__append .q-icon.q-select__dropdown-icon) {
+  order: 1;
+}
+:deep(.dlg-form-card__body .q-select .q-field__append .q-icon.q-field__focusable-action) {
+  order: 2;
+}
+:deep(.dlg-form-card__body .q-select .q-field__append .q-icon:not(.q-select__dropdown-icon):not(.q-field__focusable-action)) {
+  order: 3;
 }
 
 /* =========================================================
