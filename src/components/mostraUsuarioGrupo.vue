@@ -1026,12 +1026,13 @@ export default {
         const body = [
           {
             ic_json_parametro: "S",
-            cd_parametro: 30,
+            cd_parametro: 60,
             cd_usuario: this.cd_usuario,
             cd_grupo_usuario,
             cd_empresa: localStorage.cd_empresa,
             dados_registro: this.menus.map((m) => ({
               cd_grupo_usuario: Number(cd_grupo_usuario),
+              cd_modulo: Number(m.cd_modulo),
               cd_menu: Number(m.cd_menu),
               ic_grupo_modulo: Number(m.cd_menu_grupo_usuario) !== 0 ? "S" : "N",
             })),

@@ -483,6 +483,84 @@ begin
   return
 end
 
+--Atualização dos menus do grupo de usuários
+
+if @cd_parametro = 60
+begin
+
+  -------------------------------------------------------------------
+  -- 1) Validar se veio algo em dados_registro
+  -------------------------------------------------------------------
+  if NULLIF(@dados_registro, N'') IS NULL
+  begin
+     select 'Nenhum menu selecionado (dados_registro vazio).' as Msg
+     return
+  end
+
+  if ISJSON(@dados_registro) <> 1
+  begin
+     select 'Lista de menus invlida em dados_registro.' as Msg
+     return
+  end
+
+  -------------------------------------------------------------------
+  -- 2) Quebrar o JSON de dados_registro
+  -------------------------------------------------------------------
+  if object_id('tempdb..#menus_grupo') is not null
+     drop table #menus_grupo
+
+  select
+     try_convert(int, j.cd_grupo_usuario) as cd_grupo_usuario,
+     try_convert(int, j.cd_modulo)        as cd_modulo,
+     try_convert(int, j.cd_menu)          as cd_menu,
+     upper(isnull(j.ic_grupo_modulo,'N')) as ic_grupo_modulo
+  into #menus_grupo
+  from openjson(@dados_registro) with (
+     cd_grupo_usuario int '$.cd_grupo_usuario',
+     cd_modulo        int '$.cd_modulo',
+     cd_menu          int '$.cd_menu',
+     ic_grupo_modulo  varchar(1) '$.ic_grupo_modulo'
+  ) as j
+
+  if isnull(@cd_grupo_usuario,0) = 0
+  begin
+     select @cd_grupo_usuario = isnull(min(cd_grupo_usuario),0) from #menus_grupo
+  end
+
+  if isnull(@cd_grupo_usuario,0) = 0
+  begin
+     select 'Grupo de usurio invlido para gravao.' as Msg
+     return
+  end
+
+  -------------------------------------------------------------------
+  -- 3) Atualizar a tabela grupo_usuario_menu
+  -------------------------------------------------------------------
+  delete from egisadmin.dbo.grupo_usuario_menu
+  where cd_grupo_usuario = @cd_grupo_usuario
+
+  insert into egisadmin.dbo.grupo_usuario_menu
+    (cd_grupo_usuario, cd_modulo, cd_menu, cd_usuario, dt_usuario, cd_usuario_inclusao, dt_usuario_inclusao)
+  select distinct
+    @cd_grupo_usuario,
+    isnull(m.cd_modulo,0),
+    m.cd_menu,
+    @cd_usuario,
+    getdate(),
+    @cd_usuario,
+    getdate()
+  from
+    #menus_grupo m
+  where
+    isnull(m.ic_grupo_modulo,'N') = 'S'
+    and
+    m.cd_menu is not null
+
+  select 'Menus do grupo atualizados com sucesso.' as Msg
+
+  return
+end
+
 --Menus dos Módulos--------------------------------------------------------------
 
 if @cd_parametro = 40
