@@ -188,6 +188,8 @@
 
         <div v-if="!loadingModulos" class="q-mt-sm">
           <dx-data-grid
+            v-if="grupoSelecionado"
+            :key="gridModuloKey"
             :data-source="modulosFiltrados"
             :key-expr="'cd_modulo'"
             :column-auto-width="true"
@@ -196,6 +198,7 @@
             :row-alternation-enabled="true"
             :height="'60vh'"
             :selected-row-keys="modulosSelecionados"
+            :no-data-text="grupoSelecionado ? 'Nenhum módulo retornado para o grupo.' : 'Selecione um grupo para listar módulos.'"
             @selection-changed="onSelectionChanged"
           >
             <dx-scrolling mode="standard" />
@@ -319,6 +322,8 @@ export default {
       grupos: [],
       modulos: [],
       modulosSelecionados: [],
+      ultimoGrupoCarregado: null,
+      gridModuloKey: 0,
       grupoSelecionado: null,
       abaAtiva: "grupos",
       cd_usuario: Number(localStorage.cd_usuario || 0),
@@ -337,15 +342,6 @@ export default {
       const cod = String(this.codigoGrupo(g) || "").toLowerCase();
       return nome.includes(f) || cod.includes(f);
     });
-    },
-
-    colunasModulos() {
-      return [
-        { name: "selecionado", label: "Selecionar", field: "cd_modulo", align: "center" },
-        { name: "cd_modulo", label: "Código", field: "cd_modulo", align: "left", sortable: true },
-        { name: "nm_modulo", label: "Módulo", field: "nm_modulo", align: "left", sortable: true },
-        { name: "ic_grupo_modulo", label: "Está no grupo?", field: "ic_grupo_modulo", align: "left" },
-      ];
     },
 
     modulosFiltrados() {
@@ -368,6 +364,19 @@ export default {
 
   created() {
     this.carregarGrupos();
+  },
+
+  watch: {
+    abaAtiva(novaAba) {
+      if (
+        novaAba === "modulos" &&
+        this.grupoSelecionado &&
+        !this.loadingModulos &&
+        this.modulos.length === 0
+      ) {
+        this.carregarModulosDoGrupo();
+      }
+    },
   },
 
   methods: {
@@ -430,6 +439,11 @@ export default {
         if (!this.grupoSelecionado && rows.length) {
           this.grupoSelecionado = rows[0];
         }
+
+        const codigoAtual = this.codigoGrupo(this.grupoSelecionado);
+        if (codigoAtual && codigoAtual !== this.ultimoGrupoCarregado) {
+          await this.carregarModulosDoGrupo();
+        }
       } catch (e) {
         console.error("[mostraUsuarioGrupo] erro ao carregar:", e);
         this.grupos = [];
@@ -453,6 +467,7 @@ export default {
       localStorage.cd_grupo_usuario = cd ?? "";
       localStorage.nm_grupo_usuario = nm ?? "";
 
+      this.gridModuloKey += 1;
       this.abaAtiva = "modulos";
       this.carregarModulosDoGrupo();
     },
@@ -502,6 +517,9 @@ export default {
         this.modulosSelecionados = rows
           .filter((m) => String(m.ic_grupo_modulo || "").toUpperCase() === "S")
           .map((m) => Number(m.cd_modulo));
+
+        this.ultimoGrupoCarregado = cd_grupo_usuario;
+        this.gridModuloKey += 1;
       } catch (error) {
         console.error("[mostraUsuarioGrupo] erro ao carregar módulos:", error);
         this.modulos = [];
