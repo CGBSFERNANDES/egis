@@ -29,7 +29,7 @@
       <q-tab
         name="modulos"
         icon="view_module"
-        label="Módulos do grupo"
+        label="Módulos"
         :disable="!grupoSelecionado"
       />
     </q-tabs>
