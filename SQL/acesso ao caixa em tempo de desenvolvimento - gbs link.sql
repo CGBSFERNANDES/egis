@@ -1,0 +1,1 @@
+http://localhost:5173/gca/?ic_auto_atendimento=true&cd_empresa=371&cd_usuario=4915&caixa_aberto=false
