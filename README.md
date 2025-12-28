@@ -73,6 +73,12 @@ npm install
 
 ---
 
+## Documentação de componentes
+
+- [GlobalNotifyModal – guia de uso](docs/GlobalNotifyModal.md): como adicionar o modal de notificação global em telas existentes (inclui exemplo em `mostraUsuarioGrupo.vue`).
+
+---
+
 ## Configuração
 
 Para personalizar configurações adicionais, consulte a [documentação oficial do Vue CLI](https://cli.vuejs.org/config/).
