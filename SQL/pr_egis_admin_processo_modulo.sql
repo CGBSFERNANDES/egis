@@ -35,7 +35,7 @@ GO
 --                   Modelo de Procedure com Processos
 --
 --Data             : 20.12.2025
---Alteração        : 
+--AlteraÃ§Ã£o        : 
 --
 --
 ------------------------------------------------------------------------------
@@ -48,7 +48,7 @@ create procedure  pr_egis_admin_processo_modulo
 
 as
 
--- ver nível atual
+-- ver nÃ­vel atual
 --SELECT name, compatibility_level FROM sys.databases WHERE name = DB_NAME();
 
 -- se < 130, ajustar:
@@ -65,7 +65,7 @@ as
  
  /* 1) Validar payload - parameros de Entrada da Procedure */
  IF NULLIF(@json, N'') IS NULL OR ISJSON(@json) <> 1
-            THROW 50001, 'Payload JSON inválido ou vazio em @json.', 1;
+            THROW 50001, 'Payload JSON invÃ¡lido ou vazio em @json.', 1;
 
  /* 2) Normalizar: aceitar array[0] ou objeto */
  IF JSON_VALUE(@json, '$[0]') IS NOT NULL
@@ -88,7 +88,7 @@ set @json = replace(
                                     replace(
                                     @json, CHAR(13), ' '),
                                   CHAR(10),' '),
-                                ' ',' '),
+                                'Â ',' '),
                               ':\\\"',':\\"'),
                             '\\\";','\\";'),
                           ':\\"',':\\\"'),
@@ -114,8 +114,10 @@ declare @cd_ano               int = 0
 declare @cd_mes               int = 0
 declare @cd_modelo            int = 0
 declare @cd_grupo_usuario     int = 0
+----------------------------------------------------------------------------------------------------------------
 
-
+declare @dados_registro           nvarchar(max) = ''
+declare @dados_modal              nvarchar(max) = ''
 ----------------------------------------------------------------------------------------------------------------
 
 set @cd_empresa        = 0
@@ -138,7 +140,10 @@ select
 
  1                                                   as id_registro,
  IDENTITY(int,1,1)                                   as id,
- valores.[key]  COLLATE SQL_Latin1_General_CP1_CI_AI as campo,                     
+---------------------------------------------------------------------------------------------
+select @dados_registro         = valor from #json where campo = 'dados_registro'
+select @dados_modal            = valor from #json where campo = 'dados_modal'
+ valores.[key]  COLLATE SQL_Latin1_General_CP1_CI_AIÂ as campo,                     
  valores.[value]                                     as valor                    
                     
  into #json                    
@@ -192,7 +197,7 @@ END
 --select * from tipo_destinatario
 
 ----------------------------------------------------------------------------------------------------
---Grupo de Usuários
+--Grupo de UsuÃ¡rios
 --
 
 if @cd_parametro = 1
@@ -239,7 +244,7 @@ ORDER BY
 end
 
 ----------------------------------------------------------------------------------------------------
---Usuários da Empresa
+--UsuÃ¡rios da Empresa
 --
 
 if @cd_parametro = 2
@@ -374,7 +379,7 @@ begin
   return
 end
 
---Módulos Disponíveis------------------------------------------------------------
+--MÃ³dulos DisponÃ­veis------------------------------------------------------------
 
 if @cd_parametro = 20
 begin
@@ -405,14 +410,80 @@ begin
 end
 -----------------------
 
---Atualização dos Modulo_GrupoUsuario
+
+  -------------------------------------------------------------------
+  -- 1) Validar se veio algo em dados_registro
+  -------------------------------------------------------------------
+  if NULLIF(@dados_registro, N'') IS NULL
+  begin
+     select 'Nenhum registro selecionado (dados_registro vazio).' as Msg
+     return
+  end
+
+  if ISJSON(@dados_registro) <> 1
+  begin
+     select 'Lista de registros invlida em dados_registro.' as Msg
+     return
+  end
+
+  -------------------------------------------------------------------
+  -- 2) Quebrar o JSON de dados_registro
+  -------------------------------------------------------------------
+  if object_id('tempdb..#modulos_grupo') is not null
+     drop table #modulos_grupo
+
+  select
+     try_convert(int, j.cd_grupo_usuario) as cd_grupo_usuario,
+     try_convert(int, j.cd_modulo)        as cd_modulo,
+     upper(isnull(j.ic_grupo_modulo,'N')) as ic_grupo_modulo
+  into #modulos_grupo
+  from openjson(@dados_registro) with (
+     cd_grupo_usuario int '$.cd_grupo_usuario',
+     cd_modulo        int '$.cd_modulo',
+     ic_grupo_modulo  varchar(1) '$.ic_grupo_modulo'
+  ) as j
+
+  if isnull(@cd_grupo_usuario,0) = 0
+  begin
+     select @cd_grupo_usuario = isnull(min(cd_grupo_usuario),0) from #modulos_grupo
+  end
+
+  if isnull(@cd_grupo_usuario,0) = 0
+  begin
+     select 'Grupo de usurio invlido para gravao.' as Msg
+     return
+  end
+
+  -------------------------------------------------------------------
+  -- 3) Atualizar a tabela Modulo_GrupoUsuario
+  -------------------------------------------------------------------
+  delete from egisadmin.dbo.Modulo_GrupoUsuario
+  where cd_grupo_usuario = @cd_grupo_usuario
+
+  insert into egisadmin.dbo.Modulo_GrupoUsuario
+    (cd_grupo_usuario, cd_modulo, cd_usuario_atualiza, dt_atualiza)
+  select distinct
+    @cd_grupo_usuario,
+    m.cd_modulo,
+    @cd_usuario,
+    getdate()
+  from
+    #modulos_grupo m
+  where
+    isnull(m.ic_grupo_modulo,'N') = 'S'
+    and
+    m.cd_modulo is not null
+
+  select 'Mdulos do grupo atualizados com sucesso.' as Msg
+
+--AtualizaÃ§Ã£o dos Modulo_GrupoUsuario
 
 if @cd_parametro = 30
 begin
   return
 end
 
---Menus dos Módulos--------------------------------------------------------------
+--Menus dos MÃ³dulos--------------------------------------------------------------
 
 if @cd_parametro = 40
 begin
@@ -457,7 +528,7 @@ begin
   return
 end
 
---Usuários do Grupo de usuários
+--UsuÃ¡rios do Grupo de usuÃ¡rios
 
 if @cd_parametro = 50
 begin
@@ -494,8 +565,8 @@ end
 
 --use egissql_317
 --
-/* Padrão se nenhum caso for tratado */
-SELECT CONCAT('Nenhuma ação mapeada para cd_parametro=', @cd_parametro) AS Msg;
+/* PadrÃ£o se nenhum caso for tratado */
+SELECT CONCAT('Nenhuma aÃ§Ã£o mapeada para cd_parametro=', @cd_parametro) AS Msg;
    
  END TRY
     BEGIN CATCH
@@ -508,7 +579,7 @@ SELECT CONCAT('Nenhuma ação mapeada para cd_parametro=', @cd_parametro) AS Msg;
 
 
 
-         -- Monta a mensagem (THROW aceita até 2048 chars no 2º parâmetro)
+         -- Monta a mensagem (THROW aceita atÃ© 2048 chars no 2Âº parÃ¢metro)
     SET @fullmsg =
           N'Erro em pr_egis_admin_processo_modulo ('
         + ISNULL(@errproc, N'SemProcedure') + N':'
@@ -519,10 +590,10 @@ SELECT CONCAT('Nenhuma ação mapeada para cd_parametro=', @cd_parametro) AS Msg;
     -- Garante o limite do THROW
     SET @fullmsg = LEFT(@fullmsg, 2048);
 
-    -- Relança com contexto (state 1..255)
+    -- RelanÃ§a com contexto (state 1..255)
     THROW 50000, @fullmsg, 1;
 
-        -- Relança erro com contexto
+        -- RelanÃ§a erro com contexto
         --THROW 50000, CONCAT('Erro em pr_egis_admin_processo_modulo (',
         --                    ISNULL(@errproc, 'SemProcedure'), ':',
         --                    @errline, ') #', @errnum, ' - ', @errmsg), 1;
