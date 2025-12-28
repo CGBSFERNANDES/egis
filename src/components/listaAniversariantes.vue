@@ -1,66 +1,116 @@
 <template>
-  <div class="lista-aniversariantes relative-position">
-    <div class="row items-center q-mb-sm">
-      <div class="text-subtitle1 text-weight-bold">Aniversariantes</div>
-      <q-space />
-      <q-btn
-        size="sm"
-        flat
-        round
-        color="primary"
-        icon="refresh"
-        @click="carregarAniversariantes"
-        :loading="loading"
-        :disable="loading"
-      >
-        <q-tooltip>Atualizar</q-tooltip>
-      </q-btn>
+  <div class="lista-aniversariantes q-pa-md">
+    <div class="row items-center q-mb-md">
+      <h2 class="content-block col-12 row items-center no-wrap toolbar-scroll">
+        <q-btn
+          flat
+          round
+          dense
+          icon="arrow_back"
+          class="q-mr-sm seta-form"
+          aria-label="Voltar"
+          @click="onVoltar"
+        />
+        <span>Aniversariantes</span>
+
+        <q-space />
+
+        <q-btn
+          dense
+          rounded
+          icon="refresh"
+          color="deep-purple-7"
+          size="lg"
+          class="q-ml-sm"
+          @click="carregarAniversariantes"
+          :loading="loading"
+          :disable="loading"
+        >
+          <q-tooltip>Atualizar</q-tooltip>
+        </q-btn>
+      </h2>
+    </div>
+
+    <div class="row q-col-gutter-md q-mb-md">
+      <div class="col-12 col-md-6">
+        <q-input dense outlined v-model="filtro" placeholder="Buscar aniversariante..." clearable>
+          <template v-slot:prepend>
+            <q-icon name="search" />
+          </template>
+        </q-input>
+      </div>
+
+      <div class="col-12 col-md-6">
+        <q-banner dense class="bg-grey-2 text-grey-9 rounded-borders">
+          <div class="text-caption">
+            Empresa: <b>{{ cd_empresa }}</b>
+            <span v-if="empresaAtualNome"> | <b>{{ empresaAtualNome }}</b> </span>
+            <span class="q-ml-sm"> | Usuário logado: <b>{{ cd_usuario }}</b> </span>
+            <span class="q-ml-sm">
+              | Período:
+              <b>{{ dtInicial }}</b>
+              até
+              <b>{{ dtFinal }}</b>
+            </span>
+            <span class="q-ml-sm"> | Total: <b>{{ aniversariantes.length }}</b> </span>
+          </div>
+        </q-banner>
+      </div>
     </div>
 
     <q-inner-loading :showing="loading">
-      <q-spinner size="32px" />
+      <q-spinner size="50px" />
     </q-inner-loading>
 
-    <div v-if="!loading && aniversariantes.length === 0" class="texto-vazio">
-      Nenhum aniversariante encontrado.
+    <div v-if="!loading && aniversariantesFiltrados.length === 0" class="q-mt-md">
+      <q-banner class="bg-orange-1 text-orange-10 rounded-borders">
+        Nenhum aniversariante encontrado.
+      </q-banner>
     </div>
 
-    <div v-else class="row q-col-gutter-sm">
-      <div v-for="(u, idx) in aniversariantes" :key="idx" class="col-12">
-        <q-card class="card-aniversariante">
-          <div class="row no-wrap items-center">
-            <q-avatar size="56px" class="avatar-shadow q-mr-md">
-              <img
-                v-if="fotoUsuario(u)"
-                :src="fotoUsuario(u)"
-                alt="Foto do usuário"
-                class="foto-rounded"
-                @error="onImgError(u)"
-              />
-              <div v-else class="fallback-avatar">
-                {{ letraUsuario(u) }}
-              </div>
-            </q-avatar>
-
-            <div class="col">
-              <div class="text-body1 text-weight-bold">
-                {{ nomeUsuario(u) || "Usuário" }}
-              </div>
-              <div class="text-caption text-grey-7">
-                {{ fantasiaUsuario(u) || "-" }}
-              </div>
-              <div v-if="departamentoUsuario(u)" class="text-caption text-grey-6">
-                {{ departamentoUsuario(u) }}
-              </div>
+    <div class="row q-col-gutter-md q-mt-sm">
+      <div
+        v-for="(u, idx) in aniversariantesFiltrados"
+        :key="idx"
+        class="col-12 col-sm-6 col-md-4 col-lg-3"
+      >
+        <q-card class="cursor-pointer card-hover card-aniversariante" @click="selecionarUsuario(u)">
+          <q-card-section class="text-center">
+            <div class="row justify-center q-mb-sm">
+              <q-avatar size="86px" class="avatar-shadow">
+                <img
+                  v-if="fotoUsuario(u)"
+                  :src="fotoUsuario(u)"
+                  alt="Foto do usuário"
+                  class="foto-rounded"
+                  @error="onImgError(u)"
+                />
+                <div v-else class="fallback-avatar">
+                  {{ letraUsuario(u) }}
+                </div>
+              </q-avatar>
             </div>
 
-            <div class="text-right data-aniversario">
-              <div class="text-caption text-grey-6">Aniversário</div>
-              <div class="text-subtitle2 text-weight-bold">
-                {{ dataAniversario(u) || "-" }}
-              </div>
+            <div class="text-subtitle1 text-weight-bold">
+              {{ nomeUsuario(u) || 'Usuário' }}
             </div>
-          </div>
+
+            <div class="text-caption text-grey-7 q-mt-xs">
+              Login: <b>{{ fantasiaUsuario(u) || '-' }}</b>
+            </div>
+
+            <div class="text-caption text-grey-7 q-mt-xs">
+              Departamento: <b>{{ departamentoUsuario(u) || '-' }}</b>
+            </div>
+
+            <div class="text-caption text-grey-7 q-mt-xs">
+              Código: <b>{{ codigoUsuario(u) ? codigoUsuario(u) : '-' }}</b>
+            </div>
+
+            <div class="text-caption text-grey-7 q-mt-xs">
+              Aniversário: <b>{{ dataAniversario(u) || '-' }}</b>
+            </div>
+          </q-card-section>
         </q-card>
       </div>
     </div>
@@ -93,6 +143,10 @@ export default {
       loading: false,
       headerBanco: localStorage.nm_banco_empresa || '',
       imgFalhou: {},
+      filtro: '',
+      cd_usuario: Number(localStorage.cd_usuario || 0),
+      cd_empresa: Number(localStorage.cd_empresa || 0),
+      empresaAtualNome: localStorage.fantasia || localStorage.nm_fantasia_empresa || '',
     }
   },
 
@@ -102,6 +156,20 @@ export default {
     },
     dtFinal() {
       return localStorage.dt_final || '12/31/2025'
+    },
+    aniversariantesFiltrados() {
+      const f = (this.filtro || '').trim().toLowerCase()
+      if (!f) return this.aniversariantes
+
+      return this.aniversariantes.filter((u) => {
+        const nome = String(this.nomeUsuario(u) || '').toLowerCase()
+        const login = String(this.fantasiaUsuario(u) || '').toLowerCase()
+        const depto = String(this.departamentoUsuario(u) || '').toLowerCase()
+        const data = String(this.dataAniversario(u) || '').toLowerCase()
+        return (
+          nome.indexOf(f) >= 0 || login.indexOf(f) >= 0 || depto.indexOf(f) >= 0 || data.indexOf(f) >= 0
+        )
+      })
     },
   },
 
@@ -196,6 +264,17 @@ export default {
       if (cd) this.$set(this.imgFalhou, String(cd), true)
     },
 
+    selecionarUsuario(u) {
+      const cd = this.codigoUsuario(u)
+      const nm = this.nomeUsuario(u)
+      const login = this.fantasiaUsuario(u)
+
+      localStorage.cd_usuario_selecionado = cd !== null && cd !== undefined ? cd : ''
+      localStorage.nm_usuario_selecionado = nm !== null && nm !== undefined ? nm : ''
+      localStorage.nm_fantasia_usuario_selecionado =
+        login !== null && login !== undefined ? login : ''
+    },
+
     async carregarAniversariantes() {
       this.loading = true
       try {
@@ -234,19 +313,37 @@ export default {
         this.loading = false
       }
     },
+
+    onVoltar() {
+      if (this.$router) {
+        this.$router.push({ name: 'home' }).catch(() => {
+          this.$router.push({ path: '/' }).catch(() => {})
+        })
+      } else {
+        window.location.href = '/'
+      }
+    },
   },
 }
 </script>
 
 <style scoped>
-.lista-aniversariantes {
-  min-width: 340px;
+.toolbar-scroll {
+  overflow-x: auto;
+  white-space: nowrap;
+}
+
+.seta-form {
+  margin-left: 10px;
+  color: #512da8;
+}
+
+.content-block {
+  margin: 0;
 }
 
 .card-aniversariante {
-  border-radius: 14px;
-  padding: 8px 10px;
-  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.12);
+  border-radius: 16px;
 }
 
 .foto-rounded {
@@ -266,20 +363,20 @@ export default {
   align-items: center;
   justify-content: center;
   font-weight: 700;
-  font-size: 20px;
+  font-size: 26px;
 }
 
 .avatar-shadow {
-  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.14);
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.18);
 }
 
-.texto-vazio {
-  color: #666;
-  font-size: 12px;
-  padding: 8px 4px;
+.card-hover {
+  border-radius: 18px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
-.data-aniversario {
-  min-width: 96px;
+.card-hover:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.18);
 }
 </style>
