@@ -1434,10 +1434,15 @@ import { payloadTabela,
 //import axios from "boot/axios";
 
 import Relatorio from "@/components/Relatorio.vue";
+import Localbase from "localbase";
 
 //import api from '@/boot/axios'
 const banco = localStorage.nm_banco_empresa;
 //
+
+const offlineDb = new Localbase("egis-offline-cache");
+const GRID_CACHE_COLLECTION = "gridSnapshots";
+const GRID_CACHE_PREFIX = "unicoFormEspecial";
 
 const api = axios.create({
   baseURL: "https://egiserp.com.br/api",
@@ -3818,13 +3823,94 @@ parseSqlTabs(raw) {
       return m ? `${base}_${m}` : base
     },
 
-ssGet(k, fallback = null) {
-    try { return sessionStorage.getItem(this.ssKey(k)) ?? fallback } catch(e) { return fallback }
-  },
+    ssGet(k, fallback = null) {
+      try {
+        return sessionStorage.getItem(this.ssKey(k)) ?? fallback;
+      } catch (e) {
+        return fallback;
+      }
+    },
 
-  ssSet(k, v) {
-    try { sessionStorage.setItem(this.ssKey(k), v) } catch(e) {}
-  },
+    ssSet(k, v) {
+      try {
+        sessionStorage.setItem(this.ssKey(k), v);
+      } catch (e) {}
+    },
+
+    isQuotaError(err) {
+      return (
+        err &&
+        (err.name === "QuotaExceededError" ||
+          err.code === 22 ||
+          err.code === 1014 ||
+          (err.message || "").toLowerCase().includes("quota"))
+      );
+    },
+
+    serializeForStorage(value) {
+      return typeof value === "string" ? value : JSON.stringify(value);
+    },
+
+    async salvarCacheSeguro(key, value, { parseJson = true } = {}) {
+      const payload = parseJson ? this.serializeForStorage(value) : value;
+
+      try {
+        sessionStorage.setItem(key, payload);
+        await offlineDb.collection(GRID_CACHE_COLLECTION).doc({ key }).delete();
+        return;
+      } catch (err) {
+        if (!this.isQuotaError(err)) {
+          console.warn("[unicoFormEspecial] Falha ao salvar no sessionStorage:", err);
+        }
+      }
+
+      try {
+        await offlineDb.collection(GRID_CACHE_COLLECTION).doc({ key }).set({
+          key,
+          value,
+          scope: GRID_CACHE_PREFIX,
+          updatedAt: new Date().toISOString(),
+        });
+      } catch (dbErr) {
+        console.error("[unicoFormEspecial] Falha ao salvar no IndexedDB:", dbErr);
+      }
+    },
+
+    async lerCacheSeguro(key, { parseJson = true } = {}) {
+      try {
+        const raw = sessionStorage.getItem(key);
+        if (raw !== null && raw !== undefined) {
+          return parseJson ? JSON.parse(raw) : raw;
+        }
+      } catch (err) {
+        if (!this.isQuotaError(err)) {
+          console.warn("[unicoFormEspecial] Falha ao ler do sessionStorage:", err);
+        }
+      }
+
+      try {
+        const doc = await offlineDb.collection(GRID_CACHE_COLLECTION).doc({ key }).get();
+        if (doc && Object.prototype.hasOwnProperty.call(doc, "value")) {
+          return doc.value;
+        }
+      } catch (dbErr) {
+        console.warn("[unicoFormEspecial] Falha ao ler do IndexedDB:", dbErr);
+      }
+
+      return null;
+    },
+
+    async removerCacheSeguro(key) {
+      try {
+        sessionStorage.removeItem(key);
+      } catch (err) {}
+
+      try {
+        await offlineDb.collection(GRID_CACHE_COLLECTION).doc({ key }).delete();
+      } catch (dbErr) {
+        console.warn("[unicoFormEspecial] Falha ao limpar IndexedDB:", dbErr);
+      }
+    },
 
      async onInfoClick() {
       const { titulo, descricao } = await getInfoDoMenu(this.cd_menu, {
@@ -3850,8 +3936,8 @@ ssGet(k, fallback = null) {
   abrirFiltroSelecao () { this.dialogFiltroSelecao = true },
 
 
-  limparFiltroSelecao () {
-  const full = this.getRowsFullFromSession()
+  async limparFiltroSelecao () {
+  const full = await this.getRowsFullFromSession()
   this.rows = Array.isArray(full) ? full : []
 
   // opcional: também limpa filtros internos do devextreme (se houver)
@@ -3885,7 +3971,7 @@ traduzCampoFiltroParaGrid (fieldTecnico) {
   return found?.nm_atributo_consulta || fieldTecnico
 },
 
-    onAplicouFiltroSelecao ({ keyField, keys }) {
+    async onAplicouFiltroSelecao ({ keyField, keys }) {
   const fieldTecnico = String(keyField || '').trim()
   const values = Array.isArray(keys) ? keys : []
 
@@ -3895,7 +3981,7 @@ traduzCampoFiltroParaGrid (fieldTecnico) {
   //console.log('[Filtro] técnico:', fieldTecnico, '-> grid:', fieldGrid, 'values:', values)
 
   // pega FULL do sessionStorage
-  const full = this.getRowsFullFromSession()
+  const full = await this.getRowsFullFromSession()
 
   // sem filtro → volta tudo
   if (!fieldGrid || values.length === 0) {
@@ -10394,13 +10480,13 @@ if (this.ic_modal_pesquisa === 'S') {
 }
 
         //
-        sessionStorage.setItem("dados_resultado_consulta", JSON.stringify(this.rows));
+        await this.salvarCacheSeguro("dados_resultado_consulta", this.rows);
         
-        sessionStorage.setItem(this.ssKey("dados_resultado_consulta"), JSON.stringify(this.rows))
+        await this.salvarCacheSeguro(this.ssKey("dados_resultado_consulta"), this.rows);
 
-        sessionStorage.setItem("filtros_form_especial",JSON.stringify(this.filtrosValores)); 
+        await this.salvarCacheSeguro("filtros_form_especial", this.filtrosValores); 
         
-        sessionStorage.setItem(this.ssKey("filtros_form_especial"), JSON.stringify(this.filtrosValores))
+        await this.salvarCacheSeguro(this.ssKey("filtros_form_especial"), this.filtrosValores);
 
         //console.log('mapa', dados);
         //console.log('resultado', this.rows);
@@ -10490,33 +10576,28 @@ if (this.ic_modal_pesquisa === 'S') {
     },
 
 
-    getRowsFullFromSession () {
-  // tenta chave específica primeiro
-  const k1 = this.ssKey ? this.ssKey('dados_resultado_consulta') : null
-  const raw1 = k1 ? sessionStorage.getItem(k1) : null
-  if (raw1) {
-    try { return JSON.parse(raw1) } catch (e) {}
-  }
+    async getRowsFullFromSession() {
+      const k1 = this.ssKey ? this.ssKey("dados_resultado_consulta") : null;
 
-  // fallback chave “fixa”
-  const raw2 = sessionStorage.getItem('dados_resultado_consulta')
-  if (raw2) {
-    try { return JSON.parse(raw2) } catch (e) {}
-  }
+      if (k1) {
+        const scoped = await this.lerCacheSeguro(k1);
+        if (scoped) return scoped;
+      }
 
-  return []
-},
+      const raw = await this.lerCacheSeguro("dados_resultado_consulta");
+      if (raw) return raw;
 
-setRowsFullToSession (rows) {
-  try {
-    sessionStorage.setItem('dados_resultado_consulta', JSON.stringify(rows || []))
-  } catch (e) {}
+      return [];
+    },
 
-  try {
-    const k1 = this.ssKey ? this.ssKey('dados_resultado_consulta') : null
-    if (k1) sessionStorage.setItem(k1, JSON.stringify(rows || []))
-  } catch (e) {}
-},
+    async setRowsFullToSession(rows) {
+      await this.salvarCacheSeguro("dados_resultado_consulta", rows);
+
+      const k1 = this.ssKey ? this.ssKey("dados_resultado_consulta") : null;
+      if (k1) {
+        await this.salvarCacheSeguro(k1, rows);
+      }
+    },
 
     onRowDblClick(e) {
       const data = e.data;
