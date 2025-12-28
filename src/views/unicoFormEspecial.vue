@@ -10882,6 +10882,24 @@ setRowsFullToSession (rows) {
   background: linear-gradient(120deg, #7b1fa2, #00acc1 55%, #f4511e);
   color: #fff;
   border-radius: 18px 18px 12px 12px;
+  box-shadow: 0 18px 44px rgba(123, 31, 162, 0.25);
+  margin: 0 14px 12px;
+  padding: 20px 20px 18px;
+}
+
+.dlg-form-card__hero-icon {
+  width: 82px;
+  height: 82px;
+  border-radius: 24px;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.32), rgba(255, 255, 255, 0.12));
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  box-shadow: 0 12px 44px rgba(0, 0, 0, 0.25);
+}
+.dlg-form-card__hero-icon .q-icon {
+  font-weight: 900;
+  opacity: 0.95;
   box-shadow: 0 16px 38px rgba(123, 31, 162, 0.25);
   margin: 0 14px 12px;
   padding: 18px;
@@ -10903,6 +10921,19 @@ setRowsFullToSession (rows) {
   letter-spacing: 0.08em;
   font-weight: 800;
   opacity: 0.9;
+}
+
+.dlg-form-card__title {
+  font-size: 22px;
+  line-height: 30px;
+  font-weight: 800;
+}
+
+.dlg-form-card__close {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.08);
+}
+
 }
 
 .dlg-form-card__title {
@@ -11381,6 +11412,43 @@ setRowsFullToSession (rows) {
   box-shadow: inset 0 0 0 1px rgba(0,172,193,.68), 0 0 0 4px rgba(123,31,162,.16) !important;
 }
 
+:deep(.dlg-form-card__body .q-field) {
+  background: #ffffff !important;
+  border-radius: 14px;
+}
+:deep(.dlg-form-card__body .q-field__control) {
+  background: #ffffff !important;
+  box-shadow: inset 0 0 0 1px rgba(15,23,42,.10) !important;
+}
+:deep(.dlg-form-card__body .q-field--filled .q-field__control),
+:deep(.dlg-form-card__body .q-field--outlined .q-field__control),
+:deep(.dlg-form-card__body .q-field--standout .q-field__control) {
+  background: #ffffff !important;
+}
+:deep(.dlg-form-card__body .q-field__control:before),
+:deep(.dlg-form-card__body .q-field__control:after) {
+  background: transparent !important;
+}
+:deep(.dlg-form-card__body .q-field__label) {
+  color: #455a64 !important;
+  font-weight: 650;
+}
+:deep(.dlg-form-card__body .q-field__native),
+:deep(.dlg-form-card__body .q-field__input) {
+  color: #1f2937 !important;
+}
+:deep(.dlg-form-card__body .q-field__append) {
+  order: 2;
+  margin-left: auto;
+}
+:deep(.dlg-form-card__body .q-field__prepend) {
+  order: 1;
+}
+:deep(.dlg-form-card__body .q-field__append .q-icon),
+:deep(.dlg-form-card__body .q-field__prepend .q-icon) {
+  color: #607d8b !important;
+}
+
 /* =========================================================
    MODAL PREMIUM: só afeta o QDialog com content-class="dlg-form-branco"
    ========================================================= */
@@ -11390,6 +11458,16 @@ setRowsFullToSession (rows) {
 
   --pf-line: rgba(15, 23, 42, 0.12);
   --pf-line2: rgba(15, 23, 42, 0.20);
+
+  --pf-brand: #7b1fa2;
+  --pf-brand-soft: rgba(123, 31, 162, 0.14);
+  --pf-highlight: #00acc1;
+  --pf-hover: rgba(0, 172, 193, 0.08);
+
+  --pf-required: #f4511e;
+  --pf-required-soft: rgba(244, 81, 30, 0.14);
+  --pf-readonly: rgba(2, 6, 23, 0.05);
+
 
   --pf-brand: #7b1fa2;
   --pf-brand-soft: rgba(123, 31, 162, 0.14);
