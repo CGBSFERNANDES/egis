@@ -10900,6 +10900,20 @@ setRowsFullToSession (rows) {
 .dlg-form-card__hero-icon .q-icon {
   font-weight: 900;
   opacity: 0.95;
+  box-shadow: 0 16px 38px rgba(123, 31, 162, 0.25);
+  margin: 0 14px 12px;
+  padding: 18px;
+}
+
+.dlg-form-card__hero-icon {
+  width: 76px;
+  height: 76px;
+  border-radius: 22px;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.28), rgba(255, 255, 255, 0.08));
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.22);
 }
 
 .dlg-form-card__eyebrow {
@@ -10907,6 +10921,19 @@ setRowsFullToSession (rows) {
   letter-spacing: 0.08em;
   font-weight: 800;
   opacity: 0.9;
+}
+
+.dlg-form-card__title {
+  font-size: 22px;
+  line-height: 30px;
+  font-weight: 800;
+}
+
+.dlg-form-card__close {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.08);
+}
+
 }
 
 .dlg-form-card__title {
@@ -11431,6 +11458,16 @@ setRowsFullToSession (rows) {
 
   --pf-line: rgba(15, 23, 42, 0.12);
   --pf-line2: rgba(15, 23, 42, 0.20);
+
+  --pf-brand: #7b1fa2;
+  --pf-brand-soft: rgba(123, 31, 162, 0.14);
+  --pf-highlight: #00acc1;
+  --pf-hover: rgba(0, 172, 193, 0.08);
+
+  --pf-required: #f4511e;
+  --pf-required-soft: rgba(244, 81, 30, 0.14);
+  --pf-readonly: rgba(2, 6, 23, 0.05);
+
 
   --pf-brand: #7b1fa2;
   --pf-brand-soft: rgba(123, 31, 162, 0.14);
