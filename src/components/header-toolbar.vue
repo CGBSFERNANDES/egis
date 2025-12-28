@@ -194,6 +194,14 @@
                     <q-item-label>Aviso dos Módulos</q-item-label>
                   </q-item-section>
                 </q-item>
+                <q-item clickable v-close-popup @click="onAniversariantes">
+                  <q-item-section avatar>
+                    <q-icon name="cake" color="purple" />
+                  </q-item-section>
+                  <q-item-section>
+                    <q-item-label>Aniversariantes</q-item-label>
+                  </q-item-section>
+                </q-item>
               </q-list>
             </q-btn-dropdown>
           </div>
@@ -932,7 +940,7 @@ export default {
     },
 
     onAniversariantes() {
-      alert('buscando o componente listar aniversariantes !')
+      this.$router.push({ name: 'lista-aniversariantes' })
     },
 
     onMensagem() {
