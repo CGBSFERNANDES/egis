@@ -811,6 +811,7 @@ export default {
         if (this.$q && this.$q.notify) {
           this.$q.notify({
             type: "negative",
+            position: "center",
             message: "Erro ao carregar grupos. Veja o console.",
           });
         }
@@ -846,6 +847,7 @@ export default {
       if (!cd_grupo_usuario) {
         this.$q?.notify?.({
           type: "warning",
+          position: "center",
           message: "Selecione um grupo para carregar os módulos.",
         });
         return;
@@ -893,6 +895,7 @@ export default {
         this.modulosSelecionados = [];
         this.$q?.notify?.({
           type: "negative",
+          position: "center",
           message: "Erro ao carregar módulos do grupo. Veja o console.",
         });
       } finally {
@@ -907,6 +910,7 @@ export default {
       if (!cd_grupo_usuario) {
         this.$q?.notify?.({
           type: "warning",
+          position: "center",
           message: "Selecione um grupo para carregar os menus.",
         });
         return;
@@ -956,6 +960,7 @@ export default {
         this.menus = [];
         this.$q?.notify?.({
           type: "negative",
+          position: "center",
           message: "Erro ao carregar menus do grupo. Veja o console.",
         });
       } finally {
@@ -1009,12 +1014,14 @@ export default {
       if (!cd_grupo_usuario) {
         this.$q?.notify?.({
           type: "warning",
+          position: "center",
           message: "Selecione um grupo antes de salvar os menus.",
         });
         return;
       }
 
       this.salvandoMenus = true;
+
       try {
         const body = [
           {
@@ -1039,16 +1046,19 @@ export default {
 
         this.$q?.notify?.({
           type: "positive",
+          position: "center",
           message: "Menus enviados com sucesso.",
         });
       } catch (error) {
         console.error("[mostraUsuarioGrupo] erro ao salvar menus:", error);
         this.$q?.notify?.({
           type: "negative",
+          position: "center",
           message: "Não foi possível salvar os menus selecionados.",
         });
       } finally {
         this.salvandoMenus = false;
+        this.carregarModulosDoGrupo();
       }
     },
 
@@ -1059,6 +1069,7 @@ export default {
       if (!cd_grupo_usuario) {
         this.$q?.notify?.({
           type: "warning",
+          position: "center",
           message: "Selecione um grupo para carregar os usuários.",
         });
         return;
@@ -1099,6 +1110,7 @@ export default {
         this.usuarios = [];
         this.$q?.notify?.({
           type: "negative",
+          position: "center",
           message: "Erro ao carregar usuários do grupo. Veja o console.",
         });
       } finally {
@@ -1115,6 +1127,7 @@ export default {
       if (!cd_grupo_usuario) {
         this.$q?.notify?.({
           type: "warning",
+          position: "center",
           message: "Selecione um grupo antes de salvar os módulos.",
         });
         return;
@@ -1164,12 +1177,14 @@ export default {
 
         this.$q?.notify?.({
           type: "positive",
+          position: "center",
           message: "Módulos enviados com sucesso.",
         });
       } catch (error) {
         console.error("[mostraUsuarioGrupo] erro ao salvar módulos:", error);
         this.$q?.notify?.({
           type: "negative",
+          position: "center",
           message: "Não foi possível salvar os módulos selecionados.",
         });
       } finally {
@@ -1308,15 +1323,23 @@ export default {
   margin-right: 8px; /* ajuste fino aqui */
 }
 
-.tab-label-pad {
+
+
+.tab-label-pad :deep(.q-tab__content) {
   padding: 0 10px;
+  gap: 6px;            /* espaço entre ícone e label */
 }
+
 
 .tab-label-pad .q-tab__label {
   padding-left: 6px;
   margin-left: 15px;
   margin-right: 6px;
-  gap: 6px;
+  
+}
+
+.tab-label-pad :deep(.q-tab__icon) {
+  margin-right: 6px;
 }
 
 </style>
