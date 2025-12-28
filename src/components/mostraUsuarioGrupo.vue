@@ -1019,8 +1019,10 @@ export default {
         });
         return;
       }
-
+      
+      //
       this.salvandoMenus = true;
+      //
 
       try {
         const body = [
@@ -1032,7 +1034,6 @@ export default {
             cd_empresa: localStorage.cd_empresa,
             dados_registro: this.menus.map((m) => ({
               cd_grupo_usuario: Number(cd_grupo_usuario),
-              cd_modulo: Number(m.cd_modulo),
               cd_menu: Number(m.cd_menu),
               ic_grupo_modulo: Number(m.cd_menu_grupo_usuario) !== 0 ? "S" : "N",
             })),
@@ -1059,7 +1060,7 @@ export default {
         });
       } finally {
         this.salvandoMenus = false;
-        this.carregarModulosDoGrupo();
+        //this.carregarModulosDoGrupo();
       }
     },
 
