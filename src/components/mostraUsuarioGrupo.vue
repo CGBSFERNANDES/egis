@@ -186,30 +186,65 @@
           <q-spinner size="36px" />
         </q-inner-loading>
 
-        <q-table
-          v-if="!loadingModulos"
-          :rows="modulosFiltrados"
-          :columns="colunasModulos"
-          row-key="cd_modulo"
-          flat
-          dense
-          separator="horizontal"
-          :pagination="{ rowsPerPage: 10 }"
-          binary-state-sort
-          class="shadow-1"
-          :no-data-label="grupoSelecionado ? 'Nenhum módulo retornado para o grupo.' : 'Selecione um grupo para visualizar os módulos.'"
-        >
-          <template #body-cell-selecionado="props">
-            <q-td :props="props" class="text-center">
-              <q-checkbox
-                dense
-                color="deep-purple-7"
-                v-model="modulosSelecionados"
-                :val="Number(props.row.cd_modulo)"
-              />
-            </q-td>
-          </template>
-        </q-table>
+        <div v-if="!loadingModulos" class="q-mt-sm">
+          <dx-data-grid
+            v-if="grupoSelecionado"
+            :key="gridModuloKey"
+            :data-source="modulosFiltrados"
+            :key-expr="'cd_modulo'"
+            :column-auto-width="true"
+            :show-borders="false"
+            :hover-state-enabled="true"
+            :row-alternation-enabled="true"
+            :height="'60vh'"
+            :selected-row-keys="modulosSelecionados"
+            :no-data-text="grupoSelecionado ? 'Nenhum módulo retornado para o grupo.' : 'Selecione um grupo para listar módulos.'"
+            @selection-changed="onSelectionChanged"
+          >
+            <dx-scrolling mode="standard" />
+            <dx-selection
+              mode="multiple"
+              show-check-boxes-mode="always"
+              select-all-mode="allPages"
+            />
+            <dx-search-panel :visible="true" :width="300" placeholder="Filtrar..." />
+            <dx-paging :page-size="15" />
+            <dx-pager
+              :show-page-size-selector="true"
+              :allowed-page-sizes="[10, 15, 30, 50]"
+              :show-info="true"
+            />
+            <dx-toolbar>
+              <dx-item location="before" template="tituloModulo" />
+            </dx-toolbar>
+
+            <template #tituloModulo>
+              <div class="text-subtitle2 text-grey-8">
+                {{ grupoSelecionado ? 'Selecione os módulos do grupo' : 'Selecione um grupo para listar módulos' }}
+              </div>
+            </template>
+
+            <dx-column
+              data-field="cd_modulo"
+              caption="Código"
+              data-type="number"
+              width="110"
+              :allow-filtering="true"
+              :allow-sorting="true"
+            />
+            <dx-column
+              data-field="nm_modulo"
+              caption="Módulo"
+              :allow-filtering="true"
+              :allow-sorting="true"
+            />
+            <dx-column
+              data-field="ic_grupo_modulo"
+              caption="Está no grupo?"
+              width="140"
+            />
+          </dx-data-grid>
+        </div>
 
         <div class="row justify-end q-gutter-sm q-mt-md">
           <q-btn
@@ -237,6 +272,17 @@
 
 <script>
 import axios from "axios";
+import {
+  DxDataGrid,
+  DxColumn,
+  DxSelection,
+  DxScrolling,
+  DxSearchPanel,
+  DxPager,
+  DxPaging,
+  DxToolbar,
+  DxItem,
+} from "devextreme-vue/data-grid";
 
 const api = axios.create({
   baseURL: "https://egiserp.com.br/api",
@@ -254,6 +300,17 @@ api.interceptors.request.use(cfg => {
 
 export default {
   name: "mostraUsuarioGrupo",
+  components: {
+    DxDataGrid,
+    DxColumn,
+    DxSelection,
+    DxScrolling,
+    DxSearchPanel,
+    DxPager,
+    DxPaging,
+    DxToolbar,
+    DxItem,
+  },
 
   data() {
     return {
@@ -265,6 +322,8 @@ export default {
       grupos: [],
       modulos: [],
       modulosSelecionados: [],
+      ultimoGrupoCarregado: null,
+      gridModuloKey: 0,
       grupoSelecionado: null,
       abaAtiva: "grupos",
       cd_usuario: Number(localStorage.cd_usuario || 0),
@@ -285,18 +344,14 @@ export default {
     });
     },
 
-    colunasModulos() {
-      return [
-        { name: "selecionado", label: "Selecionar", field: "cd_modulo", align: "center" },
-        { name: "cd_modulo", label: "Código", field: "cd_modulo", align: "left", sortable: true },
-        { name: "nm_modulo", label: "Módulo", field: "nm_modulo", align: "left", sortable: true },
-        { name: "ic_grupo_modulo", label: "Está no grupo?", field: "ic_grupo_modulo", align: "left" },
-      ];
-    },
-
     modulosFiltrados() {
       const termo = (this.filtroModulo || "").trim().toLowerCase();
-      const lista = Array.isArray(this.modulos) ? this.modulos : [];
+      const lista = Array.isArray(this.modulos)
+        ? this.modulos.map((m) => ({
+            ...m,
+            cd_modulo: Number(m.cd_modulo),
+          }))
+        : [];
       if (!termo) return lista;
 
       return lista.filter((m) => {
@@ -309,6 +364,19 @@ export default {
 
   created() {
     this.carregarGrupos();
+  },
+
+  watch: {
+    abaAtiva(novaAba) {
+      if (
+        novaAba === "modulos" &&
+        this.grupoSelecionado &&
+        !this.loadingModulos &&
+        this.modulos.length === 0
+      ) {
+        this.carregarModulosDoGrupo();
+      }
+    },
   },
 
   methods: {
@@ -371,6 +439,11 @@ export default {
         if (!this.grupoSelecionado && rows.length) {
           this.grupoSelecionado = rows[0];
         }
+
+        const codigoAtual = this.codigoGrupo(this.grupoSelecionado);
+        if (codigoAtual && codigoAtual !== this.ultimoGrupoCarregado) {
+          await this.carregarModulosDoGrupo();
+        }
       } catch (e) {
         console.error("[mostraUsuarioGrupo] erro ao carregar:", e);
         this.grupos = [];
@@ -394,6 +467,7 @@ export default {
       localStorage.cd_grupo_usuario = cd ?? "";
       localStorage.nm_grupo_usuario = nm ?? "";
 
+      this.gridModuloKey += 1;
       this.abaAtiva = "modulos";
       this.carregarModulosDoGrupo();
     },
@@ -443,6 +517,9 @@ export default {
         this.modulosSelecionados = rows
           .filter((m) => String(m.ic_grupo_modulo || "").toUpperCase() === "S")
           .map((m) => Number(m.cd_modulo));
+
+        this.ultimoGrupoCarregado = cd_grupo_usuario;
+        this.gridModuloKey += 1;
       } catch (error) {
         console.error("[mostraUsuarioGrupo] erro ao carregar módulos:", error);
         this.modulos = [];
@@ -525,6 +602,11 @@ export default {
       localStorage.nm_grupo_usuario = nm ?? "";
 
       setTimeout(() => this.onVoltar(), 50);
+    },
+
+    onSelectionChanged(e) {
+      const keys = Array.isArray(e?.selectedRowKeys) ? e.selectedRowKeys : [];
+      this.modulosSelecionados = keys.map((k) => Number(k));
     },
 
     onVoltar() {
