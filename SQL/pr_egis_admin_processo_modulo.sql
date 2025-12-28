@@ -114,24 +114,28 @@ declare @cd_ano               int = 0
 declare @cd_mes               int = 0
 declare @cd_modelo            int = 0
 declare @cd_grupo_usuario     int = 0
+declare @qt_contrato_empresa  int = 0
+
+--select * from egisadmin.dbo.empresa
+
 ----------------------------------------------------------------------------------------------------------------
 
 declare @dados_registro           nvarchar(max) = ''
 declare @dados_modal              nvarchar(max) = ''
 ----------------------------------------------------------------------------------------------------------------
 
-set @cd_empresa        = 0
-set @cd_parametro      = 0
-set @dt_hoje           = convert(datetime,left(convert(varchar,getdate(),121),10)+' 00:00:00',121)
-set @cd_ano = year(getdate())
-set @cd_mes = month(getdate())  
+set @cd_empresa          = 0
+set @cd_parametro        = 0
+set @dt_hoje             = convert(datetime,left(convert(varchar,getdate(),121),10)+' 00:00:00',121)
+set @cd_ano              = year(getdate())
+set @cd_mes              = month(getdate())  
+set @qt_contrato_empresa = 0
 
 if @dt_inicial is null
 begin
   set @dt_inicial       = dbo.fn_data_inicial(@cd_mes,@cd_ano)
   set @dt_final         = dbo.fn_data_final(@cd_mes,@cd_ano)
 end
-
 
 --tabela
 --select ic_sap_admin, * from Tabela where cd_tabela = 5287
@@ -140,9 +144,6 @@ select
 
  1                                                   as id_registro,
  IDENTITY(int,1,1)                                   as id,
----------------------------------------------------------------------------------------------
-select @dados_registro         = valor from #json where campo = 'dados_registro'
-select @dados_modal            = valor from #json where campo = 'dados_modal'
  valores.[key]  COLLATE SQL_Latin1_General_CP1_CI_AI as campo,                     
  valores.[value]                                     as valor                    
                     
@@ -160,6 +161,10 @@ select @dt_inicial             = valor from #json where campo = 'dt_inicial'
 select @dt_final               = valor from #json where campo = 'dt_final'             
 select @cd_modelo              = valor from #json where campo = 'cd_modelo' 
 select @cd_grupo_usuario       = valor from #json where campo = 'cd_grupo_usuario'
+
+---------------------------------------------------------------------------------------------
+select @dados_registro         = valor from #json where campo = 'dados_registro'
+select @dados_modal            = valor from #json where campo = 'dados_modal'
 
 --------------------------------------------------------------------------------------
 
@@ -250,6 +255,21 @@ end
 if @cd_parametro = 2
 begin
 
+  --usuários do Contrato--
+  --select * from  egisadmin.dbo.empresa
+
+  select
+    @qt_contrato_empresa = case when isnull(qt_usuario_contrato,0) = 0 then 10 
+                           else isnull(qt_usuario_contrato, 10) end
+  from
+    egisadmin.dbo.empresa
+
+  where
+    cd_empresa = @cd_empresa
+
+  --select @cd_empresa, @qt_contrato_empresa
+
+
   --Acessos--
 
   select
@@ -271,7 +291,8 @@ begin
   max(upper(u.nm_fantasia_usuario))                                                                      as nm_fantasia_usuario,
   ( select top 1 ue.cd_empresa from egisadmin.dbo.Usuario_Empresa ue where ue.cd_usuario = l.cd_usuario )              as cd_empresa_acesso,
   max( isnull(m.nm_modulo,''))                                                                           as nm_modulo,
-  max( isnull(m.sg_modulo,''))                                                                           as sg_modulo
+  max( isnull(m.sg_modulo,''))                                                                           as sg_modulo,
+  max(@qt_contrato_empresa)                                                                              as qt_contrato_empresa
   
 
 
@@ -320,7 +341,8 @@ group by
     max(u.nm_email_usuario)                    as nm_email_usuario,
     max(u.cd_celular_usuario)                  as cd_celular_usuario,
     max(u.dt_nascimento_usuario)               as dt_nascimento_usuario,
-    max(d.nm_departamento)                     as nm_departamento
+    max(d.nm_departamento)                     as nm_departamento,
+    max(@qt_contrato_empresa)                  as qt_contrato_empresa
 
 
 
@@ -409,8 +431,11 @@ begin
 
 end
 -----------------------
+--Atualização dos Modulo_GrupoUsuario
 
-
+if @cd_parametro = 30
+begin
+ 
   -------------------------------------------------------------------
   -- 1) Validar se veio algo em dados_registro
   -------------------------------------------------------------------
@@ -450,7 +475,7 @@ end
 
   if isnull(@cd_grupo_usuario,0) = 0
   begin
-     select 'Grupo de usurio invlido para gravao.' as Msg
+     select 'Grupo de usurio inválido para gravação.' as Msg
      return
   end
 
@@ -459,6 +484,12 @@ end
   -------------------------------------------------------------------
   delete from egisadmin.dbo.Modulo_GrupoUsuario
   where cd_grupo_usuario = @cd_grupo_usuario
+  and
+    cd_grupo_usuario in ( select m.cd_grupo_usuario from #modulos_grupo m 
+                          where
+                            isnull(m.ic_grupo_modulo,'N') = 'S' and m.cd_grupo_usuario = @cd_grupo_usuario)
+
+  --select * from  egisadmin.dbo.Modulo_GrupoUsuario where cd_grupo_usuario = 2512
 
   insert into egisadmin.dbo.Modulo_GrupoUsuario
     (cd_grupo_usuario, cd_modulo, cd_usuario_atualiza, dt_atualiza)
@@ -474,13 +505,13 @@ end
     and
     m.cd_modulo is not null
 
+
   select 'Mdulos do grupo atualizados com sucesso.' as Msg
 
 --Atualização dos Modulo_GrupoUsuario
 
-if @cd_parametro = 30
-begin
   return
+
 end
 
 --Menus dos Módulos--------------------------------------------------------------
@@ -518,6 +549,56 @@ begin
     mgu.cd_grupo_usuario = @cd_grupo_usuario
     and
     isnull(m.ic_liberado,'N') = 'S'
+    and
+    mgu.cd_modulo > 0
+  order by
+    m.nm_modulo
+
+
+  --select * from egisadmin.dbo.modulo_funcao_menu
+
+  return
+end
+
+--Menus dos Módulos Selecionados --------------------------------------------------------------
+
+if @cd_parametro = 45
+begin
+  select 
+    m.cd_modulo,
+    m.nm_modulo,
+    f.cd_funcao,
+    f.nm_funcao,
+    mnu.cd_menu,
+    mnu.nm_menu_titulo,
+    mgu.cd_grupo_usuario,
+    g.nm_grupo_usuario,
+
+    case when isnull(mgu.cd_grupo_usuario,0)>0 then 'S' else 'N' end ic_grupo_modulo,
+
+     isnull(gum.cd_menu,0)                                as cd_menu_grupo_usuario
+
+  from
+    egisadmin.dbo.modulo m
+    inner join egisadmin.dbo.modulo_funcao_menu mfm       on mfm.cd_modulo  = m.cd_modulo
+    inner join egisadmin.dbo.funcao f                     on f.cd_funcao    = mfm.cd_funcao
+    inner join egisadmin.dbo.menu mnu                     on mnu.cd_menu    = mfm.cd_menu
+    left outer join egisadmin.dbo.Modulo_GrupoUsuario mgu on mgu.cd_modulo  = m.cd_modulo and
+                                                             mgu.cd_grupo_usuario = @cd_grupo_usuario
+    
+
+    left outer join egisadmin.dbo.GrupoUsuario g          on g.cd_grupo_usuario = mgu.cd_grupo_usuario
+    left outer join egisadmin.dbo.grupo_usuario_menu gum  on gum.cd_grupo_usuario = g.cd_grupo_usuario and
+                                                             gum.cd_menu          = mnu.cd_menu
+
+  where
+    mgu.cd_grupo_usuario = @cd_grupo_usuario
+    and
+    isnull(m.ic_liberado,'N') = 'S'
+    and
+    isnull(gum.cd_menu,0)>0
+    and
+    isnull(gum.cd_modulo,0)>0
 
   order by
     m.nm_modulo
@@ -527,6 +608,7 @@ begin
 
   return
 end
+
 
 --Usuários do Grupo de usuários
 
@@ -554,6 +636,88 @@ begin
      u.nm_usuario
   return
 
+end
+
+
+--Atualização dos menus do grupo de usuários
+
+if @cd_parametro = 60
+begin
+
+  -------------------------------------------------------------------
+  -- 1) Validar se veio algo em dados_registro
+  -------------------------------------------------------------------
+  if NULLIF(@dados_registro, N'') IS NULL
+  begin
+     select 'Nenhum menu selecionado (dados_registro vazio).' as Msg
+     return
+  end
+
+  if ISJSON(@dados_registro) <> 1
+  begin
+     select 'Lista de menus invlida em dados_registro.' as Msg
+     return
+  end
+
+  -------------------------------------------------------------------
+  -- 2) Quebrar o JSON de dados_registro
+  -------------------------------------------------------------------
+  if object_id('tempdb..#menus_grupo') is not null
+     drop table #menus_grupo
+
+  select
+     try_convert(int, j.cd_grupo_usuario) as cd_grupo_usuario,
+     try_convert(int, j.cd_modulo)        as cd_modulo,
+     try_convert(int, j.cd_menu)          as cd_menu,
+     upper(isnull(j.ic_grupo_modulo,'N')) as ic_grupo_modulo
+  into #menus_grupo
+  from openjson(@dados_registro) with (
+     cd_grupo_usuario int '$.cd_grupo_usuario',
+     cd_modulo        int '$.cd_modulo',
+     cd_menu          int '$.cd_menu',
+     ic_grupo_modulo  varchar(1) '$.ic_grupo_modulo'
+  ) as j
+
+  if isnull(@cd_grupo_usuario,0) = 0
+  begin
+     select @cd_grupo_usuario = isnull(min(cd_grupo_usuario),0) from #menus_grupo
+  end
+
+  if isnull(@cd_grupo_usuario,0) = 0
+  begin
+     select 'Grupo de usurio invlido para gravao.' as Msg
+     return
+  end
+
+  select * from egisadmin.dbo.grupo_usuario_menu where cd_grupo_usuario = 2512
+  return
+
+  -------------------------------------------------------------------
+  -- 3) Atualizar a tabela grupo_usuario_menu
+  -------------------------------------------------------------------
+  delete from egisadmin.dbo.grupo_usuario_menu
+  where cd_grupo_usuario = @cd_grupo_usuario
+
+  insert into egisadmin.dbo.grupo_usuario_menu
+    (cd_grupo_usuario, cd_modulo, cd_menu, cd_usuario, dt_usuario, cd_usuario_inclusao, dt_usuario_inclusao)
+  select distinct
+    @cd_grupo_usuario,
+    isnull(m.cd_modulo,0),
+    m.cd_menu,
+    @cd_usuario,
+    getdate(),
+    @cd_usuario,
+    getdate()
+  from
+    #menus_grupo m
+  where
+    isnull(m.ic_grupo_modulo,'N') = 'S'
+    and
+    m.cd_menu is not null
+
+  select 'Menus do grupo atualizados com sucesso.' as Msg
+
+  return
 end
 
 --select * from egisadmin.dbo.grupo_usuario_menu where cd_grupo_usuario = 2512
@@ -611,7 +775,7 @@ go
 ------------------------------------------------------------------------------
 --use egissql
 --go
-use egissql
+--use egissql
 
 
 --select * from egisadmin.dbo.usuario
@@ -627,8 +791,11 @@ go
 
 --exec  pr_egis_admin_processo_modulo '[{"ic_json_parametro": "S", "cd_parametro": 20, "cd_grupo_usuario": 2512 }]' 
 
-exec  pr_egis_admin_processo_modulo '[{"ic_json_parametro": "S", "cd_parametro": 40, "cd_grupo_usuario": 2512 }]' 
+--exec  pr_egis_admin_processo_modulo '[{"ic_json_parametro": "S", "cd_parametro": 40, "cd_grupo_usuario": 2512 }]' 
+
+--exec  pr_egis_admin_processo_modulo '[{"ic_json_parametro": "S", "cd_parametro": 45, "cd_grupo_usuario": 2512 }]' 
 go
+
 --exec  pr_egis_admin_processo_modulo '[{"ic_json_parametro": "S", "cd_parametro": 50, "cd_grupo_usuario": 2512 }]' 
 go
 go

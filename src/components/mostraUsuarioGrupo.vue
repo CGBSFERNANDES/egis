@@ -319,6 +319,14 @@
 
         <div class="row q-col-gutter-md q-mb-sm">
           <div class="col-12 col-md-6">
+
+            <q-input
+              dense outlined
+              v-model="filtroMenusDoGrupo"
+              placeholder="Filtrar menus do grupo..."
+              clearable
+              class="q-mb-sm"
+            />
             <q-input
               dense
               outlined
@@ -610,10 +618,13 @@ export default {
       salvandoMenus: false,
       loadingUsuarios: false,
       menusDisponiveis: [],
+      menusDoGrupo: [],
       filtro: "",
       filtroModulo: "",
       filtroMenu: "",
       filtroUsuario: "",
+      filtroMenusDisponiveis: '',
+      filtroMenusDoGrupo: '',
       grupos: [],
       modulos: [],
       menus: [],
@@ -663,7 +674,20 @@ export default {
       });
     },
 
-    menusDisponiveisFiltrados() {
+    computed: {
+  menusDoGrupoFiltrados () {
+    const mod = this.cdModuloFiltro ? Number(this.cdModuloFiltro) : null;
+    return (this.menusDoGrupo || []).filter(m => !mod || Number(m.cd_modulo) === mod);
+  },
+
+  menusDisponiveisFiltrados () {
+    const mod = this.cdModuloFiltro ? Number(this.cdModuloFiltro) : null;
+    return (this.menusDisponiveis || []).filter(m => !mod || Number(m.cd_modulo) === mod);
+  }
+},
+
+
+    menusDisponiveisFiltradosOld() {
       const termo = (this.filtroMenu || "").trim().toLowerCase();
       const disponiveis = this.menus.filter((m) => Number(m.cd_menu_grupo_usuario) === 0);
       if (!termo) return disponiveis;
@@ -680,7 +704,7 @@ export default {
       return this.menus.filter((m) => Number(m.cd_menu_grupo_usuario) !== 0);
     },
 
-    menusDoGrupoFiltrados() {
+    menusDoGrupoFiltradosOld() {
       const termo = (this.filtroMenu || "").trim().toLowerCase();
       const list = this.menusDoGrupo;
       if (!termo) return list;
@@ -691,6 +715,7 @@ export default {
         const modulo = String(m.nm_modulo || "").toLowerCase();
         return nome.includes(termo) || cod.includes(termo) || modulo.includes(termo);
       });
+
     },
 
     usuariosFiltrados() {
@@ -711,6 +736,13 @@ export default {
   },
 
   watch: {
+    grupoSelecionado: {
+      immediate: true,
+      handler () {
+        this.carregarMenusDoGrupoEDisponiveis();
+      }
+    },
+    
     abaAtiva(novaAba) {
       if (
         novaAba === "modulos" &&
@@ -737,9 +769,99 @@ export default {
         this.carregarUsuariosDoGrupo();
       }
     },
+    
   },
 
   methods: {
+
+  async buscarMenus (cd_parametro, cd_grupo_usuario) {
+    const body = [{
+      ic_json_parametro: "S",
+      cd_parametro,                  // 40 ou 45
+      cd_usuario: this.cd_usuario,
+      cd_grupo_usuario,
+      cd_empresa: Number(localStorage.cd_empresa)
+    }];
+
+    const cfg = this.headerBanco
+      ? { headers: { "x-banco": this.headerBanco } }
+      : undefined;
+
+    const resp = await api.post("/exec/pr_egis_admin_processo_modulo", body, cfg);
+
+    let rows = resp && resp.data ? resp.data : [];
+    if (rows && rows.dados) rows = rows.dados;
+    if (!Array.isArray(rows)) rows = rows ? [rows] : [];
+
+    return rows;
+  },
+
+  async carregarMenusDoGrupoEDisponiveis () {
+    const cd_grupo_usuario = this.grupoSelecionado?.cd_grupo_usuario || this.grupoSelecionado;
+    if (!cd_grupo_usuario) {
+      this.menusDoGrupo = [];
+      this.menusDisponiveis = [];
+      this.menusDoGrupoSelecionados = [];
+      return;
+    }
+
+    // 45 = menus vinculados ao grupo (Menus do grupo)
+    const menusDoGrupo = await this.buscarMenus(45, cd_grupo_usuario);
+
+    // 40 = base de menus (Menus disponíveis)
+    const menusBase = await this.buscarMenus(40, cd_grupo_usuario);
+
+    const idsNoGrupo = new Set((menusDoGrupo || []).map(m => Number(m.cd_menu)));
+
+    this.menusDoGrupo = menusDoGrupo || [];
+    this.menusDoGrupoSelecionados = (menusDoGrupo || []).map(m => Number(m.cd_menu));
+
+    // disponíveis = base menos os já vinculados
+    this.menusDisponiveis = (menusBase || []).filter(m => !idsNoGrupo.has(Number(m.cd_menu)));
+
+    // força repaint do grid (se você já usa esses keys)
+    this.gridMenuSelecionadoKey = Date.now();
+    this.gridMenuDisponivelKey = Date.now();
+  },
+
+
+
+  async carregarMenusDoGrupo () {
+    if (!this.grupoSelecionado) {
+      this.menusDoGrupo = []
+      return
+    }
+
+    // ajuste aqui para o campo real do seu grupo:
+    const cd_grupo = this.grupoSelecionado.cd_grupo || this.grupoSelecionado.codigo || this.grupoSelecionado.id
+
+    // 👇 coloque a URL real do seu back-end
+    const URL_MENUS_GRUPO = '/sua-rota/menus-grupo'
+
+    this.loadingMenus = true
+    try {
+      const resp = await this.$axios.get(URL_MENUS_GRUPO, {
+        params: {
+          param: 45,
+          cd_grupo
+        }
+      })
+
+      // ajuste conforme seu back-end responde:
+      // pode ser resp.data, resp.data.data, resp.data.result, etc.
+      this.menusDoGrupo = Array.isArray(resp.data) ? resp.data : (resp.data?.data || [])
+
+    } catch (e) {
+      console.error('Falha ao carregar menus do grupo (param=45):', e)
+      this.menusDoGrupo = []
+      this.$q?.notify?.({ type: 'negative', message: 'Erro ao carregar menus do grupo.' })
+    } finally {
+      this.loadingMenus = false
+    }
+  },
+
+
+
     // --- helpers para tolerar nomes de colunas diferentes ---
     pickCI(obj, keys) {
       if (!obj) return null;
@@ -838,6 +960,8 @@ export default {
       this.menusDisponiveisSelecionados = [];
       this.abaAtiva = "modulos";
       this.carregarModulosDoGrupo();
+      this.carregarMenusDoGrupo()
+
     },
 
     async carregarModulosDoGrupo() {

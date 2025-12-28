@@ -5,23 +5,23 @@
 
 IF EXISTS (SELECT name 
 	   FROM   sysobjects 
-	   WHERE  name = N'pr_egis_valida_cadastro_pessoa_juridica' 
+	   WHERE  name = N'pr_egis_admin_processo_modulo' 
 	   AND 	  type = 'P')
-    DROP PROCEDURE  pr_egis_valida_cadastro_pessoa_juridica
+    DROP PROCEDURE  pr_egis_admin_processo_modulo
 
 GO
 
 SET QUOTED_IDENTIFIER ON;
 GO
 
-IF OBJECT_ID('pr_egis_valida_cadastro_pessoa_juridica','P') IS NOT NULL
+IF OBJECT_ID('pr_egis_admin_processo_modulo','P') IS NOT NULL
     DROP PROCEDURE pr_egis_admin_processo_modulo;
 GO
 
 -------------------------------------------------------------------------------
---sp_helptext  pr_egis_valida_cadastro_pessoa_juridica
+--sp_helptext  pr_egis_admin_processo_modulo
 -------------------------------------------------------------------------------
--- pr_egis_valida_cadastro_pessoa_juridica
+-- pr_egis_admin_processo_modulo
 -------------------------------------------------------------------------------
 --GBS Global Business Solution Ltda                                        2025
 -------------------------------------------------------------------------------
@@ -35,11 +35,11 @@ GO
 --                   Modelo de Procedure com Processos
 --
 --Data             : 20.12.2025
---Alteração        : 
+--AlteraÃ§Ã£o        : 
 --
 --
 ------------------------------------------------------------------------------
-create procedure  pr_egis_valida_cadastro_pessoa_juridica
+create procedure  pr_egis_admin_processo_modulo
 ------------------------
 @json nvarchar(max) = ''
 ------------------------------------------------------------------------------
@@ -48,750 +48,720 @@ create procedure  pr_egis_valida_cadastro_pessoa_juridica
 
 as
 
--- ver nível atual
+-- ver nÃ­vel atual
 --SELECT name, compatibility_level FROM sys.databases WHERE name = DB_NAME();
 
 -- se < 130, ajustar:
 --ALTER DATABASE CURRENT SET COMPATIBILITY_LEVEL = 130;
-  
--- ver nível atual  
---SELECT name, compatibility_level FROM sys.databases WHERE name = DB_NAME();  
-  
--- se < 130, ajustar:  
---ALTER DATABASE CURRENT SET COMPATIBILITY_LEVEL = 130;  
-  
---return  
-  
---set @json = isnull(@json,'')  
-  
-SET NOCOUNT ON;  
- SET XACT_ABORT ON;  
-  
- BEGIN TRY  
-   
- /* 1) Validar payload - parameros de Entrada da Procedure */  
- IF NULLIF(@json, N'') IS NULL OR ISJSON(@json) <> 1  
-            THROW 50001, 'Payload JSON inválido ou vazio em @json.', 1;  
-  
- /* 2) Normalizar: aceitar array[0] ou objeto */  
- IF JSON_VALUE(@json, '$[0]') IS NOT NULL  
-            SET @json = JSON_QUERY(@json, '$[0]'); -- pega o primeiro elemento  
-  
-  
-set @json = replace(  
-             replace(  
-               replace(  
-                replace(  
-                  replace(  
-                    replace(  
-                      replace(  
-                        replace(  
-                          replace(  
-                            replace(  
-                              replace(  
-                                replace(  
-                                  replace(  
-                                    replace(  
-                                    @json, CHAR(13), ' '),  
-                                  CHAR(10),' '),  
-                                ' ',' '),  
-                              ':\\\"',':\\"'),  
-                            '\\\";','\\";'),  
-                          ':\\"',':\\\"'),  
-                        '\\";','\\\";'),  
-                      '\\"','\"'),  
-                    '\"', '"'),  
-                  '',''),  
-                '["','['),  
-              '"[','['),  
-             ']"',']'),  
-          '"]',']')   
-  
-  
-declare @cd_empresa           int  
-declare @cd_parametro         int  
-declare @cd_documento         int = 0  
-declare @cd_item_documento    int  
-declare @cd_usuario           int   
-declare @dt_hoje              datetime  
-declare @dt_inicial           datetime   
-declare @dt_final             datetime  
-declare @cd_ano               int = 0  
-declare @cd_mes               int = 0  
-declare @cd_modelo            int = 0  
-declare @cd_documento_receber int = 0  
-declare @vl_saldo_documento   decimal(25,2) = 0.00  
-declare @vl_documento_receber decimal(25,2) = 0.00  
-declare @cd_identificacao     varchar(50)  
-declare @cd_cnpj              varchar(18) = ''  
-declare @cd_tipo_destinatario int = 0   
-  
-----------------------------------------------------------------------------------------------------------------  
-  
-set @cd_empresa        = 0  
-set @cd_parametro      = 0  
-set @dt_hoje           = convert(datetime,left(convert(varchar,getdate(),121),10)+' 00:00:00',121)  
-set @cd_ano = year(getdate())  
-set @cd_mes = month(getdate())    
-  
-if @dt_inicial is null  
-begin  
-  set @dt_inicial       = dbo.fn_data_inicial(@cd_mes,@cd_ano)  
-  set @dt_final         = dbo.fn_data_final(@cd_mes,@cd_ano)  
-end  
-  
-  
---tabela  
---select ic_sap_admin, * from Tabela where cd_tabela = 5287  
-  
-select                       
-  
- 1                                                   as id_registro,  
- IDENTITY(int,1,1)                                   as id,  
- valores.[key]  COLLATE SQL_Latin1_General_CP1_CI_AI as campo,                       
- valores.[value]                                     as valor                      
-                      
- into #json                      
- from                  
-   openjson(@json)root                      
-   cross apply openjson(root.value) as valores        
-  
---------------------------------------------------------------------------------------------  
-  
-select @cd_empresa             = valor from #json where campo = 'cd_empresa'               
-select @cd_parametro           = valor from #json where campo = 'cd_parametro'            
-select @cd_usuario             = valor from #json where campo = 'cd_usuario'               
-select @dt_inicial             = valor from #json where campo = 'dt_inicial'               
-select @dt_final               = valor from #json where campo = 'dt_final'               
-select @cd_modelo              = valor from #json where campo = 'cd_modelo'   
-select @cd_cnpj                = valor from #json where campo = 'cd_cnpj'  
-  
---------------------------------------------------------------------------------------  
-  
-set @cd_empresa = ISNULL(@cd_empresa,0)  
-  
-if @cd_empresa = 0  
-   set @cd_empresa = dbo.fn_empresa()  
-  
----------------------------------------------------------------------------------------------------------------------------------------------------------      
---Processos             
----------------------------------------------------------------------------------------------------------------------------------------------------------      
-set @cd_parametro         = ISNULL(@cd_parametro,0)  
-set @cd_cnpj              = isnull(@cd_cnpj,'')  
-set @cd_tipo_destinatario = isnull(@cd_tipo_destinatario,0)  
-  
----------------------------------------------------------------------------------------------------------------------------------------------------------      
-  
-  
-IF ISNULL(@cd_parametro,0) = 0  
-BEGIN  
-  
-  select   
-    'Sucesso'     as Msg,  
-     @cd_modelo   AS cd_modelo,  
-     @cd_empresa  AS cd_empresa,  
-     @dt_inicial  AS dt_inicial,  
-     @dt_final    AS dt_final,  
-     @cd_usuario  AS cd_usuario  
-  
-  
-  RETURN;  
-  
-END  
-  
---select * from tipo_destinatario  
-  
-----------------------------------------------------------------------------------------------------  
-  
-if @cd_parametro = 1  
-begin  
-  select * from tipo_destinatario  
-  return  
-end  
-  
-  --Validação de Cadastro---  
-  
-  if @cd_parametro = 2  
-  begin  
-  
-  SELECT TOP 1  
-      LEFT(  
-        (  
-            COALESCE('Receita|', '') +  
-            COALESCE(CASE WHEN c.cd_cnpj_cliente IS NOT NULL THEN 'Cliente|' END, '') +  
-            COALESCE(CASE WHEN f.cd_cnpj_fornecedor IS NOT NULL THEN 'Fornecedor|' END, '') +  
-            COALESCE(CASE WHEN t.cd_cnpj_transportadora IS NOT NULL THEN 'Transportadora|' END, '')  
-        ),  
-        LEN(  
-            COALESCE('Receita|', '') +  
-            COALESCE(CASE WHEN c.cd_cnpj_cliente IS NOT NULL THEN 'Cliente|' END, '') +  
-            COALESCE(CASE WHEN f.cd_cnpj_fornecedor IS NOT NULL THEN 'Fornecedor|' END, '') +  
-            COALESCE(CASE WHEN t.cd_cnpj_transportadora IS NOT NULL THEN 'Transportadora|' END, '')  
-        ) - 1  
-    ) AS TipoDestinatario,  
-    crp.*,  
-    CASE   
-        WHEN c.cd_cnpj_cliente IS NOT NULL THEN 'Cliente'  
-        WHEN f.cd_cnpj_fornecedor IS NOT NULL THEN 'Fornecedor'  
-        WHEN t.cd_cnpj_transportadora IS NOT NULL THEN 'Transportadora'  
-        ELSE 'Não cadastrado'  
-    END AS TipoDestinatarioUnico,  
-  
-      
-    -- Receita  
-    crp.nm_fantasia              AS Receita_Fantasia,  
-    crp.nm_razao_social          AS Receita_RazaoSocial,  
-    crp.cd_inscestual            AS Receita_IE,  
-    crp.nm_endereco              AS Receita_Endereco,  
-  crp.cd_numero                AS Receita_Numero,  
-    crp.nm_complemento           AS Receita_Complemento,  
-    crp.nm_bairro                AS Receita_Bairro,  
-    crp.nm_cidade                AS Receita_Cidade,  
-    crp.ic_estado                AS Receita_Estado,  
-    crp.nm_cep                   AS Receita_CEP,  
-    crp.nm_telefone              AS Receita_Telefone,  
-  
-    -- Cliente  
-    c.nm_fantasia_cliente      AS Cliente_Fantasia,  
-    c.nm_razao_social_cliente  AS Cliente_RazaoSocial,  
-    c.cd_inscestadual          AS Cliente_IE,  
-    c.nm_endereco_cliente      AS Cliente_Endereco,  
-    c.cd_numero_endereco       AS Cliente_Numero,  
-    c.nm_complemento_endereco  AS Cliente_Complemento,  
-    c.nm_bairro                AS Cliente_Bairro,  
-    c.cd_cep                   AS Cliente_CEP,  
-    c.cd_telefone              AS Cliente_Telefone,  
-  
-    -- Fornecedor  
-    f.nm_fantasia_fornecedor  AS Fornecedor_Fantasia,  
-    f.nm_razao_social         AS Fornecedor_RazaoSocial,  
-    f.cd_inscEstadual         AS Fornecedor_IE,  
-    f.nm_endereco_fornecedor  AS Fornecedor_Endereco,  
-    f.cd_numero_endereco      AS Fornecedor_Numero,  
-    f.nm_complemento_endereco AS Fornecedor_Complemento,  
-    f.nm_bairro               AS Fornecedor_Bairro,  
-    f.cd_cep                  AS Fornecedor_CEP,  
-    f.cd_telefone             AS Fornecedor_Telefone,  
-  
-    -- Transportadora  
-    t.nm_fantasia           AS Transportadora_Fantasia,  
-    t.nm_transportadora     AS Transportadora_RazaoSocial,  
-    t.cd_insc_estadual      AS Transportadora_IE,  
-    t.nm_endereco           AS Transportadora_Endereco,  
-    t.cd_numero_endereco    AS Transportadora_Numero,  
-    t.nm_endereco_complemento AS Transportadora_Complemento,  
-    t.nm_bairro             AS Transportadora_Bairro,  
-    t.cd_cep                AS Transportadora_CEP,  
-    t.cd_telefone           AS Transportadora_Telefone,  
-  
-    -- Comparações detalhadas  
-  
-    --CASE   
-    --    WHEN crp.nm_fantasia = c.nm_fantasia_cliente   
-    --     AND crp.nm_fantasia = f.nm_fantasia_fornecedor   
-    --     AND crp.nm_fantasia = t.nm_fantasia   
-    --    THEN 'OK'  
-    --    ELSE CONCAT(  
-    --        CASE WHEN crp.nm_fantasia <> c.nm_fantasia_cliente THEN 'Cliente diferente; ' ELSE '' END,  
-    --        CASE WHEN crp.nm_fantasia <> f.nm_fantasia_fornecedor THEN 'Fornecedor diferente; ' ELSE '' END,  
-    --        CASE WHEN crp.nm_fantasia <> t.nm_fantasia THEN 'Transportadora diferente; ' ELSE '' END  
-    --    )  
-    --END AS Analise_Fantasia,  
-  
-    CASE   
-        WHEN crp.nm_razao_social = c.nm_razao_social_cliente   
-         AND crp.nm_razao_social = f.nm_razao_social   
-         AND crp.nm_razao_social = t.nm_transportadora   
-        THEN 'OK'  
-        ELSE CONCAT(  
-            CASE WHEN crp.nm_razao_social <> c.nm_razao_social_cliente THEN 'Cliente diferente; ' ELSE '' END,  
-            CASE WHEN crp.nm_razao_social <> f.nm_razao_social THEN 'Fornecedor diferente; ' ELSE '' END,  
-            CASE WHEN crp.nm_razao_social <> t.nm_transportadora THEN 'Transportadora diferente; ' ELSE '' END  
-        )  
-    END AS Analise_RazaoSocial,  
-  
-    CASE   
-        WHEN crp.cd_inscestual = c.cd_inscestadual   
-         AND crp.cd_inscestual = f.cd_inscEstadual   
-         AND crp.cd_inscestual = t.cd_insc_estadual   
-        THEN 'OK'  
-        ELSE CONCAT(  
-            CASE WHEN crp.cd_inscestual <> c.cd_inscestadual THEN 'Cliente diferente; ' ELSE '' END,  
-            CASE WHEN crp.cd_inscestual <> f.cd_inscEstadual THEN 'Fornecedor diferente; ' ELSE '' END,  
-            CASE WHEN crp.cd_inscestual <> t.cd_insc_estadual THEN 'Transportadora diferente; ' ELSE '' END  
-        )  
-    END AS Analise_IE,  
-  
-    CASE   
-        WHEN crp.nm_endereco = c.nm_endereco_cliente   
-         AND crp.nm_endereco = f.nm_endereco_fornecedor   
-         AND crp.nm_endereco = t.nm_endereco   
-        THEN 'OK'  
-        ELSE CONCAT(  
-            CASE WHEN crp.nm_endereco <> c.nm_endereco_cliente THEN 'Cliente diferente; ' ELSE '' END,  
-            CASE WHEN crp.nm_endereco <> f.nm_endereco_fornecedor THEN 'Fornecedor diferente; ' ELSE '' END,  
-            CASE WHEN crp.nm_endereco <> t.nm_endereco THEN 'Transportadora diferente; ' ELSE '' END  
-        )  
-    END AS Analise_Endereco,  
-  
-    CASE   
-        WHEN crp.cd_numero = c.cd_numero_endereco   
-         AND crp.cd_numero = f.cd_numero_endereco   
-         AND crp.cd_numero = t.cd_numero_endereco   
-        THEN 'OK'  
-        ELSE CONCAT(  
-            CASE WHEN crp.cd_numero <> c.cd_numero_endereco THEN 'Cliente diferente; ' ELSE '' END,  
-            CASE WHEN crp.cd_numero <> f.cd_numero_endereco THEN 'Fornecedor diferente; ' ELSE '' END,  
-            CASE WHEN crp.cd_numero <> t.cd_numero_endereco THEN 'Transportadora diferente; ' ELSE '' END  
-        )  
-    END AS Analise_Numero,  
-  
-    CASE   
-        WHEN crp.nm_bairro = c.nm_bairro   
-         AND crp.nm_bairro = f.nm_bairro   
-         AND crp.nm_bairro = t.nm_bairro   
-        THEN 'OK'  
-        ELSE CONCAT(  
-            CASE WHEN crp.nm_bairro <> c.nm_bairro THEN 'Cliente diferente; ' ELSE '' END,  
-            CASE WHEN crp.nm_bairro <> f.nm_bairro THEN 'Fornecedor diferente; ' ELSE '' END,  
-            CASE WHEN crp.nm_bairro <> t.nm_bairro THEN 'Transportadora diferente; ' ELSE '' END  
-        )  
-    END AS Analise_Bairro,  
-  
-  
-     -- Cidade (somente Receita nas tabelas informadas)  
-    'Somente Receita' AS Analise_Cidade,  
-  
-    -- Estado (somente Receita nas tabelas informadas)  
-    'Somente Receita' AS Analise_Estado,  
-  
-    -- CEP (compara só dígitos)  
-    CASE  
-        WHEN r_norm.cep = c_norm.cep  
-         AND r_norm.cep = f_norm.cep  
-         AND r_norm.cep = t_norm.cep  
-        THEN 'OK'  
-        ELSE CONCAT(  
-            CASE WHEN c_norm.cep IS NULL THEN 'Cliente ausente; '   
-                 WHEN r_norm.cep <> c_norm.cep THEN 'Cliente diferente; ' END,  
-            CASE WHEN f_norm.cep IS NULL THEN 'Fornecedor ausente; '   
-                 WHEN r_norm.cep <> f_norm.cep THEN 'Fornecedor diferente; ' END,  
-            CASE WHEN t_norm.cep IS NULL THEN 'Transportadora ausente; '   
-                 WHEN r_norm.cep <> t_norm.cep THEN 'Transportadora diferente; ' END  
-        )  
-    END AS Analise_CEP  
-  
-    -- Telefone (compara só dígitos)  
-    --CASE  
-    --    WHEN r_norm.telefone = c_norm.telefone  
-    --     AND r_norm.telefone = f_norm.telefone  
-    --     AND r_norm.telefone = t_norm.telefone  
-    --    THEN 'OK'  
-    --    ELSE CONCAT(  
-    --        CASE WHEN c_norm.telefone IS NULL THEN 'Cliente ausente; '   
-    --             WHEN r_norm.telefone <> c_norm.telefone THEN 'Cliente diferente; ' END,  
-    --        CASE WHEN f_norm.telefone IS NULL THEN 'Fornecedor ausente; '   
-    --             WHEN r_norm.telefone <> f_norm.telefone THEN 'Fornecedor diferente; ' END,  
-    --        CASE WHEN t_norm.telefone IS NULL THEN 'Transportadora ausente; '   
-    --             WHEN r_norm.telefone <> t_norm.telefone THEN 'Transportadora diferente; ' END  
-    --    )  
-    --END AS Analise_Telefone  
-  
-  
-  
-    --CASE   
-    --    WHEN crp.nm_cidade = c.nm_cidade   
-    --     AND crp.nm_cidade = f.nm_cidade   
-    --     AND crp.nm_cidade = t.nm_cidade   
-    --    THEN 'OK'  
-    --    ELSE CONCAT(  
-    --        CASE WHEN crp.nm_cidade <> c.nm_cidade THEN 'Cliente diferente; ' ELSE '' END,  
-    --        CASE WHEN crp.nm_cidade <> f.nm_cidade THEN 'Fornecedor diferente; ' ELSE '' END,  
-    --        CASE WHEN crp.nm_cidade <> t.nm_cidade THEN 'Transportadora diferente; ' ELSE '' END  
-    --    )  
-    --END AS Analise_Cidade,  
-  
-    --CASE   
-    --    WHEN crp.ic_estado = c.ic_estado   
-    --     AND crp.ic_estado = f.ic_estado   
-    --     AND crp.ic_estado = t.ic_estado   
-    --    THEN 'OK'  
-    --    ELSE CONCAT(  
-    --        CASE WHEN crp.ic_estado <> c.ic_estado THEN 'Cliente diferente; ' ELSE '' END,  
-    --        CASE WHEN crp.ic_estado <> f.ic_estado THEN 'Fornecedor diferente; ' ELSE '' END,  
-    --        CASE WHEN crp.ic_estado <> t.ic_estado THEN 'Transportadora diferente; ' ELSE '' END  
-    --    )  
-    --END AS Analise_Estado,  
-  
-  
-  
-FROM EGISCNPJ.dbo.Consulta_Receita_Pessoa crp  
-LEFT JOIN dbo.Cliente c   
-       ON c.cd_cnpj_cliente = crp.cd_cnpj  
-LEFT JOIN dbo.Fornecedor f   
-       ON f.cd_cnpj_fornecedor = crp.cd_cnpj  
-LEFT JOIN dbo.Transportadora t   
-       ON t.cd_cnpj_transportadora = crp.cd_cnpj  
-  
-  
-       -- Normalizações centralizadas para comparação justa  
-CROSS APPLY (  
-    SELECT  
-        UPPER(LTRIM(RTRIM(crp.nm_fantasia)))     AS nm_fantasia,  
-        UPPER(LTRIM(RTRIM(crp.nm_razao_social))) AS nm_razao_social,  
-        UPPER(LTRIM(RTRIM(crp.cd_inscestual)))   AS ie,  
-        UPPER(LTRIM(RTRIM(crp.nm_endereco)))     AS endereco,  
-        TRY_CONVERT(INT, NULLIF(LTRIM(RTRIM(CONVERT(VARCHAR(20), crp.cd_numero))), '')) AS numero,  
-        UPPER(LTRIM(RTRIM(crp.nm_complemento)))  AS complemento,  
-        UPPER(LTRIM(RTRIM(crp.nm_bairro)))       AS bairro,  
-        -- CEP/Telefone: somente dígitos  
-        REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(  
-               LTRIM(RTRIM(crp.nm_cep)),'-',''),' ',''),  
-               '.',''),',',''),'/',''),'(',''),')',''),'+',''),'_',''),'–','') AS cep,  
-        REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(  
-               LTRIM(RTRIM(crp.nm_telefone)),'-',''),' ',''),  
-               '.',''),',',''),'/',''),'(',''),')',''),'+',''),'_',''),'–','') AS telefone  
-) AS r_norm  
-CROSS APPLY (  
-    SELECT  
-        UPPER(LTRIM(RTRIM(c.nm_fantasia_cliente)))     AS nm_fantasia,  
-        UPPER(LTRIM(RTRIM(c.nm_razao_social_cliente))) AS nm_razao_social,  
-        UPPER(LTRIM(RTRIM(c.cd_inscestadual)))         AS ie,  
-        UPPER(LTRIM(RTRIM(c.nm_endereco_cliente)))     AS endereco,  
-        TRY_CONVERT(INT, NULLIF(LTRIM(RTRIM(CONVERT(VARCHAR(20), c.cd_numero_endereco))), '')) AS numero,  
-        UPPER(LTRIM(RTRIM(c.nm_complemento_endereco))) AS complemento,  
-        UPPER(LTRIM(RTRIM(c.nm_bairro)))               AS bairro,  
-        REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(  
-               LTRIM(RTRIM(c.cd_cep)),'-',''),' ',''),  
-               '.',''),',',''),'/',''),'(',''),')',''),'+',''),'_',''),'–','') AS cep,  
-        REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(  
-               LTRIM(RTRIM(c.cd_telefone)),'-',''),' ',''),  
-               '.',''),',',''),'/',''),'(',''),')',''),'+',''),'_',''),'–','') AS telefone  
-) AS c_norm  
-CROSS APPLY (  
-    SELECT  
-        UPPER(LTRIM(RTRIM(f.nm_fantasia_fornecedor))) AS nm_fantasia,  
-        UPPER(LTRIM(RTRIM(f.nm_razao_social)))        AS nm_razao_social,  
-        UPPER(LTRIM(RTRIM(f.cd_inscEstadual)))        AS ie,  
-        UPPER(LTRIM(RTRIM(f.nm_endereco_fornecedor))) AS endereco,  
-        TRY_CONVERT(INT, NULLIF(LTRIM(RTRIM(CONVERT(VARCHAR(20), f.cd_numero_endereco))), '')) AS numero,  
-        UPPER(LTRIM(RTRIM(f.nm_complemento_endereco))) AS complemento,  
-        UPPER(LTRIM(RTRIM(f.nm_bairro)))              AS bairro,  
-        REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(  
-               LTRIM(RTRIM(f.cd_cep)),'-',''),' ',''),  
-               '.',''),',',''),'/',''),'(',''),')',''),'+',''),'_',''),'–','') AS cep,  
-        REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(  
-               LTRIM(RTRIM(f.cd_telefone)),'-',''),' ',''),  
-               '.',''),',',''),'/',''),'(',''),')',''),'+',''),'_',''),'–','') AS telefone  
-) AS f_norm  
-CROSS APPLY (  
-    SELECT  
-        UPPER(LTRIM(RTRIM(t.nm_fantasia)))          AS nm_fantasia,  
-        UPPER(LTRIM(RTRIM(t.nm_transportadora)))    AS nm_razao_social,  
-        UPPER(LTRIM(RTRIM(t.cd_insc_estadual)))     AS ie,  
-        UPPER(LTRIM(RTRIM(t.nm_endereco)))          AS endereco,  
-        TRY_CONVERT(INT, NULLIF(LTRIM(RTRIM(CONVERT(VARCHAR(20), t.cd_numero_endereco))), '')) AS numero,  
-        UPPER(LTRIM(RTRIM(t.nm_endereco_complemento))) AS complemento,  
-        UPPER(LTRIM(RTRIM(t.nm_bairro)))            AS bairro,  
-        REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(  
-               LTRIM(RTRIM(t.cd_cep)),'-',''),' ',''),  
-               '.',''),',',''),'/',''),'(',''),')',''),'+',''),'_',''),'–','') AS cep,  
-        REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(  
-               LTRIM(RTRIM(t.cd_telefone)),'-',''),' ',''),  
-               '.',''),',',''),'/',''),'(',''),')',''),'+',''),'_',''),'–','') AS telefone  
-) AS t_norm  
-  
-WHERE crp.cd_cnpj = @cd_cnpj  
-order by crp.dt_usuario desc  
-      
-    --select   
-    --  top 1  
-    --  crp.*   
-    --from  
-    --  EGISCNPJ.dbo.Consulta_Receita_Pessoa crp  
-      
-    --where  
-    --  crp.cd_cnpj = @cd_cnpj  
-  
-  
-    return  
-  
-  end  
-  
-  ----------------------------------------------------------------------------------------------------  
-  
-  if @cd_parametro = 3  
-  begin  
-        
-    select * from Cliente c  
-    where  
-      cd_cnpj_cliente = @cd_cnpj  
-  
-    return  
-  
-  end  
-  
-  --------------------------------------------------------------------------------------  
+
+--return
+
+--set @json = isnull(@json,'')
+
+ SET NOCOUNT ON;
+ SET XACT_ABORT ON;
+
+ BEGIN TRY
+ 
+ /* 1) Validar payload - parameros de Entrada da Procedure */
+ IF NULLIF(@json, N'') IS NULL OR ISJSON(@json) <> 1
+            THROW 50001, 'Payload JSON invÃ¡lido ou vazio em @json.', 1;
+
+ /* 2) Normalizar: aceitar array[0] ou objeto */
+ IF JSON_VALUE(@json, '$[0]') IS NOT NULL
+            SET @json = JSON_QUERY(@json, '$[0]'); -- pega o primeiro elemento
+
+
+set @json = replace(
+             replace(
+               replace(
+                replace(
+                  replace(
+                    replace(
+                      replace(
+                        replace(
+                          replace(
+                            replace(
+                              replace(
+                                replace(
+                                  replace(
+                                    replace(
+                                    @json, CHAR(13), ' '),
+                                  CHAR(10),' '),
+                                'Â ',' '),
+                              ':\\\"',':\\"'),
+                            '\\\";','\\";'),
+                          ':\\"',':\\\"'),
+                        '\\";','\\\";'),
+                      '\\"','\"'),
+                    '\"', '"'),
+                  '',''),
+                '["','['),
+              '"[','['),
+             ']"',']'),
+          '"]',']') 
+
+
+declare @cd_empresa           int
+declare @cd_parametro         int
+declare @cd_documento         int = 0
+declare @cd_item_documento    int
+declare @cd_usuario           int 
+declare @dt_hoje              datetime
+declare @dt_inicial           datetime 
+declare @dt_final             datetime
+declare @cd_ano               int = 0
+declare @cd_mes               int = 0
+declare @cd_modelo            int = 0
+declare @cd_grupo_usuario     int = 0
+declare @qt_contrato_empresa  int = 0
+
+--select * from egisadmin.dbo.empresa
+
+----------------------------------------------------------------------------------------------------------------
+
+declare @dados_registro           nvarchar(max) = ''
+declare @dados_modal              nvarchar(max) = ''
+----------------------------------------------------------------------------------------------------------------
+
+set @cd_empresa          = 0
+set @cd_parametro        = 0
+set @dt_hoje             = convert(datetime,left(convert(varchar,getdate(),121),10)+' 00:00:00',121)
+set @cd_ano              = year(getdate())
+set @cd_mes              = month(getdate())  
+set @qt_contrato_empresa = 0
+
+if @dt_inicial is null
+begin
+  set @dt_inicial       = dbo.fn_data_inicial(@cd_mes,@cd_ano)
+  set @dt_final         = dbo.fn_data_final(@cd_mes,@cd_ano)
+end
+
+--tabela
+--select ic_sap_admin, * from Tabela where cd_tabela = 5287
+
+select                     
+
+ 1                                                   as id_registro,
+ IDENTITY(int,1,1)                                   as id,
+ valores.[key]  COLLATE SQL_Latin1_General_CP1_CI_AIÂ as campo,                     
+ valores.[value]                                     as valor                    
+                    
+ into #json                    
+ from                
+   openjson(@json)root                    
+   cross apply openjson(root.value) as valores      
+
+--------------------------------------------------------------------------------------------
+
+select @cd_empresa             = valor from #json where campo = 'cd_empresa'             
+select @cd_parametro           = valor from #json where campo = 'cd_parametro'          
+select @cd_usuario             = valor from #json where campo = 'cd_usuario'             
+select @dt_inicial             = valor from #json where campo = 'dt_inicial'             
+select @dt_final               = valor from #json where campo = 'dt_final'             
+select @cd_modelo              = valor from #json where campo = 'cd_modelo' 
+select @cd_grupo_usuario       = valor from #json where campo = 'cd_grupo_usuario'
+
+---------------------------------------------------------------------------------------------
+select @dados_registro         = valor from #json where campo = 'dados_registro'
+select @dados_modal            = valor from #json where campo = 'dados_modal'
+
+--------------------------------------------------------------------------------------
+
+set @cd_empresa = ISNULL(@cd_empresa,0)
+
+if @cd_empresa = 0
+   set @cd_empresa = dbo.fn_empresa()
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------    
+--Processos           
+---------------------------------------------------------------------------------------------------------------------------------------------------------    
+set @cd_parametro         = ISNULL(@cd_parametro,0)
+set @cd_usuario           = isnull(@cd_usuario,0)
+set @cd_grupo_usuario     = isnull(@cd_grupo_usuario,0)
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------    
+
+
+IF ISNULL(@cd_parametro,0) = 0
+BEGIN
+
+  select 
+    'Sucesso'     as Msg,
+     @cd_modelo   AS cd_modelo,
+     @cd_empresa  AS cd_empresa,
+     @dt_inicial  AS dt_inicial,
+     @dt_final    AS dt_final,
+     @cd_usuario  AS cd_usuario
+
+
+  RETURN;
+
+END
+
+--select * from tipo_destinatario
+
+----------------------------------------------------------------------------------------------------
+--Grupo de UsuÃ¡rios
+--
+
+if @cd_parametro = 1
+begin
+  --select @cd_empresa
+
+  SELECT
+    --cv.cd_cadeia_valor,
+    --cv.nm_cadeia_valor,
+    --m.cd_modulo,
+    --m.nm_modulo,
+    GU.cd_grupo_usuario,   
+    GU.nm_grupo_usuario + ' (' + cast(GU.cd_grupo_usuario as varchar(10)) + ')' as nm_grupo_usuario,   
+    UGU.cd_usuario  
+
+FROM
+ egisadmin.dbo.GrupoUsuario GU
+ inner join egisadmin.dbo.Empresa_grupo_usuario eg      on eg.cd_grupo_usuario  = gu.cd_grupo_usuario
+
+ left outer join egisadmin.dbo.Usuario_GrupoUsuario UGU on UGU.cd_grupo_usuario = GU.cd_grupo_usuario and
+                                                           UGU.cd_usuario       = @cd_usuario        
+                                                           
+ --left outer join egisadmin.dbo.Modulo_GrupoUsuario mg    on mg.cd_grupo_usuario = gu.cd_grupo_usuario
+ --left outer join egisadmin.dbo.Modulo m                  on m.cd_modulo         = mg.cd_modulo
+ --left outer join egisadmin.dbo.Cadeia_Valor cv           on cv.cd_cadeia_valor  = m.cd_cadeia_valor
+
+
+--select * from egisadmin.dbo.Modulo_GrupoUsuario
+--select * from egisadmin.dbo.GrupoUsuario                                                           
+--select * from egisadmin.dbo.Empresa_grupo_usuario                                                           
+--select * from egisadmin.dbo.Usuario_GrupoUsuario
+
+where
+   eg.cd_empresa = case when @cd_empresa = 0 then eg.cd_empresa else @cd_empresa end
+   --and
+   --eg.cd_usuario = case when @cd_usuario = 0 then eg.cd_usuario else @cd_usuario end
+
+
+ORDER BY
+  GU.nm_grupo_usuario  
+
+  return
+
+end
+
+----------------------------------------------------------------------------------------------------
+--UsuÃ¡rios da Empresa
+--
+
+if @cd_parametro = 2
+begin
+
+  --usuÃ¡rios do Contrato--
+  --select * from  egisadmin.dbo.empresa
+
+  select
+    @qt_contrato_empresa = case when isnull(qt_usuario_contrato,0) = 0 then 10 
+                           else isnull(qt_usuario_contrato, 10) end
+  from
+    egisadmin.dbo.empresa
+
+  where
+    cd_empresa = @cd_empresa
+
+  --select @cd_empresa, @qt_contrato_empresa
+
+
+  --Acessos--
+
+  select
+  distinct
+  identity(int,1,1)                                                                                      as cd_controle,
+  format(
+  convert(datetime,left(convert(varchar,l.dt_log_acesso,121),10)+' 00:00:00',121),'dd/MM/yyyy')          as dt_log_acesso,
+  max(FORMAT(l.dt_log_acesso, 'HH:mm:ss'))                                                               as hr_log_acesso,
+  l.cd_usuario,
+  l.cd_modulo,
+  sum(case when l.sg_log_acesso = '0' then 1 else 0 end)                                                 as qt_entrada,
+  sum(case when l.sg_log_acesso = '1' then 1 else 0 end)                                                 as qt_saida,
+
+  sum(case when l.sg_log_acesso = '0' then 1 else 0 end) 
+  -                                              
+  sum(case when l.sg_log_acesso = '1' then 1 else 0 end)                                                 as qt_status,
+  
+  max(upper(u.nm_usuario))                                                                               as nm_usuario,
+  max(upper(u.nm_fantasia_usuario))                                                                      as nm_fantasia_usuario,
+  ( select top 1 ue.cd_empresa from egisadmin.dbo.Usuario_Empresa ue where ue.cd_usuario = l.cd_usuario )              as cd_empresa_acesso,
+  max( isnull(m.nm_modulo,''))                                                                           as nm_modulo,
+  max( isnull(m.sg_modulo,''))                                                                           as sg_modulo,
+  max(@qt_contrato_empresa)                                                                              as qt_contrato_empresa
+  
+
+
+  into
+    #acesso
+
+from
+  egisadmin.dbo.LogAcesso l
+ 
+  inner join egisadmin.dbo.usuario u          on u.cd_usuario  = l.cd_usuario
+  inner join egisadmin.dbo.usuario_empresa ue on ue.cd_usuario = u.cd_usuario 
+  left outer join egisadmin.dbo.modulo m      on m.cd_modulo   = l.cd_modulo 
+
+  --select top 1000 * from logacesso
+
+where
+  --l.cd_modulo = 0
+  --and
+  l.dt_log_acesso>=@dt_hoje
+  and
+  isnull(l.cd_usuario,0)>0
+  and
+  l.cd_usuario = case when @cd_usuario = 0 then l.cd_usuario else @cd_usuario end
+  and
+  ue.cd_empresa = @cd_empresa
+
+  --select * from egisadmin.dbo.LogAcesso l
+
+group by
+  convert(datetime,left(convert(varchar,l.dt_log_acesso,121),10)+' 00:00:00',121),
+  l.cd_usuario,
+  l.cd_modulo
+  
+
+
+  select 
+    e.cd_empresa,
+	e.nm_fantasia_empresa,
+	u.cd_usuario,
+	upper(u.nm_fantasia_usuario)               as nm_fantasia_usuario,
+	max(u.nm_usuario)                          as nm_usuario,
+	count(a.qt_entrada)                        as qt_entrada,
+	MAX(a.hr_log_acesso)                       as hr_log_acesso,
+	MAX(a.dt_log_acesso)                       as dt_log_acesso,
+    max(isnull(ui.nm_caminho_imagem,''))       as nm_caminho_imagem,
+    max(u.nm_email_usuario)                    as nm_email_usuario,
+    max(u.cd_celular_usuario)                  as cd_celular_usuario,
+    max(u.dt_nascimento_usuario)               as dt_nascimento_usuario,
+    max(d.nm_departamento)                     as nm_departamento,
+    max(@qt_contrato_empresa)                  as qt_contrato_empresa
+
+
+
+  into #AcessoUsuario
+  
+  from 
+    --#acesso a
+    egisadmin.dbo.usuario u
+    left outer join egisadmin.dbo.usuario_empresa ue on ue.cd_usuario       = u.cd_usuario and
+                                          ue.ic_acesso_padrao = 'S'
+
+    inner join egisadmin.dbo.empresa e               on e.cd_empresa = ue.cd_empresa
+	--inner join egisadmin.dbo.Usuario u               on u.cd_usuario = a.cd_usuario
+    left outer join #acesso a                        on a.cd_usuario  = u.cd_usuario
+    left outer join egisadmin.dbo.usuario_imagem ui  on ui.cd_usuario = u.cd_usuario
+    left outer join departamento d                   on d.cd_departamento = u.cd_departamento
+
+  where
+    ue.cd_empresa = case when @cd_empresa = 0 then ue.cd_empresa else @cd_empresa end
+    and
+    isnull(u.ic_ativo,'A') = 'A'
+
+  group by
+     e.cd_empresa,
+	 e.nm_fantasia_empresa,
+ 	 u.cd_usuario,
+	 u.nm_fantasia_usuario
+
+
+
+  order by
+    e.cd_empresa
+
+
+  select * from #AcessoUsuario
+  order by
+    nm_fantasia_usuario
+  
+  return
+
+end
+
+--Frases do Dia----------------------------
+
+if @cd_parametro = 10
+begin
+  --select * from egisadmin.dbo.Dica_Modulo
+  select
+   cd_dica,
+   nm_dica,
+   ds_dica
+
+  from
+    egisadmin.dbo.Dica_Modulo
+
+  return
+end
+
+--MÃ³dulos DisponÃ­veis------------------------------------------------------------
+
+if @cd_parametro = 20
+begin
+
+  select 
+    m.cd_modulo,
+    m.nm_modulo,
+    mgu.cd_grupo_usuario,
+    g.nm_grupo_usuario,
+
+    case when isnull(mgu.cd_grupo_usuario,0)>0 then 'S' else 'N' end ic_grupo_modulo
+  from
+    egisadmin.dbo.modulo m
+    left outer join egisadmin.dbo.Modulo_GrupoUsuario mgu on mgu.cd_modulo = m.cd_modulo and
+                                                             mgu.cd_grupo_usuario = @cd_grupo_usuario
     
-  if @cd_parametro = 4  
-  begin  
-        
-    select * from Fornecedor f  
-    where  
-      cd_cnpj_fornecedor = @cd_cnpj  
-  
-    return  
-  
-  end  
-  
-  ----------------------------------------------------------------------------------------------------  
-  
-  if @cd_parametro = 5  
-  begin  
-        
-    select * from Transportadora t  
-    where  
-      cd_cnpj_transportadora = @cd_cnpj  
-  
-    return  
-  
-  end  
-  
-  
-  if @cd_parametro = 10  
-  begin  
-    declare @qt_cliente   int = 0  
-    declare @dt_validacao datetime = null   
-    select  
-      @qt_cliente = count(cd_cliente)  
-    from  
-      cliente c  
-    where  
-      c.cd_status_cliente = 1  
-  
-    --select * from cadastro_validacao  
-  
-    select   
-      @dt_validacao = max(dt_validacao)  
-    from  
-      cadastro_validacao  
-  
-  
-    select @qt_cliente as qt_cliente, @dt_validacao as dt_validacao  
-  
-  
-    return  
-  end  
-  
-  if @cd_parametro = 15  
-  begin  
-    --Fila_Validacao_CNPJ--  
-    --select * from consulta_receita_pessoa where cd_cnpj = '02314572000170'  
-    --select * from egiscnpj.dbo.consulta_receita_pessoa where cd_cnpj = '07633295000425'  
-    --select * from egiscnpj.dbo.fila_validacao_cnpj order by dt_usuario desc  
-    --select * from egiscnpj.dbo.consulta_receita_pessoa order by dt_usuario desc  
-      
-    INSERT INTO egiscnpj.dbo.fila_validacao_cnpj (  
-    cd_fila,  
-    cd_cnpj,  
-    nm_status_validacao,  
-    cd_usuario_inclusao,  
-    dt_usuario_inclusao,  
-    cd_usuario,  
-    dt_usuario,  
-    cd_empresa,  
-    nm_banco_empresa  
-)  
-SELECT  
-    (SELECT ISNULL(MAX(cd_fila),0) + 1 FROM egiscnpj.dbo.fila_validacao_cnpj) AS cd_fila,  
-    TRY_CAST(@cd_cnpj as VARCHAR(18)) as cd_cnpj,  
-    'PENDENTE' AS nm_status_validacao,  
-    TRY_CAST(@cd_usuario AS INT) as cd_usuario_inclusao,  
-    GETDATE() AS dt_usuario_inclusao,  
-    TRY_CAST(@cd_usuario AS INT) as cd_usuario,  
-    GETDATE() AS dt_usuario,  
-    TRY_CAST(@cd_empresa AS INT) as cd_empresa,  
-    DB_NAME() AS nm_banco_empresa   -- aqui pega o nome do banco atual  
-where  
-  @cd_cnpj not in ( select f.cd_cnpj from EGISCNPJ.dbo.fila_validacao_cnpj f  
-                    where   
-                      f.cd_cnpj = @cd_cnpj )  
---FROM egiscnj.dbo.consulta_receita_pessoa crp  
---WHERE crp.cd_cnpj = @cd_cnpj;  
-  
-  
-    return  
-  end  
-  
-  
-  if @cd_parametro = 20  
-  begin  
-  
-  INSERT INTO cadastro_validacao (  
-    cd_validacao,  
-    cd_tipo_destinatario,  
-    cd_destinatario,  
-    dt_validacao,  
-    cd_cnpj,  
-    nm_endereco,  
-    cd_numero,  
-    nm_complemento,  
-    nm_bairro,  
-    nm_cidade,  
-    sg_estado,  
-    cd_cep,  
-    cd_usuario_inclusao,  
-    dt_usuario_inclusao,  
-    cd_usuario,  
-    dt_usuario  
-)  
-SELECT  
-  (SELECT ISNULL(MAX(cd_validacao),0) + 1 FROM cadastro_validacao) AS cd_validacao,  
+
+    left outer join egisadmin.dbo.GrupoUsuario g          on g.cd_grupo_usuario = mgu.cd_grupo_usuario
+  where
+        isnull(m.ic_liberado,'N') = 'S'
+
+  order by
+    m.nm_modulo
+
+  --select * from egisadmin.dbo.Modulo_GrupoUsuario
+  return
+
+end
+-----------------------
+--AtualizaÃ§Ã£o dos Modulo_GrupoUsuario
+
+if @cd_parametro = 30
+begin
+ 
+  -------------------------------------------------------------------
+  -- 1) Validar se veio algo em dados_registro
+  -------------------------------------------------------------------
+  if NULLIF(@dados_registro, N'') IS NULL
+  begin
+     select 'Nenhum registro selecionado (dados_registro vazio).' as Msg
+     return
+  end
+
+  if ISJSON(@dados_registro) <> 1
+  begin
+     select 'Lista de registros invlida em dados_registro.' as Msg
+     return
+  end
+
+  -------------------------------------------------------------------
+  -- 2) Quebrar o JSON de dados_registro
+  -------------------------------------------------------------------
+  if object_id('tempdb..#modulos_grupo') is not null
+     drop table #modulos_grupo
+
+  select
+     try_convert(int, j.cd_grupo_usuario) as cd_grupo_usuario,
+     try_convert(int, j.cd_modulo)        as cd_modulo,
+     upper(isnull(j.ic_grupo_modulo,'N')) as ic_grupo_modulo
+  into #modulos_grupo
+  from openjson(@dados_registro) with (
+     cd_grupo_usuario int '$.cd_grupo_usuario',
+     cd_modulo        int '$.cd_modulo',
+     ic_grupo_modulo  varchar(1) '$.ic_grupo_modulo'
+  ) as j
+
+  if isnull(@cd_grupo_usuario,0) = 0
+  begin
+     select @cd_grupo_usuario = isnull(min(cd_grupo_usuario),0) from #modulos_grupo
+  end
+
+  if isnull(@cd_grupo_usuario,0) = 0
+  begin
+     select 'Grupo de usurio invÃ¡lido para gravaÃ§Ã£o.' as Msg
+     return
+  end
+
+  -------------------------------------------------------------------
+  -- 3) Atualizar a tabela Modulo_GrupoUsuario
+  -------------------------------------------------------------------
+  delete from egisadmin.dbo.Modulo_GrupoUsuario
+  where cd_grupo_usuario = @cd_grupo_usuario
+  and
+    cd_grupo_usuario in ( select m.cd_grupo_usuario from #modulos_grupo m 
+                          where
+                            isnull(m.ic_grupo_modulo,'N') = 'S' and m.cd_grupo_usuario = @cd_grupo_usuario)
+
+  --select * from  egisadmin.dbo.Modulo_GrupoUsuario where cd_grupo_usuario = 2512
+
+  insert into egisadmin.dbo.Modulo_GrupoUsuario
+    (cd_grupo_usuario, cd_modulo, cd_usuario_atualiza, dt_atualiza)
+  select distinct
+    @cd_grupo_usuario,
+    m.cd_modulo,
+    @cd_usuario,
+    getdate()
+  from
+    #modulos_grupo m
+  where
+    isnull(m.ic_grupo_modulo,'N') = 'S'
+    and
+    m.cd_modulo is not null
+
+
+  select 'Mdulos do grupo atualizados com sucesso.' as Msg
+
+--AtualizaÃ§Ã£o dos Modulo_GrupoUsuario
+
+  return
+
+end
+
+--Menus dos MÃ³dulos--------------------------------------------------------------
+
+if @cd_parametro = 40
+begin
+  select 
+    m.cd_modulo,
+    m.nm_modulo,
+    f.cd_funcao,
+    f.nm_funcao,
+    mnu.cd_menu,
+    mnu.nm_menu_titulo,
+    mgu.cd_grupo_usuario,
+    g.nm_grupo_usuario,
+
+    case when isnull(mgu.cd_grupo_usuario,0)>0 then 'S' else 'N' end ic_grupo_modulo,
+
+     isnull(gum.cd_menu,0)                                as cd_menu_grupo_usuario
+
+  from
+    egisadmin.dbo.modulo m
+    inner join egisadmin.dbo.modulo_funcao_menu mfm       on mfm.cd_modulo  = m.cd_modulo
+    inner join egisadmin.dbo.funcao f                     on f.cd_funcao    = mfm.cd_funcao
+    inner join egisadmin.dbo.menu mnu                     on mnu.cd_menu    = mfm.cd_menu
+    left outer join egisadmin.dbo.Modulo_GrupoUsuario mgu on mgu.cd_modulo  = m.cd_modulo and
+                                                             mgu.cd_grupo_usuario = @cd_grupo_usuario
+    
+
+    left outer join egisadmin.dbo.GrupoUsuario g          on g.cd_grupo_usuario = mgu.cd_grupo_usuario
+    left outer join egisadmin.dbo.grupo_usuario_menu gum  on gum.cd_grupo_usuario = g.cd_grupo_usuario and
+                                                             gum.cd_menu          = mnu.cd_menu
+
+  where
+    mgu.cd_grupo_usuario = @cd_grupo_usuario
+    and
+    isnull(m.ic_liberado,'N') = 'S'
+    and
+    mgu.cd_modulo > 0
+  order by
+    m.nm_modulo
+
+
+  --select * from egisadmin.dbo.modulo_funcao_menu
+
+  return
+end
+
+--Menus dos MÃ³dulos Selecionados --------------------------------------------------------------
+
+if @cd_parametro = 45
+begin
+  select 
+    m.cd_modulo,
+    m.nm_modulo,
+    f.cd_funcao,
+    f.nm_funcao,
+    mnu.cd_menu,
+    mnu.nm_menu_titulo,
+    mgu.cd_grupo_usuario,
+    g.nm_grupo_usuario,
+
+    case when isnull(mgu.cd_grupo_usuario,0)>0 then 'S' else 'N' end ic_grupo_modulo,
+
+     isnull(gum.cd_menu,0)                                as cd_menu_grupo_usuario
+
+  from
+    egisadmin.dbo.modulo m
+    inner join egisadmin.dbo.modulo_funcao_menu mfm       on mfm.cd_modulo  = m.cd_modulo
+    inner join egisadmin.dbo.funcao f                     on f.cd_funcao    = mfm.cd_funcao
+    inner join egisadmin.dbo.menu mnu                     on mnu.cd_menu    = mfm.cd_menu
+    left outer join egisadmin.dbo.Modulo_GrupoUsuario mgu on mgu.cd_modulo  = m.cd_modulo and
+                                                             mgu.cd_grupo_usuario = @cd_grupo_usuario
+    
+
+    left outer join egisadmin.dbo.GrupoUsuario g          on g.cd_grupo_usuario = mgu.cd_grupo_usuario
+    left outer join egisadmin.dbo.grupo_usuario_menu gum  on gum.cd_grupo_usuario = g.cd_grupo_usuario and
+                                                             gum.cd_menu          = mnu.cd_menu
+
+  where
+    mgu.cd_grupo_usuario = @cd_grupo_usuario
+    and
+    isnull(m.ic_liberado,'N') = 'S'
+    and
+    isnull(gum.cd_menu,0)>0
+    and
+    isnull(gum.cd_modulo,0)>0
+
+  order by
+    m.nm_modulo
+
+
+  --select * from egisadmin.dbo.modulo_funcao_menu
+
+  return
+end
+
+
+--UsuÃ¡rios do Grupo de usuÃ¡rios
+
+if @cd_parametro = 50
+begin
+  select 
+    u.cd_usuario,
+    u.nm_usuario,
+    u.nm_fantasia_usuario,
+    ugu.cd_grupo_usuario,
+    g.nm_grupo_usuario
    
-    TRY_CAST(1 AS INT),  
-    TRY_CAST(0 AS INT),  
-    GETDATE(),  
-   TRY_CAST(crp.cd_cnpj AS VARCHAR(18)),  
-    TRY_CAST(crp.nm_endereco AS VARCHAR(60)),  
-    TRY_CAST(crp.cd_numero AS VARCHAR(10)),  
-    TRY_CAST(crp.nm_complemento AS VARCHAR(60)),  
-    TRY_CAST(crp.nm_bairro AS VARCHAR(25)),  
-    TRY_CAST(crp.nm_cidade AS VARCHAR(60)),  
-    TRY_CAST(crp.ic_estado AS CHAR(2)),  
-    TRY_CAST(crp.nm_cep AS VARCHAR(8)),  
-    TRY_CAST(crp.cd_usuario_inclusao AS INT),  
-    TRY_CAST(crp.dt_usuario_inclusao AS DATETIME),  
-    TRY_CAST(crp.cd_usuario AS INT),  
-    TRY_CAST(crp.dt_usuario AS DATETIME)  
-FROM egiscnpj.dbo.consulta_receita_pessoa crp  
---CROSS JOIN (SELECT MAX(cd_validacao) AS cd_validacao FROM cadastro_validacao) cv  
-WHERE crp.cd_cnpj = @cd_cnpj;  
-  
-update  
-  cliente  
-set  
-  cd_cep              = case when cd_cep <> cast(nm_cep as varchar(8)) then nm_cep else c.cd_cep end,  
-  
-  nm_endereco_cliente = case when nm_endereco_cliente <> cast(nm_endereco as varchar(60)) then  
-                            crp.nm_endereco  
-                        else  
-                           c.nm_endereco_cliente   
-                        end,  
-  
-  cd_numero_endereco = case when cd_numero_endereco <> cast(cd_numero as varchar(10)) then  
-                            crp.cd_numero  
-                        else  
-                           c.cd_numero_endereco   
-                        end,  
-  
-  nm_complemento_endereco = case when nm_complemento_endereco <> cast(crp.nm_complemento as varchar(60))   
-                            and  
-                            isnull(crp.nm_complemento,'')<>''  
-                            then  
-                              crp.nm_complemento  
-                            else  
-                              c.nm_complemento_endereco   
-                            end,  
-  
-  
-  nm_bairro               = case when c.nm_bairro <> cast(crp.nm_bairro as varchar(60)) then  
-                              crp.nm_bairro  
-                            else  
-                              c.nm_bairro   
-                            end,  
-  
-  cd_inscestadual         = case when cd_inscestadual <> cast(crp.cd_inscestual as varchar(18)) then  
-                              crp.cd_inscestual  
-                            else  
-                              c.cd_inscestadual   
-                            end,  
-  
-  
-  cd_telefone         = case when cd_telefone<>STUFF(nm_telefone, PATINDEX('%([0-9][0-9])%', nm_telefone), 5, '') then  
-                          STUFF(nm_telefone, PATINDEX('%([0-9][0-9])%', nm_telefone), 5, '')  
-                        else  
-                          c.cd_telefone  
-                        end  
-  
-  
-from  
-  cliente c  
-  inner join egiscnpj.dbo.consulta_receita_pessoa crp on crp.cd_cnpj = c.cd_cnpj_cliente  
-where  
-  cd_cnpj_cliente = @cd_cnpj  
-  
-  --select cd_telefone, * from cliente where cd_cnpj_cliente = '04602326000140'  
-  
-return  
-  
-  end  
-  
-if @cd_parametro = 50  
-begin  
-  select  
-    c.cd_cliente, c.cd_cnpj_cliente, c.nm_razao_social_cliente, c.dt_cadastro_cliente  
-  from  
-    cliente c  
-  where  
-    isnull(c.cd_status_cliente,0) = 1  
-    and  
-    c.cd_cnpj_cliente not in ( select p.cd_cnpj from egiscnpj.dbo.consulta_receita_pessoa p  
-                               where  
-                                 p.cd_cnpj = c.cd_cnpj_cliente)  
-    and  
-    isnull(c.cd_tipo_pessoa,0) = 1  
-    and  
-    isnull(c.cd_cnpj_cliente,'')<>''  
-    --and  
-    --len(c.cd_cnpj_cliente)   
-  order by  
-    c.dt_cadastro_cliente desc, c.nm_fantasia_cliente  
-  
-  return  
-end  
-  
-  
-if @cd_parametro = 9999  
-begin  
-  return  
-end  
-  
---use egissql_317  
---  
-/* Padrão se nenhum caso for tratado */  
-SELECT CONCAT('Nenhuma ação mapeada para cd_parametro=', @cd_parametro) AS Msg;  
-     
- END TRY  
-    BEGIN CATCH  
-        DECLARE  
-            @errnum   INT          = ERROR_NUMBER(),  
-            @errmsg   NVARCHAR(4000) = ERROR_MESSAGE(),  
-            @errproc  NVARCHAR(128) = ERROR_PROCEDURE(),  
-            @errline  INT          = ERROR_LINE(),  
-            @fullmsg  NVARCHAR(2048);  
-  
-  
-  
-         -- Monta a mensagem (THROW aceita até 2048 chars no 2º parâmetro)  
-    SET @fullmsg =  
-          N'Erro em pr_egis_valida_cadastro_pessoa_juridica ('  
-        + ISNULL(@errproc, N'SemProcedure') + N':'  
-        + CONVERT(NVARCHAR(10), @errline)  
-        + N') #' + CONVERT(NVARCHAR(10), @errnum)  
-        + N' - ' + ISNULL(@errmsg, N'');  
-  
-    -- Garante o limite do THROW  
-    SET @fullmsg = LEFT(@fullmsg, 2048);  
-  
-    -- Relança com contexto (state 1..255)  
-    THROW 50000, @fullmsg, 1;  
-  
-        -- Relança erro com contexto  
-        --THROW 50000, CONCAT('Erro em pr_egis_valida_cadastro_pessoa_juridica (',  
-        --                    ISNULL(@errproc, 'SemProcedure'), ':',  
-        --                    @errline, ') #', @errnum, ' - ', @errmsg), 1;  
-    END CATCH  
-  
+  from
+    egisadmin.dbo.usuario u
+    inner join egisadmin.dbo.Usuario_GrupoUsuario ugu    on ugu.cd_usuario       = u.cd_usuario
+    inner join egisadmin.dbo.GrupoUsuario g              on g.cd_grupo_usuario   = ugu.cd_grupo_usuario
+
+
+  where
+    ugu.cd_grupo_usuario = @cd_grupo_usuario
+    and
+    isnull(u.ic_ativo,'A') = 'A'
+
+  order by
+     u.nm_usuario
+  return
+
+end
+
+
+--AtualizaÃ§Ã£o dos menus do grupo de usuÃ¡rios
+
+if @cd_parametro = 60
+begin
+
+  -------------------------------------------------------------------
+  -- 1) Validar se veio algo em dados_registro
+  -------------------------------------------------------------------
+  if NULLIF(@dados_registro, N'') IS NULL
+  begin
+     select 'Nenhum menu selecionado (dados_registro vazio).' as Msg
+     return
+  end
+
+  if ISJSON(@dados_registro) <> 1
+  begin
+     select 'Lista de menus invlida em dados_registro.' as Msg
+     return
+  end
+
+  -------------------------------------------------------------------
+  -- 2) Quebrar o JSON de dados_registro
+  -------------------------------------------------------------------
+  if object_id('tempdb..#menus_grupo') is not null
+     drop table #menus_grupo
+
+  select
+     try_convert(int, j.cd_grupo_usuario) as cd_grupo_usuario,
+     try_convert(int, j.cd_modulo)        as cd_modulo,
+     try_convert(int, j.cd_menu)          as cd_menu,
+     upper(isnull(j.ic_grupo_modulo,'N')) as ic_grupo_modulo
+  into #menus_grupo
+  from openjson(@dados_registro) with (
+     cd_grupo_usuario int '$.cd_grupo_usuario',
+     cd_modulo        int '$.cd_modulo',
+     cd_menu          int '$.cd_menu',
+     ic_grupo_modulo  varchar(1) '$.ic_grupo_modulo'
+  ) as j
+
+  if isnull(@cd_grupo_usuario,0) = 0
+  begin
+     select @cd_grupo_usuario = isnull(min(cd_grupo_usuario),0) from #menus_grupo
+  end
+
+  if isnull(@cd_grupo_usuario,0) = 0
+  begin
+     select 'Grupo de usurio invlido para gravao.' as Msg
+     return
+  end
+
+  select * from egisadmin.dbo.grupo_usuario_menu where cd_grupo_usuario = 2512
+  return
+
+  -------------------------------------------------------------------
+  -- 3) Atualizar a tabela grupo_usuario_menu
+  -------------------------------------------------------------------
+  delete from egisadmin.dbo.grupo_usuario_menu
+  where cd_grupo_usuario = @cd_grupo_usuario
+
+  insert into egisadmin.dbo.grupo_usuario_menu
+    (cd_grupo_usuario, cd_modulo, cd_menu, cd_usuario, dt_usuario, cd_usuario_inclusao, dt_usuario_inclusao)
+  select distinct
+    @cd_grupo_usuario,
+    isnull(m.cd_modulo,0),
+    m.cd_menu,
+    @cd_usuario,
+    getdate(),
+    @cd_usuario,
+    getdate()
+  from
+    #menus_grupo m
+  where
+    isnull(m.ic_grupo_modulo,'N') = 'S'
+    and
+    m.cd_menu is not null
+
+  select 'Menus do grupo atualizados com sucesso.' as Msg
+
+  return
+end
+
+--select * from egisadmin.dbo.grupo_usuario_menu where cd_grupo_usuario = 2512
+
+if @cd_parametro = 9999
+begin
+  return
+end
+
+--use egissql_317
+--
+/* PadrÃ£o se nenhum caso for tratado */
+SELECT CONCAT('Nenhuma aÃ§Ã£o mapeada para cd_parametro=', @cd_parametro) AS Msg;
+   
+ END TRY
+    BEGIN CATCH
+        DECLARE
+            @errnum   INT          = ERROR_NUMBER(),
+            @errmsg   NVARCHAR(4000) = ERROR_MESSAGE(),
+            @errproc  NVARCHAR(128) = ERROR_PROCEDURE(),
+            @errline  INT          = ERROR_LINE(),
+            @fullmsg  NVARCHAR(2048);
+
+
+
+         -- Monta a mensagem (THROW aceita atÃ© 2048 chars no 2Âº parÃ¢metro)
+    SET @fullmsg =
+          N'Erro em pr_egis_admin_processo_modulo ('
+        + ISNULL(@errproc, N'SemProcedure') + N':'
+        + CONVERT(NVARCHAR(10), @errline)
+        + N') #' + CONVERT(NVARCHAR(10), @errnum)
+        + N' - ' + ISNULL(@errmsg, N'');
+
+    -- Garante o limite do THROW
+    SET @fullmsg = LEFT(@fullmsg, 2048);
+
+    -- RelanÃ§a com contexto (state 1..255)
+    THROW 50000, @fullmsg, 1;
+
+        -- RelanÃ§a erro com contexto
+        --THROW 50000, CONCAT('Erro em pr_egis_admin_processo_modulo (',
+        --                    ISNULL(@errproc, 'SemProcedure'), ':',
+        --                    @errline, ') #', @errnum, ' - ', @errmsg), 1;
+    END CATCH
 
 ---------------------------------------------------------------------------------------------------------------------------------------------------------    
 go
@@ -805,10 +775,59 @@ go
 ------------------------------------------------------------------------------
 --use egissql
 --go
+--use egissql
+
+
+--select * from egisadmin.dbo.usuario
+
 
 --exec  pr_egis_admin_processo_modulo '[{"cd_parametro": 0 }]' 
---exec  pr_egis_valida_cadastro_pessoa_juridica '[{"cd_parametro": 1, "cd_usuario": 113 }]' 
+--exec  pr_egis_admin_processo_modulo '[{"cd_parametro": 1, "cd_usuario": 113 }]' 
+go
+--exec  pr_egis_admin_processo_modulo '[{"ic_json_parametro": "S", "cd_parametro": 2, "cd_usuario": 113 }]' 
+--go
 
+--exec  pr_egis_admin_processo_modulo '[{"ic_json_parametro": "S", "cd_parametro": 10, "cd_usuario": 113 }]' 
+
+--exec  pr_egis_admin_processo_modulo '[{"ic_json_parametro": "S", "cd_parametro": 20, "cd_grupo_usuario": 2512 }]' 
+
+--exec  pr_egis_admin_processo_modulo '[{"ic_json_parametro": "S", "cd_parametro": 40, "cd_grupo_usuario": 2512 }]' 
+
+--exec  pr_egis_admin_processo_modulo '[{"ic_json_parametro": "S", "cd_parametro": 45, "cd_grupo_usuario": 2512 }]' 
+go
+
+--exec  pr_egis_admin_processo_modulo '[{"ic_json_parametro": "S", "cd_parametro": 50, "cd_grupo_usuario": 2512 }]' 
+go
+go
 go
 ------------------------------------------------------------------------------
 GO
+
+/*
+
+
+
+exec  pr_egis_admin_processo_modulo '[
+    {
+        "ic_json_parametro": "S",
+        "cd_parametro": 20,
+        "cd_usuario": 113,
+        "cd_grupo_usuario": 2512,
+        "cd_empresa": "1"
+    }
+]'
+
+select * from egisadmin.dbo.usuario_imagem
+
+ select @vb_base64 = vb_imagem  
+from openjson(  
+    (  
+        select  vb_imagem  
+        from  egisadmin.dbo.Usuario_Imagem_Portal   
+        where  
+     cd_usuario = @cd_usuario    
+        for json auto  
+    )  
+) with( vb_imagem varchar(max))  
+  
+  */

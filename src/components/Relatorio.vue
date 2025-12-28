@@ -21,17 +21,20 @@
     <!-- Tabela -->
     <q-separator/>
     <q-card-section class="q-pa-none">
+
       <div class="table-wrapper">
         <table class="rel-table">
           <thead>
             <tr>
-              <th v-for="(c, i) in columns" :key="i">{{ c.caption || c.dataField }}</th>
+              <th v-for="(c, i) in displayColumns" :key="i">
+                {{ c.caption || fieldName(c) }}
+                </th>
             </tr>
           </thead>
           <tbody>
-            <tr v-for="(r, idx) in rows" :key="r.id || idx">
-              <td v-for="(c, i) in columns" :key="i">
-                {{ formatCell(r[c.dataField], c) }}
+            <tr v-for="(r, idx) in safeRows" :key="r.id || idx">
+              <td v-for="(c, i) in displayColumns" :key="i">
+             {{ formatCell(getValue(r, fieldName(c)), c) }}
               </td>
             </tr>
           </tbody>
@@ -89,7 +92,24 @@ export default {
     usuarioNomeOuId: { type: String, default: '' },
   },
 
+  mounted() {
+    console.log('Entrada do Relatório: ', this.rows)
+     console.log('rows isArray?', Array.isArray(this.rows), this.rows)
+  console.log('safeRows isArray?', Array.isArray(this.safeRows), this.safeRows)
+  console.log('displayColumns:', this.displayColumns)
+  },
+
   computed: {
+
+    safeRows () {
+    let r = this.rows
+
+    if (r && r.dados) r = r.dados
+
+    console.log('Safe Rows r - dados', r)
+    return Array.isArray(r) ? r : (r ? [r] : [])
+  },
+  
     /* 2) Computed “resolved” usando as props ou storages (fallback) */
     resolvedEmpresaNome() {
       return (
@@ -113,7 +133,30 @@ export default {
       return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
     },
 
-    totalColSpan() {
+
+ displayColumns() {
+  // se pai mandou columns...
+  if (Array.isArray(this.columns) && this.columns.length) {
+    // filtra só as colunas que realmente existem no row0 (direto ou nested)
+    const row0 = this.safeRows?.[0] || {}
+    const ok = this.columns.filter(c => this.getValue(row0, this.fieldName(c)) !== undefined)
+
+    // se sobrou algo, usa; se não, gera do row
+    if (ok.length) return ok
+  }
+
+  const first = this.safeRows?.length ? this.safeRows[0] : null
+  if (!first || typeof first !== 'object' || Array.isArray(first)) return []
+  return Object.keys(first).map(k => ({ dataField: k, caption: k }))
+},
+
+  totalColSpan() {
+    const qTotais = this.totais?.length || 0;
+    const qCols   = this.displayColumns?.length || 0;
+    return Math.max(qCols - qTotais, 1);
+  },
+
+    totalColSpanold() {
       // ocupa as colunas da tabela menos a quantidade de totais exibidos
       const qTotais = this.totais?.length || 0;
       const qCols   = this.columns?.length || 0;
@@ -123,6 +166,17 @@ export default {
 
   methods: {
     
+    fieldName(col) {
+    return col?.dataField ?? col?.data_field ?? col?.field ?? col?.name ?? ''
+  },
+
+  // ✅ pega r["a.b.c"] também
+  getValue(row, path) {
+    if (!row || !path) return undefined
+    if (Object.prototype.hasOwnProperty.call(row, path)) return row[path] // chave direta existe
+    return String(path).split('.').reduce((acc, k) => (acc == null ? acc : acc[k]), row)
+  },
+
     formatCell(value, col) {
   if (value == null || value === '') return ''
 

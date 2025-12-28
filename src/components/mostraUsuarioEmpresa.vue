@@ -58,6 +58,9 @@
             <span class="q-ml-sm">
               | Usuário logado: <b>{{ cd_usuario }}</b>
             </span>
+            <span class="q-ml-sm">
+              | No. de Usuários Contrato: <b>{{ qt_contrato_empresa }}</b>
+            </span>
           </div>
         </q-banner>
       </div>
@@ -166,6 +169,8 @@ export default {
       headerBanco: localStorage.nm_banco_empresa || "",
       // cache de imagens que falharam
       imgFalhou: {},
+      qt_contrato_empresa: 0,
+
     };
   },
 
@@ -282,6 +287,8 @@ export default {
 
         console.log("dados", rows);
         this.usuarios = rows;
+        this.qt_contrato_empresa = rows[0].qt_contrato_empresa || 0;
+
       } catch (e) {
         console.error("[mostraUsuarioEmpresa] erro:", e);
         this.usuarios = [];

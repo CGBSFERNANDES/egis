@@ -618,7 +618,7 @@
           <Relatorio
             v-if="showRelatorio"
             :columns="gridColumns"
-            :rows="rows"
+            :rows="this.rows"
             :summary="totalColumns"
             :titulo="this.tituloMenu"
             :menu-codigo="this.cd_menu"
@@ -2800,6 +2800,30 @@ export default {
 
   methods: {
 
+    async ensureConsultaCacheLoaded () {
+      const cdMenu =
+        Number(this.cd_menu_entrada || this.ncd_menu_entrada || this.cd_menu || this.cdMenu || 0) || null
+
+      // Colunas
+      if (!Array.isArray(this.columns) || this.columns.length === 0) {
+        const cols =
+          (cdMenu && await this.lerCacheSeguro(this.ssKey("colunas_grid", cdMenu))) ||
+          (cdMenu && await this.lerCacheSeguro(this.ssKey("colunas_grid_full", cdMenu))) ||
+          await this.lerCacheSeguro("colunas_grid") ||
+          []
+        if (Array.isArray(cols) && cols.length) this.columns = cols
+      }
+
+      // Linhas
+      if (!Array.isArray(this.rows) || this.rows.length === 0) {
+        const rows =
+          (cdMenu && await this.lerCacheSeguro(this.ssKey("dados_resultado_consulta", cdMenu))) ||
+          await this.lerCacheSeguro("dados_resultado_consulta") ||
+          []
+        if (Array.isArray(rows) && rows.length) this.rows = rows
+      }
+    },
+
     sortRowsForTreeAndGrid () {
   const meta = this.gridMeta || this.metaCampos || []
 
@@ -3856,8 +3880,27 @@ parseSqlTabs(raw) {
 
       // tenta salvar no sessionStorage; se falhar por quota, cai para IndexedDB
       try {
+
         sessionStorage.setItem(key, payload);
+
+        //
+
+        // se salvou no localStorage, remove do IndexedDB para não ficar lixo/stale
+        //try {
+        // await offlineDb.collection(GRID_CACHE_COLLECTION).doc({ key }).delete();
+        //..} catch (_) {}
+
+        
+        // IMPORTANTE: manter cópia no IndexedDB para outras abas/janelas
+        //await offlineDb.collection(GRID_CACHE_COLLECTION).doc({ key }).set({
+        //  key,
+        //  value: payload,
+        //  updatedAt: Date.now()
+        //});
+        
         return;
+
+
       } catch (err) {
         if (!this.isQuotaError(err)) {
           console.warn("[unicoFormEspecial] Falha ao salvar no sessionStorage:", err);
@@ -3866,15 +3909,27 @@ parseSqlTabs(raw) {
 
       // fallback: IndexedDB via Localbase
       try {
-        await offlineDb.collection(GRID_CACHE_COLLECTION).doc({ key }).set({
-          key,
-          value,
-          scope: GRID_CACHE_PREFIX,
-          updatedAt: new Date().toISOString(),
-        });
+        
+        const docId = key; // chave vira o id do documento
+
+        await offlineDb.collection(GRID_CACHE_COLLECTION).doc(docId).set({
+        key,
+        value: payload,
+        updatedAt: Date.now()
+      });
+
+
+        //await offlineDb.collection(GRID_CACHE_COLLECTION).doc({ key }).set({
+        //  key,
+        //  value,
+         // scope: GRID_CACHE_PREFIX,
+        //  updatedAt: new Date().toISOString(),
+        //});
+
       } catch (dbErr) {
         console.error("[unicoFormEspecial] Falha ao salvar no IndexedDB:", dbErr);
       }
+
     },
 
     async lerCacheSeguro(key, { parseJson = true } = {}) {
@@ -3891,8 +3946,14 @@ parseSqlTabs(raw) {
 
       try {
         const doc = await offlineDb.collection(GRID_CACHE_COLLECTION).doc({ key }).get();
+      
         if (doc && Object.prototype.hasOwnProperty.call(doc, "value")) {
-          return doc.value;
+          //return doc.value;
+          const raw = doc.value;
+          if (raw == null) return null;
+
+          return parseJson ? this.deserializeFromStorage(raw) : raw;
+
         }
       } catch (dbErr) {
         // ausência de doc não é erro crítico; log apenas se for outra falha
@@ -3902,6 +3963,7 @@ parseSqlTabs(raw) {
       }
 
       return null;
+      
     },
 
     async removerCacheSeguro(key) {
@@ -4634,13 +4696,17 @@ selecionarERetornarOld(rows) {
   
    },
 
-    abrirDashboardDinamico () {
+    async abrirDashboardDinamico () {
       
+       await this.ensureConsultaCacheLoaded()
+
        this.returnTo = this.$route.fullPath
-      //console.log('[unicoFormEspecial] abrirDashboardDinamico clicado, rows:',
+      
+       //console.log('[unicoFormEspecial] abrirDashboardDinamico clicado, rows:',
       //(this.rowsParaDashboard || []).length)
 
     this.showDashDinamico = true
+
    },
 
    saveGridConfig() {
@@ -7707,16 +7773,20 @@ async syncLookupsFromFormData() {
       return { cols, rows };
     },
 
-    abrirRelatorio() {
+    async abrirRelatorio() {
       // garanta que gridRows e camposMetaGrid estão prontos aqui
       if (!Array.isArray(this.columns) || this.columns.length === 0) {
         //this.$q.notify({ type:'warning', position:'top-right', message:'Sem dados para o relatório.' })
         this.notifyWarn("Sem dados para o relatório.");
         return;
       }
+
+      await this.ensureConsultaCacheLoaded()
+  
       // Se já tiver grid pronta no form, passe os dados e meta por props:
       // this.$refs.relComp (opcional) poderá acessar depois
       this.showRelatorio = true;
+
     },
 
     async bootstrap() {
@@ -8166,6 +8236,9 @@ async syncLookupsFromFormData() {
     },
 
     async exportarPDF() {
+
+      await this.ensureConsultaCacheLoaded()
+
       try {
         const { default: jsPDF } = await import("jspdf");
         const { default: autoTable } = await import("jspdf-autotable");
@@ -8842,6 +8915,9 @@ async syncLookupsFromFormData() {
     try {
       // obtenha os dados atuais; ajuste a origem conforme seu componente
       const dados = Array.isArray(this.rows) ? this.rows : (this.dataSource || [])
+      
+      await this.ensureConsultaCacheLoaded()
+
       await gerarPdfRelatorio({
         cd_menu: this.cd_menu,
         cd_usuario: this.cd_usuario,
@@ -10550,6 +10626,7 @@ if (this.ic_modal_pesquisa === 'S') {
 
         this.panelIndex = 1; // mostra a grid
 
+        console.log('this rows --> linhas para relatório ',this.rows)
         this.$nextTick(() => {
           try {
             const inst =
