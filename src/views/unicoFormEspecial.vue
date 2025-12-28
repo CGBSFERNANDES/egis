@@ -3854,9 +3854,9 @@ parseSqlTabs(raw) {
     async salvarCacheSeguro(key, value, { parseJson = true } = {}) {
       const payload = parseJson ? this.serializeForStorage(value) : value;
 
+      // tenta salvar no sessionStorage; se falhar por quota, cai para IndexedDB
       try {
         sessionStorage.setItem(key, payload);
-        await offlineDb.collection(GRID_CACHE_COLLECTION).doc({ key }).delete();
         return;
       } catch (err) {
         if (!this.isQuotaError(err)) {
@@ -3864,6 +3864,7 @@ parseSqlTabs(raw) {
         }
       }
 
+      // fallback: IndexedDB via Localbase
       try {
         await offlineDb.collection(GRID_CACHE_COLLECTION).doc({ key }).set({
           key,
@@ -3894,7 +3895,10 @@ parseSqlTabs(raw) {
           return doc.value;
         }
       } catch (dbErr) {
-        console.warn("[unicoFormEspecial] Falha ao ler do IndexedDB:", dbErr);
+        // ausência de doc não é erro crítico; log apenas se for outra falha
+        if (dbErr && !/No Documents found/i.test(dbErr.message || "")) {
+          console.warn("[unicoFormEspecial] Falha ao ler do IndexedDB:", dbErr);
+        }
       }
 
       return null;
@@ -3908,7 +3912,10 @@ parseSqlTabs(raw) {
       try {
         await offlineDb.collection(GRID_CACHE_COLLECTION).doc({ key }).delete();
       } catch (dbErr) {
-        console.warn("[unicoFormEspecial] Falha ao limpar IndexedDB:", dbErr);
+        // ignora ausência de documento
+        if (dbErr && !/No Documents found/i.test(dbErr.message || "")) {
+          console.warn("[unicoFormEspecial] Falha ao limpar IndexedDB:", dbErr);
+        }
       }
     },
 
