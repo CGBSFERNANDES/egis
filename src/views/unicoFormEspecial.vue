@@ -873,9 +873,50 @@
           aria-label="Rolar grid para a direita"
           @click="scrollGridHorizontal(240)"
         />
+        <q-btn
+          flat
+          round
+          dense
+          icon="settings"
+          color="deep-purple-7"
+          aria-label="Configurar altura da grid"
+        >
+          <q-menu anchor="bottom right" self="top right">
+            <div class="q-pa-sm" style="min-width: 240px">
+              <div class="text-subtitle2 q-mb-xs">Altura da grid</div>
+              <q-slider
+                v-model="gridAlturaAtual"
+                :min="gridAlturaMin"
+                :max="gridAlturaMax"
+                :step="20"
+                color="deep-purple-7"
+                label
+                label-always
+              />
+              <div class="row justify-between q-mt-sm q-gutter-xs">
+                <q-btn
+                  flat
+                  dense
+                  icon="refresh"
+                  label="Padrão"
+                  color="grey-8"
+                  @click="resetarAlturaGrid"
+                />
+                <q-btn
+                  flat
+                  dense
+                  icon="aspect_ratio"
+                  label="Ajustar à tela"
+                  color="deep-purple-7"
+                  @click="ajustarAlturaTela"
+                />
+              </div>
+            </div>
+          </q-menu>
+        </q-btn>
       </div>
 
-      <div class="grid-scroll-shell" ref="scrollShell">
+      <div class="grid-scroll-shell" ref="scrollShell" :style="gridScrollStyles">
 
         <!-- Legenda de Status (acima da grid) -->
 
@@ -2255,6 +2296,10 @@ export default {
       ncd_acesso_entrada: this.cd_acesso_entrada || localStorage.cd_chave_pesquisa || 0,
       ncd_menu_entrada: this.cd_menu_entrada || 0,
       mostrarSetasGrid: false, // por padrão NÃO mostra
+      gridAlturaMin: 420,
+      gridAlturaMax: 1400,
+      gridAlturaPadrao: 720,
+      gridAlturaAtual: 720,
       infoDialog: false,
       infoTitulo: '',
       infoTexto: '',
@@ -2457,6 +2502,7 @@ export default {
   async mounted() {
 
     this.restoreGridConfig();
+    this.definirAlturaInicialGrid();
 
     locale('pt'); // ou 'pt-BR'
     
@@ -2540,6 +2586,21 @@ export default {
 
   return undefined
 },
+
+    gridScrollStyles() {
+      const alturaBruta = Number(this.gridAlturaAtual || 0);
+      if (!alturaBruta) return {};
+
+      const altura = Math.max(
+        this.gridAlturaMin,
+        Math.min(this.gridAlturaMax, alturaBruta)
+      );
+
+      return {
+        maxHeight: `${altura}px`,
+        minHeight: `${Math.min(altura, this.gridAlturaMax)}px`,
+      };
+    },
 
 
     menuIdEfetivo() {
@@ -5448,6 +5509,31 @@ async refreshGrid () {
         // fallback para browsers sem scrollBy options
         refEl.scrollTop = (refEl.scrollTop || 0) + 400;
       }
+    },
+
+    definirAlturaInicialGrid() {
+      const alturaViewport = window.innerHeight || 0;
+      const margem = 240;
+      const alturaSugerida = alturaViewport
+        ? Math.max(this.gridAlturaMin, Math.min(this.gridAlturaMax, alturaViewport - margem))
+        : this.gridAlturaPadrao;
+
+      this.gridAlturaPadrao = alturaSugerida;
+      this.gridAlturaAtual = alturaSugerida;
+    },
+
+    ajustarAlturaTela() {
+      const alturaViewport = window.innerHeight || 0;
+      const margem = 200;
+      const novaAltura = alturaViewport
+        ? Math.max(this.gridAlturaMin, Math.min(this.gridAlturaMax, alturaViewport - margem))
+        : this.gridAlturaPadrao;
+      this.gridAlturaAtual = novaAltura;
+    },
+
+    resetarAlturaGrid() {
+      const alvo = this.gridAlturaPadrao || this.gridAlturaMin;
+      this.gridAlturaAtual = alvo;
     },
 
     setFiltroFilho(cdMenu, val) {
