@@ -1189,7 +1189,7 @@
           <transition name="slide-fade">
             <dx-data-grid
               class="dx-card wide-card"
-              height="100%"
+              :height="gridAlturaAtual"
               v-if="temSessao"
               id="grid-padrao"
               ref="grid"
@@ -2597,6 +2597,7 @@ export default {
       );
 
       return {
+        height: `${altura}px`,
         maxHeight: `${altura}px`,
         minHeight: `${Math.min(altura, this.gridAlturaMax)}px`,
       };
@@ -5494,7 +5495,7 @@ async refreshGrid () {
       // decide o container de scroll
       let refEl = null;
       if (qual === "principal") {
-        refEl = this.$refs.scrollShellPrincipal;
+        refEl = this.$refs.scrollShell;
       } else if (qual === "det" && this.$refs["scrollShellDet_" + cdMenu]) {
         // quando v-for com ref, o Vue devolve um array
         const arr = this.$refs["scrollShellDet_" + cdMenu];
