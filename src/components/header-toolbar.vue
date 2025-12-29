@@ -181,9 +181,7 @@
                 </q-item>
               </q-list>
               <q-separator />
-              <div class="aniversariantes-dropdown q-pa-sm">
-                <lista-aniversariantes />
-              </div>
+             
             </q-btn-dropdown>
           </div>
         </dx-item>
