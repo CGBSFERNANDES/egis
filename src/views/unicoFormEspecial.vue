@@ -854,7 +854,7 @@
 
       <!-- GRID DevExtreme (SEU BLOCO ORIGINAL) -->
 
-      <div class="row justify-center q-gutter-xs q-mb-sm">
+      <div class="row justify-center q-gutter-xs q-mb-sm q-mt-sm">
         <q-btn
           flat
           round
@@ -1185,7 +1185,9 @@
         <div
           v-else
           v-show="!(String(ic_treeview_menu || 'N').toUpperCase() === 'S' && exibirComoTree)"
-          class="grid-scroll-track" ref="scrollTrack">
+          class="grid-scroll-shell grid-scroll-track"
+          ref="scrollShell"
+          :style="gridScrollStyles">
           <transition name="slide-fade">
             <dx-data-grid
               class="dx-card wide-card"
@@ -2295,7 +2297,7 @@ export default {
       showDashDinamico: false,
       ncd_acesso_entrada: this.cd_acesso_entrada || localStorage.cd_chave_pesquisa || 0,
       ncd_menu_entrada: this.cd_menu_entrada || 0,
-      mostrarSetasGrid: false, // por padrão NÃO mostra
+      mostrarSetasGrid: true, // exibe setas de scroll vertical
       gridAlturaMin: 420,
       gridAlturaMax: 1400,
       gridAlturaPadrao: 720,
