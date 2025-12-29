@@ -276,6 +276,15 @@ dados = [
   },
   {
     path: '/',
+    name: 'lista-aniversariantes',
+    meta: { requiresAuth: true },
+    components: {
+      layout: defaultLayout,
+      content: () => import(/* webpackChunkName: "display-data" */ './components/listaAniversariantes'),
+    },
+  },
+  {
+    path: '/',
     name: 'aviso-modulo',
     meta: { requiresAuth: true },
     components: {
