@@ -193,24 +193,30 @@ export default {
     },
 
     codigoUsuario(u) {
-      return this.pickCI(u, ['cd_usuario'])
+      return this.pickCI(u, ['cd_usuario', 'codigo_usuario', 'cd_usuario_empresa'])
     },
 
     nomeUsuario(u) {
-      return this.pickCI(u, ['nm_usuario'])
+      return this.pickCI(u, [
+        'nm_usuario',
+        'nm_nome',
+        'nm_nome_usuario',
+        'nm_pessoa',
+        'nm_usuario_empresa',
+      ])
     },
 
     fantasiaUsuario(u) {
-      return this.pickCI(u, ['nm_fantasia_usuario'])
+      return this.pickCI(u, ['nm_fantasia_usuario', 'nm_login', 'nm_fantasia', 'login'])
     },
 
     departamentoUsuario(u) {
-      return this.pickCI(u, ['nm_departamento'])
+      return this.pickCI(u, ['nm_departamento', 'nm_setor', 'nm_departamento_usuario'])
     },
 
     fotoUsuario(u) {
       const cd = this.codigoUsuario(u)
-      const url = this.pickCI(u, ['nm_caminho_imagem'])
+      const url = this.pickCI(u, ['nm_caminho_imagem', 'nm_foto', 'url_foto'])
       if (cd && this.imgFalhou[String(cd)]) return ''
 
       if (!url) return ''
@@ -231,6 +237,8 @@ export default {
         'dt_aniversario_usuario',
         'dt_nasc_usuario',
         'dt_aniversario_user',
+        'dt_aniversario_cliente',
+        'dt_aniversario_pessoa',
       ])
       return this.formatarData(raw)
     },
@@ -266,8 +274,8 @@ export default {
 
     selecionarUsuario(u) {
       const cd = this.codigoUsuario(u)
-      const nm = this.nomeUsuario(u)
-      const login = this.fantasiaUsuario(u)
+      const nm = this.nomeUsuario(u) || this.fantasiaUsuario(u)
+      const login = this.fantasiaUsuario(u) || this.nomeUsuario(u)
 
       localStorage.cd_usuario_selecionado = cd !== null && cd !== undefined ? cd : ''
       localStorage.nm_usuario_selecionado = nm !== null && nm !== undefined ? nm : ''

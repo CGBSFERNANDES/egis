@@ -31,31 +31,6 @@
           <img v-if="!caminho == ''" class="img" v-bind:src="pegaImg()" alt="" />
         </dx-item>
 
-        <dx-item v-show="qt_aniversario > 0" location="after">
-          <div v-show="qt_aniversario > 0" slot-scope="_">
-            <!--<div class="badge">
-              <span>
-                {{ qt_aniversario }}
-              </span>
-            </div>-->
-
-            <q-btn @click="onAniversariantes()" flat round color="cyan-8" icon="cake">
-              <q-tooltip self="center middle" class="bg-black"> Aniversariantes </q-tooltip>
-              <q-badge rounded color="red" floating>{{ qt_aniversario }}</q-badge>
-            </q-btn>
-            <!--<DxButton
-              class="btn"
-              icon="fas fa-birthday-cake"
-              type="gbs"
-              @click="onAniversariantes()"
-            >
-              <q-tooltip self="center middle" class="bg-black">
-                Aniversariantes
-              </q-tooltip>
-            </DxButton>-->
-          </div>
-        </dx-item>
-
         <dx-item location="center">
           <div
             class="text-weight-medium dt-storage"
