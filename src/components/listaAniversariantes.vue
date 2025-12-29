@@ -241,7 +241,7 @@ export default {
 
       // Se vier caminho relativo, prefixa com host padrão (mesma lógica dos demais componentes)
       if (!/^https?:\/\//i.test(clean)) {
-        return `https://www.egisnet.com.br/img/${clean.replace(/^\\//, '')}`
+        return `https://www.egisnet.com.br/img/${clean.replace(/^[/\\\\]+/, '')}`
       }
 
       return clean
