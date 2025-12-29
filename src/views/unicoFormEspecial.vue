@@ -11034,28 +11034,31 @@ if (this.ic_modal_pesquisa === 'S') {
 }
 .tabsheets-form {
   width: 100%;
-  background: linear-gradient(90deg, rgba(123, 31, 162, 0.08), rgba(0, 172, 193, 0.06));
+  background: linear-gradient(90deg, rgba(123, 31, 162, 0.1), rgba(0, 172, 193, 0.08));
   border-radius: 14px;
-  padding: 4px 6px;
+  padding: 6px 8px;
 }
 .tabsheets-form .q-tabs__content {
   gap: 8px;
+  align-items: center;
 }
 .tabsheets-form .q-tab {
   flex: 1 1 0;
   min-width: 0;
   justify-content: center;
   text-align: center;
-  color: #4527a0;
+  color: #3f2b96;
   font-weight: 800;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.04em;
   font-size: 15px;
+  min-height: 46px;
+  line-height: 1.2;
   border-radius: 12px;
   transition: all 0.18s ease;
 }
 .tabsheets-form .q-tab:hover {
-  background: rgba(0, 172, 193, 0.1);
-  color: #5e35b1;
+  background: rgba(0, 172, 193, 0.12);
+  color: #4a148c;
 }
 .tabsheets-form .q-tab.q-tab--active {
   color: #fff;
@@ -11066,16 +11069,11 @@ if (this.ic_modal_pesquisa === 'S') {
 .tabsheets-form :deep(.q-tab__label) {
   width: 100%;
   text-align: center;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.06em;
   color: inherit;
 }
-.tabsheets-form :deep(.q-tab__label) {
-  width: 100%;
-  text-align: center;
-  letter-spacing: 0.02em;
-}
 .tabsheets-form .q-tab__indicator {
-  height: 4px;
+  height: 5px;
   border-radius: 6px;
   background: linear-gradient(90deg, #f4511e, #00acc1);
 }
@@ -11085,8 +11083,8 @@ if (this.ic_modal_pesquisa === 'S') {
   color: #fff;
   border-radius: 18px 18px 12px 12px;
   box-shadow: 0 18px 44px rgba(123, 31, 162, 0.25);
-  margin: 0 14px 12px;
-  padding: 20px 20px 18px;
+  margin: 0 14px 6px;
+  padding: 12px 18px 12px;
   align-items: center;
 }
 
@@ -11114,6 +11112,9 @@ if (this.ic_modal_pesquisa === 'S') {
   font-size: 38px;
   display: grid;
   place-items: center;
+}
+.dlg-form-card__title {
+  margin-top: 2px;
 }
 
 .dlg-form-card__eyebrow {
@@ -11576,7 +11577,7 @@ if (this.ic_modal_pesquisa === 'S') {
 :deep(.q-dialog__inner.dlg-form-branco .q-field--filled .q-field__control),
 :deep(.q-dialog__inner.dlg-form-branco .q-field--outlined .q-field__control),
 :deep(.q-dialog__inner.dlg-form-branco .q-field--standout .q-field__control) {
-  background: transparent !important; /* evita cinza no control */
+  background: #ffffff !important; /* evita cinza no control */
 }
 
 /* FILLED: fundo real é o :before */
