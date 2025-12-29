@@ -854,6 +854,27 @@
 
       <!-- GRID DevExtreme (SEU BLOCO ORIGINAL) -->
 
+      <div class="row justify-end q-gutter-xs q-mb-sm">
+        <q-btn
+          flat
+          round
+          dense
+          icon="chevron_left"
+          color="deep-orange-7"
+          aria-label="Rolar grid para a esquerda"
+          @click="scrollGridHorizontal(-240)"
+        />
+        <q-btn
+          flat
+          round
+          dense
+          icon="chevron_right"
+          color="deep-orange-7"
+          aria-label="Rolar grid para a direita"
+          @click="scrollGridHorizontal(240)"
+        />
+      </div>
+
       <div class="grid-scroll-shell" ref="scrollShell">
 
         <!-- Legenda de Status (acima da grid) -->
@@ -1132,10 +1153,10 @@
               id="grid-padrao"
               ref="grid"
               :data-source="rows || dataSourceConfig"
-              :columns="columns"
-              :key-expr="keyName || id"
-              :summary="gridSummaryConfig"
-              :show-borders="true"
+      :columns="columns"
+      :key-expr="keyName || id"
+      :summary="gridSummaryConfig"
+      :show-borders="true"
               :focused-row-enabled="false"
               :focused-row-key="null"
               :focused-row-index="null"
@@ -6192,6 +6213,15 @@ async refreshGrid () {
       const width = shell.clientWidth;
       shell.scrollBy({
         left: dir * width * 0.8, // move 80% da largura visível
+        behavior: "smooth",
+      });
+    },
+    scrollGridHorizontal(delta) {
+      const shell = this.$refs.scrollShell;
+      if (!shell) return;
+
+      shell.scrollBy({
+        left: delta,
         behavior: "smooth",
       });
     },
