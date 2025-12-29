@@ -160,7 +160,7 @@
               content-class="menu-aviso-dropdown"
               :content-style="{ padding: '0', maxHeight: '320px' }"
             >
-              <q-list style="min-width: 240px" class="lista-menu">
+              <q-list style="min-width: 360px" class="lista-menu">
                 <q-item clickable v-close-popup @click="onAvisoModuloClick">
                   <q-item-section avatar>
                     <!-- Ícone DEVEXTREME: fields -->
@@ -180,6 +180,10 @@
                   </q-item-section>
                 </q-item>
               </q-list>
+              <q-separator />
+              <div class="aniversariantes-dropdown q-pa-sm">
+                <lista-aniversariantes />
+              </div>
             </q-btn-dropdown>
           </div>
         </dx-item>
@@ -510,6 +514,7 @@ export default {
     DxToolbar,
     DxItem,
     UserPanel,
+    ListaAniversariantes: () => import('./listaAniversariantes.vue'),
     selecaoData: () => import('../views/selecao-periodo'),
     DigisacWebchat: () => import('../components/webChat.vue'),
     grid: () => import('../views/grid.vue'),
@@ -607,6 +612,13 @@ export default {
           disabled: false,
           visible: true,
           beginGroup: true,
+        },
+        {
+          text: 'Composição',
+          icon: 'doc',
+          onClick: this.onModuloComposicaoClick,
+          disabled: false,
+          visible: true,
         },
 
         {
@@ -983,6 +995,13 @@ export default {
         name: 'selecao-modulo',
         //query: { redirect: this.$route.path }
       })
+    },
+    onModuloComposicaoClick() {
+      localStorage.cd_menu = 6543
+      localStorage.nm_identificacao_api = 'Empresa/Modulo'
+      localStorage.cd_api = 52
+      localStorage.cd_tipo_consulta = 0
+      this.$router.push({ name: 'modulo-composicao' })
     },
     onContatoClick() {
       this.collapse = true
