@@ -10837,6 +10837,21 @@ if (this.ic_modal_pesquisa === 'S') {
   padding-top: 8px;
   padding-bottom: 6px;
 }
+:deep(.q-field--filled .q-field__control) {
+  background: #ffffff !important;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.06);
+}
+:deep(.q-field--filled .q-field__control:before) {
+  background: #ffffff !important;
+  opacity: 1 !important;
+}
+:deep(.q-field--filled .q-field__control:after) {
+  background: transparent !important;
+}
+:deep(.q-field--filled .q-field__native),
+:deep(.q-field--filled .q-field__label) {
+  color: #1f2937 !important;
+}
 
 .dx-card.wide-card {
   padding: 12px 12px; /* sutil e consistente */
@@ -11019,32 +11034,46 @@ if (this.ic_modal_pesquisa === 'S') {
 }
 .tabsheets-form {
   width: 100%;
-  background: linear-gradient(90deg, rgba(123, 31, 162, 0.08), rgba(0, 172, 193, 0.06));
+  background: linear-gradient(90deg, rgba(123, 31, 162, 0.1), rgba(0, 172, 193, 0.08));
   border-radius: 14px;
-  padding: 4px 6px;
+  padding: 6px 8px;
 }
 .tabsheets-form .q-tabs__content {
   gap: 8px;
+  align-items: center;
 }
 .tabsheets-form .q-tab {
   flex: 1 1 0;
   min-width: 0;
   justify-content: center;
-  color: var(--pf-muted, #334155);
+  text-align: center;
+  color: #3f2b96;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  font-size: 15px;
+  min-height: 46px;
+  line-height: 1.2;
   border-radius: 12px;
   transition: all 0.18s ease;
 }
 .tabsheets-form .q-tab:hover {
-  background: rgba(0, 172, 193, 0.08);
-  color: var(--pf-brand, #7b1fa2);
+  background: rgba(0, 172, 193, 0.12);
+  color: #4a148c;
 }
 .tabsheets-form .q-tab.q-tab--active {
   color: #fff;
-  background: linear-gradient(135deg, #7b1fa2, #00acc1);
+  background: linear-gradient(135deg, #6a1b9a, #00838f);
   box-shadow: 0 12px 30px rgba(123, 31, 162, 0.18);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+}
+.tabsheets-form :deep(.q-tab__label) {
+  width: 100%;
+  text-align: center;
+  letter-spacing: 0.06em;
+  color: inherit;
 }
 .tabsheets-form .q-tab__indicator {
-  height: 4px;
+  height: 5px;
   border-radius: 6px;
   background: linear-gradient(90deg, #f4511e, #00acc1);
 }
@@ -11054,8 +11083,8 @@ if (this.ic_modal_pesquisa === 'S') {
   color: #fff;
   border-radius: 18px 18px 12px 12px;
   box-shadow: 0 18px 44px rgba(123, 31, 162, 0.25);
-  margin: 0 14px 12px;
-  padding: 20px 20px 18px;
+  margin: 0 14px 6px;
+  padding: 12px 18px 12px;
   align-items: center;
 }
 
@@ -11067,30 +11096,25 @@ if (this.ic_modal_pesquisa === 'S') {
 .dlg-form-card__hero-icon {
   width: 82px;
   height: 82px;
-  border-radius: 24px;
-  display: grid;
-  place-items: center;
-  background: linear-gradient(145deg, rgba(255, 255, 255, 0.32), rgba(255, 255, 255, 0.12));
-  border: 1px solid rgba(255, 255, 255, 0.5);
-  box-shadow: 0 12px 44px rgba(0, 0, 0, 0.25);
-}
-.dlg-form-card__hero-icon .q-icon {
-  font-weight: 900;
-  opacity: 0.95;
-  box-shadow: 0 16px 38px rgba(123, 31, 162, 0.25);
-  margin: 0 14px 12px;
-  padding: 18px;
-}
-
-.dlg-form-card__hero-icon {
-  width: 76px;
-  height: 76px;
-  border-radius: 22px;
+  border-radius: 50%;
   display: grid;
   place-items: center;
   background: linear-gradient(145deg, rgba(255, 255, 255, 0.28), rgba(255, 255, 255, 0.08));
   border: 1px solid rgba(255, 255, 255, 0.4);
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.22);
+}
+.dlg-form-card__hero-icon .q-icon {
+  font-weight: 900;
+  opacity: 0.95;
+  box-shadow: 0 16px 38px rgba(123, 31, 162, 0.25);
+  margin: 0;
+  padding: 0;
+  font-size: 38px;
+  display: grid;
+  place-items: center;
+}
+.dlg-form-card__title {
+  margin-top: 2px;
 }
 
 .dlg-form-card__eyebrow {
@@ -11472,6 +11496,10 @@ if (this.ic_modal_pesquisa === 'S') {
   background: #fff !important;
   transition: background-color .15s ease;
 }
+:deep(.q-dialog__inner.dlg-form-branco .q-field--filled .q-field__control) {
+  background: #fff !important;
+  box-shadow: inset 0 0 0 1px var(--pf-line) !important;
+}
 
 /* FILLED: remove underline/overlay padrão */
 :deep(.q-dialog__inner.dlg-form-branco .q-field--filled .q-field__control:after) {
@@ -11549,7 +11577,7 @@ if (this.ic_modal_pesquisa === 'S') {
 :deep(.q-dialog__inner.dlg-form-branco .q-field--filled .q-field__control),
 :deep(.q-dialog__inner.dlg-form-branco .q-field--outlined .q-field__control),
 :deep(.q-dialog__inner.dlg-form-branco .q-field--standout .q-field__control) {
-  background: transparent !important; /* evita cinza no control */
+  background: #ffffff !important; /* evita cinza no control */
 }
 
 /* FILLED: fundo real é o :before */
