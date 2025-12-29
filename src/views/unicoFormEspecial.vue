@@ -3963,7 +3963,7 @@ parseSqlTabs(raw) {
       }
 
       return null;
-      
+
     },
 
     async removerCacheSeguro(key) {
@@ -5338,6 +5338,7 @@ async refreshGrid () {
 },
 
   async onGerarRelatorio() {
+
     try {
       const payload = {
         cd_menu: this.cd_menu,
@@ -5347,8 +5348,10 @@ async refreshGrid () {
       }
 
       const dados = await gerarRelatorioPadrao(payload)
+
       // você pode reaproveitar os dados pra exportar/mostrar/abrir PDF
       // Ex.: gerar PDF com os dados retornados:
+
       await gerarPdfRelatorio({
         cd_menu: this.cd_menu,
         cd_usuario: this.cd_usuario,
@@ -8246,7 +8249,8 @@ async syncLookupsFromFormData() {
         // 1) Pega suas colunas / linhas já mostradas na grid
         const metaCols =
           (this.columns?.length ? this.columns : this.gridColumns) || [];
-        const rowsSrc = (this.rows?.length ? this.rows : this.gridRows) || [];
+        
+          const rowsSrc = (this.rows?.length ? this.rows : this.gridRows) || [];
 
         if (!rowsSrc.length) {
           this.$q?.notify?.({

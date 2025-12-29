@@ -115,6 +115,7 @@ declare @cd_mes               int = 0
 declare @cd_modelo            int = 0
 declare @cd_grupo_usuario     int = 0
 declare @qt_contrato_empresa  int = 0
+declare @cd_modulo            int = 0
 
 --select * from egisadmin.dbo.empresa
 
@@ -161,7 +162,7 @@ select @dt_inicial             = valor from #json where campo = 'dt_inicial'
 select @dt_final               = valor from #json where campo = 'dt_final'             
 select @cd_modelo              = valor from #json where campo = 'cd_modelo' 
 select @cd_grupo_usuario       = valor from #json where campo = 'cd_grupo_usuario'
-
+select @cd_modulo              = valor from #json where campo = 'cd_modulo'
 ---------------------------------------------------------------------------------------------
 select @dados_registro         = valor from #json where campo = 'dados_registro'
 select @dados_modal            = valor from #json where campo = 'dados_modal'
@@ -179,6 +180,8 @@ if @cd_empresa = 0
 set @cd_parametro         = ISNULL(@cd_parametro,0)
 set @cd_usuario           = isnull(@cd_usuario,0)
 set @cd_grupo_usuario     = isnull(@cd_grupo_usuario,0)
+set @cd_modulo            = isnull(@cd_modulo,0)
+
 
 ---------------------------------------------------------------------------------------------------------------------------------------------------------    
 
@@ -722,6 +725,215 @@ end
 
 --select * from egisadmin.dbo.grupo_usuario_menu where cd_grupo_usuario = 2512
 
+if @cd_parametro = 100
+begin
+  select
+    m.cd_modulo,
+    m.nm_modulo,
+    m.sg_modulo,
+    f.cd_funcao,
+    f.nm_funcao,
+    mu.cd_menu,
+    mu.nm_menu_titulo,
+    mu.cd_rota
+
+  from
+    egisadmin.dbo.modulo m
+    inner join egisadmin.dbo.modulo_funcao_menu mfm on mfm.cd_modulo = m.cd_modulo
+    inner join egisadmin.dbo.funcao f               on f.cd_funcao   = mfm.cd_funcao
+    inner join egisadmin.dbo.menu mu                on mu.cd_menu    = mfm.cd_menu
+
+  where
+    m.cd_modulo = @cd_modulo
+  order by
+    cd_indice
+
+  --select * from egisadmin.dbo.modulo_funcao_menu
+
+  return
+end
+
+--Lista de Aniversariantes--
+
+if @cd_parametro = 200
+begin
+
+ declare @dt_dia      datetime  
+ declare @ic_dia_util char(1)  
+ declare @cd_dias     int  
+ declare @dt_dia_F    datetime  
+
+   
+ set @cd_dias = 0  
+ set @dt_dia  = convert(datetime,left(convert(varchar,getdate(),121),10)+' 00:00:00',121)
+  
+ set @dt_dia   = isNull(@dt_inicial, @dt_dia)  
+ set @dt_dia_F = isNull(@dt_final,   @dt_dia)  
+
+ select 
+   distinct 
+   u.cd_usuario,  
+   u.nm_fantasia_usuario,  
+   u.nm_usuario,  
+   u.dt_nascimento_usuario,  
+   u.cd_departamento,  
+   TotAnos =  
+  cast((@dt_dia - u.dt_nascimento_usuario)  as int ),
+  @dt_hoje as dt_hoje,
+  u.dt_ultimo_acesso_usuario,
+  e.nm_empresa as nm_empresa,
+  e.cd_empresa as cd_empresa
+
+-------  
+into #TmpAniversariantesDia  
+-------  
+from 
+  egisadmin.dbo.Usuario u with(nolock)
+  left outer join egisadmin.dbo.Usuario_Empresa ue with(nolock) on ue.cd_usuario = u.cd_usuario 
+  left outer join egisadmin.dbo.empresa e          with(nolock) on e.cd_empresa = ue.cd_empresa
+
+where
+     isnull(ic_ativo,'A') = 'A'  and   --Usuário Ativo
+      (day(dt_nascimento_usuario) >= day(@dt_dia+@cd_dias) and  
+       month(dt_nascimento_usuario) >= month(@dt_dia+@cd_dias)) and  
+      (day(dt_nascimento_usuario) <= day(@dt_dia_F+@cd_dias) and  
+       month(dt_nascimento_usuario) <= month(@dt_dia_F+@cd_dias))    
+      and  
+      isnull(ic_controle_aniversario,'S') = 'S'  
+      and
+        e.cd_empresa = @cd_empresa
+
+      --and
+      --u.cd_usuario not in (
+      --	select u.cd_usuario 
+      --	  from egisadmin.dbo.usuario u with(nolock)
+      --		inner join egisadmin.dbo.usuario_empresa ue with(nolock) on ue.cd_usuario = u.cd_usuario 
+      --	 where ue.cd_empresa = case when @cd_empresa<>1 then 1 else @cd_empresa end ) --and u.cd_usuario in  (3572, 3868, 3877, 3574, 3576)
+
+
+--select * from #TmpAniversariantesDia
+
+set @ic_dia_util = 'N'  
+set @cd_dias = 1  
+
+  
+while @ic_dia_util = 'N'   
+begin  
+   if Exists (select ic_util from  egissql.dbo.Agenda with(nolock) 
+              where day(dt_agenda)   = day( @dt_dia_F + @cd_dias ) and  
+                    month(dt_agenda) = month( @dt_dia_F + @cd_dias ) and  
+                    year(dt_agenda)  = year( @dt_dia_F + @cd_dias ) )  
+   begin  
+  
+      select @ic_dia_util = IsNull(ic_util,'S')  
+      from Agenda with(nolock)  
+      -- Na comparação específica da data, o Sql considera o horário (DateTime) e não trazia  
+      -- nenhum registro  
+      where day(dt_agenda)   = day( @dt_dia_F + @cd_dias ) and  
+            month(dt_agenda) = month( @dt_dia_F + @cd_dias ) and  
+            year(dt_agenda)  = year( @dt_dia_F + @cd_dias )  
+  
+      if @ic_dia_util = 'N'   
+      begin  
+  
+         -- Aniversariantes de dias não úteis posteriores  
+  
+         insert into #TmpAniversariantesDia  
+  
+         select
+		   distinct
+           u.cd_usuario,  
+           u.nm_fantasia_usuario,  
+           u.nm_usuario,                  
+           u.dt_nascimento_usuario,  
+           u.cd_departamento,  
+                TotAnos =   
+              cast(((@dt_dia+@cd_dias) - dt_nascimento_usuario)  as int ),
+       @dt_hoje as dt_hoje,
+       u.dt_ultimo_acesso_usuario,     
+	   --e.nm_empresa     
+	   e.nm_empresa  as nm_empresa,
+	   e.cd_empresa  as cd_empresa
+
+--                DataCorrente =   
+--                Convert(VarChar,RTrim(Convert(Char(2),DatePart(m,dt_nascimento_usuario)))+'/'+  
+--                                RTrim(Convert(Char(2),DatePart(d,dt_nascimento_usuario)))+'/'+  
+--                                      Convert(Char(4),Year(@dt_dia+@cd_dias)))  
+         from 
+		    egisadmin.dbo.Usuario  u with(nolock)
+            left outer join egisadmin.dbo.Usuario_Empresa ue with(nolock) on ue.cd_usuario = u.cd_usuario 
+            left outer join egisadmin.dbo.empresa e          with(nolock) on e.cd_empresa = ue.cd_empresa
+
+
+
+         where 
+		   isnull(ic_ativo,'A') = 'A'  and   --Usuário Ativo
+           
+		   day(u.dt_nascimento_usuario) = day(@dt_dia_F+@cd_dias)     and  
+               month(u.dt_nascimento_usuario) = month(@dt_dia_F+@cd_dias) and  
+               isnull(u.ic_controle_aniversario,'S') = 'S'                
+--               dt_ultimo_acesso_usuario < @dt_hoje
+      and  
+      ( select dt_ultimo_acesso_usuario from egisadmin.dbo.usuario with(nolock) where cd_usuario = @cd_usuario ) < @dt_hoje and @cd_usuario>0
+
+  
+         set @cd_dias = @cd_dias + 1  
+  
+      end  
+
+   end  
+   else  
+      set @ic_dia_util = 'S'  
+  
+end  
+
+--select @dt_hoje, @cd_usuario
+--select cd_usuario,dt_ultimo_acesso_usuario from egisadmin.dbo.usuario
+--Atualiza a Data do último Acesso----------------------------------------------------------------
+
+if @cd_usuario > 0 and exists ( select top 1 * from #TmpAniversariantesDia )
+begin
+
+  update
+    egisadmin.dbo.usuario
+  set
+    dt_ultimo_acesso_usuario = @dt_hoje
+  where
+    cd_usuario = @cd_usuario 
+ 
+end
+
+
+  
+select 
+  a.cd_usuario,
+  a.nm_fantasia_usuario     as 'Usuario ',  
+  a.nm_usuario              as 'Nome',  
+  b.nm_departamento         as 'Departamento',  
+  Data =   
+  a.dt_nascimento_usuario, --+ TotAnos 
+  a.nm_empresa,
+  a.cd_empresa,
+  cast(dbo.fn_strzero(datepart(dd,a.dt_nascimento_usuario),2) as varchar)+'/'+
+  cast(dbo.fn_strzero(datepart(mm,a.dt_nascimento_usuario),2) as varchar)      as nm_niver,
+  u.nm_email_usuario
+
+from 
+  #TmpAniversariantesDia a  
+  LEFT OUTER JOIN Departamento b               with(nolock) on (a.cd_departamento = b.cd_departamento)  
+  left outer join egisadmin.dbo.usuario u      with(nolock) on u.cd_usuario = a.cd_usuario
+where
+  isnull(a.cd_empresa,0) = case when isnull(@cd_empresa,0) = 0 then isnull(a.cd_empresa,0) else @cd_empresa end
+
+order by
+  month(u.dt_nascimento_usuario), day(u.dt_nascimento_usuario),a.nm_usuario
+
+
+  return
+
+end
+
+
 if @cd_parametro = 9999
 begin
   return
@@ -797,11 +1009,19 @@ go
 go
 
 --exec  pr_egis_admin_processo_modulo '[{"ic_json_parametro": "S", "cd_parametro": 50, "cd_grupo_usuario": 2512 }]' 
+
+
+--exec  pr_egis_admin_processo_modulo '[{"ic_json_parametro": "S", "cd_parametro": 100, "cd_modulo": 264 }]'
+
+
+exec  pr_egis_admin_processo_modulo '[{"ic_json_parametro": "S", "cd_parametro": 200, "dt_inicial": "01/01/2025" , "dt_final": "12/31/2025" }]'
 go
 go
 go
 ------------------------------------------------------------------------------
 GO
+
+use egissql
 
 /*
 
