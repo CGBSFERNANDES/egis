@@ -226,12 +226,24 @@ export default {
 
     fotoUsuario(u) {
       const cd = this.codigoUsuario(u)
-      const url = this.pickCI(u, ['nm_caminho_imagem', 'nm_foto', 'url_foto'])
+      let url = this.pickCI(u, [
+        'nm_caminho_imagem',
+        'nm_foto',
+        'url_foto',
+        'nm_caminho_foto',
+        'nm_imagem',
+      ])
       if (cd && this.imgFalhou[String(cd)]) return ''
 
       if (!url) return ''
       const clean = String(url).trim()
       if (!clean) return ''
+
+      // Se vier caminho relativo, prefixa com host padrão (mesma lógica dos demais componentes)
+      if (!/^https?:\/\//i.test(clean)) {
+        return `https://www.egisnet.com.br/img/${clean.replace(/^\\//, '')}`
+      }
+
       return clean
     },
 
