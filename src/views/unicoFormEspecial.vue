@@ -348,10 +348,10 @@
       <q-tabs
         v-model="activeTabsheet"
         dense
-        align="left"
+        align="center"
         class="tabsheets-form"
-        active-color="deep-orange-6"
-        indicator-color="cyan-6"
+        active-color="white"
+        indicator-color="cyan-6"       
       >
         <q-tab
          v-for="(t, idx) in tabsheetsForm"
@@ -11032,16 +11032,21 @@ if (this.ic_modal_pesquisa === 'S') {
 .tabs-form {
   width: 100%;
 }
+
 .tabsheets-form {
   width: 100%;
   background: linear-gradient(90deg, rgba(123, 31, 162, 0.1), rgba(0, 172, 193, 0.08));
   border-radius: 14px;
   padding: 6px 8px;
 }
+
 .tabsheets-form .q-tabs__content {
   gap: 8px;
   align-items: center;
+  width: 100%;
+  justify-content: center; 
 }
+
 .tabsheets-form .q-tab {
   flex: 1 1 0;
   min-width: 0;
@@ -11054,7 +11059,10 @@ if (this.ic_modal_pesquisa === 'S') {
   min-height: 46px;
   line-height: 1.2;
   border-radius: 12px;
-  transition: all 0.18s ease;
+  transition: all 0.18s ease;  
+  display: flex;
+  align-items: center;      /* centraliza vertical */
+  justify-content: center;  /* centraliza horizontal */ 
 }
 .tabsheets-form .q-tab:hover {
   background: rgba(0, 172, 193, 0.12);
@@ -11072,10 +11080,25 @@ if (this.ic_modal_pesquisa === 'S') {
   letter-spacing: 0.06em;
   color: inherit;
 }
+
 .tabsheets-form .q-tab__indicator {
   height: 5px;
   border-radius: 6px;
   background: linear-gradient(90deg, #f4511e, #00acc1);
+}
+
+/* centraliza o conteúdo do tab (ícone + label) */
+.tabsheets-form__tab .q-tab__content {
+  
+  justify-content: center;   /* eixo principal */
+  align-items: center;       /* eixo cruzado */
+  width: 100%;
+}
+
+/* centraliza o texto do label */
+.tabsheets-form__tab .q-tab__label {
+  width: 100%;
+  text-align: center;
 }
 
 .dlg-form-card__hero {
@@ -11091,6 +11114,7 @@ if (this.ic_modal_pesquisa === 'S') {
 .dlg-form-card__hero-main {
   flex: 1 1 auto;
   min-width: 0;
+  margin-top: -15px;
 }
 
 .dlg-form-card__hero-icon {
@@ -11768,6 +11792,5 @@ if (this.ic_modal_pesquisa === 'S') {
   color: var(--pf-brand) !important;
   transform: scale(1.07);
 }
-
 
 </style>
