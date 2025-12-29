@@ -165,3 +165,27 @@ export async function mapColumnsFromDB (cd_tabela, columns = [], {
   return applyMapaToColumns(columns, byAtrib)
 
 }
+
+/**
+ * Constrói colunas a partir de um conjunto de linhas e aplica os metadados da
+ * pr_egis_pesquisa_mapa_atributo automaticamente (caption, tipo, largura, visibilidade).
+ *
+ * rows: array de objetos (os dados do grid)
+ * options:
+ *   - cd_tabela: tabela para o mapa (default 0)
+ *   - cd_parametro: parâmetro da procedure (default 1 conforme exemplo)
+ *   - useCache: usar cache local/memória
+ */
+export async function buildColumnsFromData (rows = [], {
+  cd_tabela = 0,
+  cd_parametro = 1,
+  useCache = true
+} = {}) {
+  const sample = Array.isArray(rows) && rows.length ? rows[0] : null
+  if (!sample) return []
+
+  const campos = Object.keys(sample).filter((k) => k !== '__rowKey')
+  const baseCols = campos.map((c) => ({ dataField: c }))
+
+  return mapColumnsFromDB(cd_tabela, baseCols, { cd_parametro, useCache })
+}

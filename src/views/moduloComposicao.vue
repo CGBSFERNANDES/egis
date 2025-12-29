@@ -41,6 +41,35 @@
       </div>
     </div>
 
+    <div v-if="moduloSelecionado" class="q-mb-lg">
+      <q-card flat bordered class="modulo-selecionado shadow-1">
+        <q-card-section class="row items-center q-col-gutter-md">
+          <div class="col-auto">
+            <div class="logo-modulo pequeno">
+              <span class="logo-letter">
+                {{ (moduloSelecionado.sg_modulo || moduloSelecionado.nm_modulo || '').charAt(0) }}
+              </span>
+            </div>
+          </div>
+          <div class="col">
+            <div class="text-subtitle1 text-weight-bold">
+              {{ moduloSelecionado.nm_modulo }}
+            </div>
+            <div class="text-grey-7">
+              {{ moduloSelecionado.ds_modulo }}
+            </div>
+            <div class="text-caption q-mt-xs text-weight-medium">
+              Cadeia: {{ moduloSelecionado.nm_cadeia_valor || '—' }}
+            </div>
+          </div>
+          <div class="col-auto text-right">
+            <div class="text-caption text-grey-6">Código</div>
+            <div class="text-h6 text-primary">{{ moduloSelecionado.cd_modulo }}</div>
+          </div>
+        </q-card-section>
+      </q-card>
+    </div>
+
     <div class="cards-wrapper q-mb-xl">
       <div
         v-for="modulo in modulosFiltrados"
@@ -99,6 +128,7 @@
 
       <dx-data-grid
         v-if="!carregandoComposicao"
+        id="composicao-section"
         class="dx-card wide-card"
         :data-source="composicaoComChave"
         :show-borders="true"
@@ -128,11 +158,14 @@
           storage-key="grid_modulo_composicao"
         />
         <DxColumn
-          v-for="coluna in colunasComposicao"
+          v-for="coluna in colunasGrid"
           :key="coluna.dataField"
           :data-field="coluna.dataField"
           :caption="coluna.caption"
           :data-type="coluna.dataType"
+          :format="coluna.format"
+          :width="coluna.width"
+          :visible="coluna.visible"
         />
       </dx-data-grid>
 
@@ -167,6 +200,7 @@ import saveAs from "file-saver";
 import notify from "devextreme/ui/notify";
 import Menu from "../http/menu";
 import Procedimento from "../http/procedimento";
+import { buildColumnsFromData } from "@/services/mapaAtributo";
 
 const api = axios.create({
   baseURL: "https://egiserp.com.br/api",
@@ -216,6 +250,7 @@ export default {
       cd_api: Number(localStorage.cd_api || 0),
       cd_cliente: Number(localStorage.cd_cliente || 0),
       headerBanco: localStorage.nm_banco_empresa || "",
+      colunasGrid: [],
     };
   },
   computed: {
@@ -266,19 +301,6 @@ export default {
         ...row,
       }));
     },
-    colunasComposicao() {
-      const rows = this.composicaoComChave;
-      if (!rows.length) return [];
-
-      const sample = rows[0];
-      return Object.keys(sample)
-        .filter((k) => k !== "__rowKey")
-        .map((key) => ({
-          dataField: key,
-          caption: this.tituloColuna(key),
-          dataType: this.detectaTipo(sample[key]),
-        }));
-    },
   },
   async created() {
     await this.carregarModulos();
@@ -291,11 +313,6 @@ export default {
         .replace(/\s+/g, " ")
         .trim()
         .replace(/\b\w/g, (l) => l.toUpperCase());
-    },
-    detectaTipo(valor) {
-      if (typeof valor === "number") return "number";
-      if (valor instanceof Date) return "date";
-      return undefined;
     },
     async carregarModulos() {
       this.carregandoModulos = true;
@@ -327,6 +344,10 @@ export default {
       localStorage.cd_modulo = modulo.cd_modulo;
       localStorage.nm_modulo = modulo.nm_modulo;
       this.carregarComposicao();
+      this.$nextTick(() => {
+        const el = document.getElementById("composicao-section");
+        if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
     },
     async carregarComposicao() {
       if (!this.moduloSelecionado) return;
@@ -352,10 +373,15 @@ export default {
         if (!Array.isArray(rows)) rows = rows ? [rows] : [];
 
         this.composicao = rows;
+        this.colunasGrid = await buildColumnsFromData(rows, {
+          cd_tabela: 0,
+          cd_parametro: 1,
+        });
       } catch (e) {
         console.error("[moduloComposicao] erro ao carregar composição:", e);
         notify("Não foi possível carregar a composição do módulo.");
         this.composicao = [];
+        this.colunasGrid = [];
       } finally {
         this.carregandoComposicao = false;
       }
@@ -479,5 +505,15 @@ export default {
 
 .card-modulo {
   border-radius: 18px;
+}
+
+.modulo-selecionado {
+  border-radius: 18px;
+}
+
+.logo-modulo.pequeno {
+  width: 48px;
+  height: 48px;
+  font-size: 24px;
 }
 </style>
