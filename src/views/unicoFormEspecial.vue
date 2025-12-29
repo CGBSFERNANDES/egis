@@ -10837,6 +10837,17 @@ if (this.ic_modal_pesquisa === 'S') {
   padding-top: 8px;
   padding-bottom: 6px;
 }
+:deep(.q-field--filled .q-field__control:before) {
+  background: #ffffff !important;
+  opacity: 1 !important;
+}
+:deep(.q-field--filled .q-field__control:after) {
+  background: transparent !important;
+}
+:deep(.q-field--filled .q-field__native),
+:deep(.q-field--filled .q-field__label) {
+  color: #1f2937 !important;
+}
 
 .dx-card.wide-card {
   padding: 12px 12px; /* sutil e consistente */
@@ -11030,7 +11041,9 @@ if (this.ic_modal_pesquisa === 'S') {
   flex: 1 1 0;
   min-width: 0;
   justify-content: center;
-  color: var(--pf-muted, #334155);
+  text-align: center;
+  color: #4527a0;
+  font-weight: 700;
   border-radius: 12px;
   transition: all 0.18s ease;
 }
@@ -11040,8 +11053,13 @@ if (this.ic_modal_pesquisa === 'S') {
 }
 .tabsheets-form .q-tab.q-tab--active {
   color: #fff;
-  background: linear-gradient(135deg, #7b1fa2, #00acc1);
+  background: linear-gradient(135deg, #6a1b9a, #00838f);
   box-shadow: 0 12px 30px rgba(123, 31, 162, 0.18);
+}
+.tabsheets-form :deep(.q-tab__label) {
+  width: 100%;
+  text-align: center;
+  letter-spacing: 0.02em;
 }
 .tabsheets-form .q-tab__indicator {
   height: 4px;
@@ -11067,12 +11085,12 @@ if (this.ic_modal_pesquisa === 'S') {
 .dlg-form-card__hero-icon {
   width: 82px;
   height: 82px;
-  border-radius: 24px;
+  border-radius: 50%;
   display: grid;
   place-items: center;
-  background: linear-gradient(145deg, rgba(255, 255, 255, 0.32), rgba(255, 255, 255, 0.12));
-  border: 1px solid rgba(255, 255, 255, 0.5);
-  box-shadow: 0 12px 44px rgba(0, 0, 0, 0.25);
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.28), rgba(255, 255, 255, 0.08));
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.22);
 }
 .dlg-form-card__hero-icon .q-icon {
   font-weight: 900;
@@ -11080,17 +11098,6 @@ if (this.ic_modal_pesquisa === 'S') {
   box-shadow: 0 16px 38px rgba(123, 31, 162, 0.25);
   margin: 0 14px 12px;
   padding: 18px;
-}
-
-.dlg-form-card__hero-icon {
-  width: 76px;
-  height: 76px;
-  border-radius: 22px;
-  display: grid;
-  place-items: center;
-  background: linear-gradient(145deg, rgba(255, 255, 255, 0.28), rgba(255, 255, 255, 0.08));
-  border: 1px solid rgba(255, 255, 255, 0.4);
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.22);
 }
 
 .dlg-form-card__eyebrow {
