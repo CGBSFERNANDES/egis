@@ -854,7 +854,7 @@
 
       <!-- GRID DevExtreme (SEU BLOCO ORIGINAL) -->
 
-      <div class="row justify-end q-gutter-xs q-mb-sm">
+      <div class="row justify-center q-gutter-xs q-mb-sm">
         <q-btn
           flat
           round
