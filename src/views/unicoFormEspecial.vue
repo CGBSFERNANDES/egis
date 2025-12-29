@@ -854,7 +854,7 @@
 
       <!-- GRID DevExtreme (SEU BLOCO ORIGINAL) -->
 
-      <div class="row justify-center q-gutter-xs q-mb-sm">
+      <div class="row justify-center q-gutter-xs q-mb-sm q-mt-sm">
         <q-btn
           flat
           round
@@ -1185,11 +1185,13 @@
         <div
           v-else
           v-show="!(String(ic_treeview_menu || 'N').toUpperCase() === 'S' && exibirComoTree)"
-          class="grid-scroll-track" ref="scrollTrack">
+          class="grid-scroll-shell grid-scroll-track"
+          ref="scrollShell"
+          :style="gridScrollStyles">
           <transition name="slide-fade">
             <dx-data-grid
               class="dx-card wide-card"
-              height="100%"
+              :height="gridAlturaAtual"
               v-if="temSessao"
               id="grid-padrao"
               ref="grid"
@@ -2295,7 +2297,7 @@ export default {
       showDashDinamico: false,
       ncd_acesso_entrada: this.cd_acesso_entrada || localStorage.cd_chave_pesquisa || 0,
       ncd_menu_entrada: this.cd_menu_entrada || 0,
-      mostrarSetasGrid: false, // por padrão NÃO mostra
+      mostrarSetasGrid: true, // exibe setas de scroll vertical
       gridAlturaMin: 420,
       gridAlturaMax: 1400,
       gridAlturaPadrao: 720,
@@ -2597,6 +2599,7 @@ export default {
       );
 
       return {
+        height: `${altura}px`,
         maxHeight: `${altura}px`,
         minHeight: `${Math.min(altura, this.gridAlturaMax)}px`,
       };
@@ -5494,7 +5497,7 @@ async refreshGrid () {
       // decide o container de scroll
       let refEl = null;
       if (qual === "principal") {
-        refEl = this.$refs.scrollShellPrincipal;
+        refEl = this.$refs.scrollShell;
       } else if (qual === "det" && this.$refs["scrollShellDet_" + cdMenu]) {
         // quando v-for com ref, o Vue devolve um array
         const arr = this.$refs["scrollShellDet_" + cdMenu];
