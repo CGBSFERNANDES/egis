@@ -31,31 +31,6 @@
           <img v-if="!caminho == ''" class="img" v-bind:src="pegaImg()" alt="" />
         </dx-item>
 
-        <dx-item v-show="qt_aniversario > 0" location="after">
-          <div v-show="qt_aniversario > 0" slot-scope="_">
-            <!--<div class="badge">
-              <span>
-                {{ qt_aniversario }}
-              </span>
-            </div>-->
-
-            <q-btn @click="onAniversariantes()" flat round color="cyan-8" icon="cake">
-              <q-tooltip self="center middle" class="bg-black"> Aniversariantes </q-tooltip>
-              <q-badge rounded color="red" floating>{{ qt_aniversario }}</q-badge>
-            </q-btn>
-            <!--<DxButton
-              class="btn"
-              icon="fas fa-birthday-cake"
-              type="gbs"
-              @click="onAniversariantes()"
-            >
-              <q-tooltip self="center middle" class="bg-black">
-                Aniversariantes
-              </q-tooltip>
-            </DxButton>-->
-          </div>
-        </dx-item>
-
         <dx-item location="center">
           <div
             class="text-weight-medium dt-storage"
@@ -182,6 +157,8 @@
               color="deep-orange-7"
               class="q-ml-md"
               dropdown-icon=""
+              content-class="menu-aviso-dropdown"
+              :content-style="{ padding: '0', maxHeight: '320px' }"
             >
               <q-list style="min-width: 240px" class="lista-menu">
                 <q-item clickable v-close-popup @click="onAvisoModuloClick">
@@ -192,6 +169,14 @@
 
                   <q-item-section>
                     <q-item-label>Aviso dos Módulos</q-item-label>
+                  </q-item-section>
+                </q-item>
+                <q-item clickable v-close-popup @click="onAniversariantes">
+                  <q-item-section avatar>
+                    <q-icon name="cake" color="purple" />
+                  </q-item-section>
+                  <q-item-section>
+                    <q-item-label>Aniversariantes</q-item-label>
                   </q-item-section>
                 </q-item>
               </q-list>
@@ -932,7 +917,7 @@ export default {
     },
 
     onAniversariantes() {
-      alert('buscando o componente listar aniversariantes !')
+      this.$router.push({ name: 'lista-aniversariantes' })
     },
 
     onMensagem() {
@@ -1278,5 +1263,9 @@ export default {
 
 .q-btn-dropdown__arrow {
   display: none !important;
+}
+
+.menu-aviso-dropdown {
+  padding: 0 !important;
 }
 </style>
