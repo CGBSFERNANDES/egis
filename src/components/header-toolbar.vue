@@ -623,6 +623,13 @@ export default {
           visible: true,
           beginGroup: true,
         },
+        {
+          text: 'Composição',
+          icon: 'doc',
+          onClick: this.onModuloComposicaoClick,
+          disabled: false,
+          visible: true,
+        },
 
         {
           text: 'Período',
@@ -998,6 +1005,13 @@ export default {
         name: 'selecao-modulo',
         //query: { redirect: this.$route.path }
       })
+    },
+    onModuloComposicaoClick() {
+      localStorage.cd_menu = 6543
+      localStorage.nm_identificacao_api = 'Empresa/Modulo'
+      localStorage.cd_api = 52
+      localStorage.cd_tipo_consulta = 0
+      this.$router.push({ name: 'modulo-composicao' })
     },
     onContatoClick() {
       this.collapse = true
