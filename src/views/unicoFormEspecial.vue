@@ -11069,6 +11069,11 @@ if (this.ic_modal_pesquisa === 'S') {
   letter-spacing: 0.04em;
   color: inherit;
 }
+.tabsheets-form :deep(.q-tab__label) {
+  width: 100%;
+  text-align: center;
+  letter-spacing: 0.02em;
+}
 .tabsheets-form .q-tab__indicator {
   height: 4px;
   border-radius: 6px;

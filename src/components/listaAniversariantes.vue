@@ -203,15 +203,25 @@ export default {
         'nm_nome_usuario',
         'nm_pessoa',
         'nm_usuario_empresa',
+        'nome',
+        'nm_nome_cliente',
+        'nm_nome_funcionario',
       ])
     },
 
     fantasiaUsuario(u) {
-      return this.pickCI(u, ['nm_fantasia_usuario', 'nm_login', 'nm_fantasia', 'login'])
+      return this.pickCI(u, [
+        'nm_fantasia_usuario',
+        'nm_login',
+        'nm_fantasia',
+        'login',
+        'usuario',
+        'nm_usuario_login',
+      ])
     },
 
     departamentoUsuario(u) {
-      return this.pickCI(u, ['nm_departamento', 'nm_setor', 'nm_departamento_usuario'])
+      return this.pickCI(u, ['nm_departamento', 'nm_setor', 'nm_departamento_usuario', 'departamento'])
     },
 
     fotoUsuario(u) {
@@ -239,6 +249,8 @@ export default {
         'dt_aniversario_user',
         'dt_aniversario_cliente',
         'dt_aniversario_pessoa',
+        'nm_niver',
+        'data',
       ])
       return this.formatarData(raw)
     },
