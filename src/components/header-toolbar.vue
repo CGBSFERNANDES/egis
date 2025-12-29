@@ -157,6 +157,8 @@
               color="deep-orange-7"
               class="q-ml-md"
               dropdown-icon=""
+              content-class="menu-aviso-dropdown"
+              :content-style="{ padding: '0', maxHeight: '320px' }"
             >
               <q-list style="min-width: 360px" class="lista-menu">
                 <q-item clickable v-close-popup @click="onAvisoModuloClick">
@@ -1282,9 +1284,7 @@ export default {
   display: none !important;
 }
 
-.aniversariantes-dropdown {
-  max-height: 420px;
-  width: 360px;
-  overflow-y: auto;
+.menu-aviso-dropdown {
+  padding: 0 !important;
 }
 </style>

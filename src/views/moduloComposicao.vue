@@ -70,7 +70,7 @@
       </q-card>
     </div>
 
-    <div class="cards-wrapper q-mb-xl">
+    <div v-if="exibirCards" class="cards-wrapper q-mb-xl">
       <div
         v-for="modulo in modulosFiltrados"
         :key="modulo.cd_modulo"
@@ -251,6 +251,7 @@ export default {
       cd_cliente: Number(localStorage.cd_cliente || 0),
       headerBanco: localStorage.nm_banco_empresa || "",
       colunasGrid: [],
+      exibirCards: true,
     };
   },
   computed: {
@@ -317,6 +318,12 @@ export default {
     async carregarModulos() {
       this.carregandoModulos = true;
       try {
+        // reset seleção e exibe novamente a lista de cards
+        this.exibirCards = true;
+        this.moduloSelecionado = null;
+        this.composicao = [];
+        this.colunasGrid = [];
+
         const dadosMenu = await Menu.montarMenu(this.cd_empresa, this.cd_menu, this.cd_api);
         const sParametroApi = dadosMenu.nm_api_parametro;
 
@@ -344,6 +351,7 @@ export default {
       localStorage.cd_modulo = modulo.cd_modulo;
       localStorage.nm_modulo = modulo.nm_modulo;
       this.carregarComposicao();
+      this.exibirCards = false;
       this.$nextTick(() => {
         const el = document.getElementById("composicao-section");
         if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });

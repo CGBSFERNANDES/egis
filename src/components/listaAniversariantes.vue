@@ -203,25 +203,47 @@ export default {
         'nm_nome_usuario',
         'nm_pessoa',
         'nm_usuario_empresa',
+        'nome',
+        'nm_nome_cliente',
+        'nm_nome_funcionario',
       ])
     },
 
     fantasiaUsuario(u) {
-      return this.pickCI(u, ['nm_fantasia_usuario', 'nm_login', 'nm_fantasia', 'login'])
+      return this.pickCI(u, [
+        'nm_fantasia_usuario',
+        'nm_login',
+        'nm_fantasia',
+        'login',
+        'usuario',
+        'nm_usuario_login',
+      ])
     },
 
     departamentoUsuario(u) {
-      return this.pickCI(u, ['nm_departamento', 'nm_setor', 'nm_departamento_usuario'])
+      return this.pickCI(u, ['nm_departamento', 'nm_setor', 'nm_departamento_usuario', 'departamento'])
     },
 
     fotoUsuario(u) {
       const cd = this.codigoUsuario(u)
-      const url = this.pickCI(u, ['nm_caminho_imagem', 'nm_foto', 'url_foto'])
+      let url = this.pickCI(u, [
+        'nm_caminho_imagem',
+        'nm_foto',
+        'url_foto',
+        'nm_caminho_foto',
+        'nm_imagem',
+      ])
       if (cd && this.imgFalhou[String(cd)]) return ''
 
       if (!url) return ''
       const clean = String(url).trim()
       if (!clean) return ''
+
+      // Se vier caminho relativo, prefixa com host padrão (mesma lógica dos demais componentes)
+      if (!/^https?:\/\//i.test(clean)) {
+        return `https://www.egisnet.com.br/img/${clean.replace(/^[/\\\\]+/, '')}`
+      }
+
       return clean
     },
 
@@ -239,6 +261,8 @@ export default {
         'dt_aniversario_user',
         'dt_aniversario_cliente',
         'dt_aniversario_pessoa',
+        'nm_niver',
+        'data',
       ])
       return this.formatarData(raw)
     },
