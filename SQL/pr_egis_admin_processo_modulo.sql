@@ -1,22 +1,10 @@
 --BANCO DA EMPRESA/CLIENTE
---
 --use EGISSQL_355
 
-
-IF EXISTS (SELECT name 
-	   FROM   sysobjects 
-	   WHERE  name = N'pr_egis_admin_processo_modulo' 
-	   AND 	  type = 'P')
-    DROP PROCEDURE  pr_egis_admin_processo_modulo
-
+IF OBJECT_ID(N'dbo.pr_egis_admin_processo_modulo', N'P') IS NOT NULL
+    DROP PROCEDURE dbo.pr_egis_admin_processo_modulo;
 GO
 
-SET QUOTED_IDENTIFIER ON;
-GO
-
-IF OBJECT_ID('pr_egis_admin_processo_modulo','P') IS NOT NULL
-    DROP PROCEDURE pr_egis_admin_processo_modulo;
-GO
 
 -------------------------------------------------------------------------------
 --sp_helptext  pr_egis_admin_processo_modulo
@@ -39,7 +27,13 @@ GO
 --
 --
 ------------------------------------------------------------------------------
-create procedure  pr_egis_admin_processo_modulo
+
+SET ANSI_NULLS ON;
+GO
+SET QUOTED_IDENTIFIER ON;
+GO
+
+CREATE PROCEDURE pr_egis_admin_processo_modulo
 ------------------------
 @json nvarchar(max) = ''
 ------------------------------------------------------------------------------
@@ -48,7 +42,7 @@ create procedure  pr_egis_admin_processo_modulo
 
 as
 
--- ver nível atual
+-- ver nvel atual
 --SELECT name, compatibility_level FROM sys.databases WHERE name = DB_NAME();
 
 -- se < 130, ajustar:
@@ -60,12 +54,17 @@ as
 
  SET NOCOUNT ON;
  SET XACT_ABORT ON;
+ 
+    DECLARE @__sucesso BIT = 0;
+    DECLARE @__codigo  INT = 0;
+    DECLARE @__mensagem NVARCHAR(4000) = N'OK';
+ 
 
  BEGIN TRY
  
  /* 1) Validar payload - parameros de Entrada da Procedure */
  IF NULLIF(@json, N'') IS NULL OR ISJSON(@json) <> 1
-            THROW 50001, 'Payload JSON inválido ou vazio em @json.', 1;
+            THROW 50001, 'Payload JSON invlido ou vazio em @json.', 1;
 
  /* 2) Normalizar: aceitar array[0] ou objeto */
  IF JSON_VALUE(@json, '$[0]') IS NOT NULL
@@ -88,7 +87,7 @@ set @json = replace(
                                     replace(
                                     @json, CHAR(13), ' '),
                                   CHAR(10),' '),
-                                ' ',' '),
+                                '',' '),
                               ':\\\"',':\\"'),
                             '\\\";','\\";'),
                           ':\\"',':\\\"'),
@@ -145,7 +144,7 @@ select
 
  1                                                   as id_registro,
  IDENTITY(int,1,1)                                   as id,
- valores.[key]  COLLATE SQL_Latin1_General_CP1_CI_AI as campo,                     
+ valores.[key]  COLLATE SQL_Latin1_General_CP1_CI_AI as campo,                     
  valores.[value]                                     as valor                    
                     
  into #json                    
@@ -198,6 +197,13 @@ BEGIN
      @cd_usuario  AS cd_usuario
 
 
+ 
+    -- Status padronizado (sempre o ÚLTIMO resultset antes de sair)
+    SET @__sucesso = 1;
+    SET @__codigo  = 200;
+    SET @__mensagem = N'OK';
+    SELECT @__sucesso AS sucesso, @__codigo AS codigo, @__mensagem AS mensagem;
+ 
   RETURN;
 
 END
@@ -205,7 +211,7 @@ END
 --select * from tipo_destinatario
 
 ----------------------------------------------------------------------------------------------------
---Grupo de Usuários
+--Grupo de Usurios
 --
 
 if @cd_parametro = 1
@@ -247,18 +253,25 @@ where
 ORDER BY
   GU.nm_grupo_usuario  
 
+ 
+    -- Status padronizado (sempre o ÚLTIMO resultset antes de sair)
+    SET @__sucesso = 1;
+    SET @__codigo  = 200;
+    SET @__mensagem = N'OK';
+    SELECT @__sucesso AS sucesso, @__codigo AS codigo, @__mensagem AS mensagem;
+ 
   return
 
 end
 
 ----------------------------------------------------------------------------------------------------
---Usuários da Empresa
+--Usurios da Empresa
 --
 
 if @cd_parametro = 2
 begin
 
-  --usuários do Contrato--
+  --usurios do Contrato--
   --select * from  egisadmin.dbo.empresa
 
   select
@@ -384,6 +397,13 @@ group by
   order by
     nm_fantasia_usuario
   
+ 
+    -- Status padronizado (sempre o ÚLTIMO resultset antes de sair)
+    SET @__sucesso = 1;
+    SET @__codigo  = 200;
+    SET @__mensagem = N'OK';
+    SELECT @__sucesso AS sucesso, @__codigo AS codigo, @__mensagem AS mensagem;
+ 
   return
 
 end
@@ -401,10 +421,17 @@ begin
   from
     egisadmin.dbo.Dica_Modulo
 
+ 
+    -- Status padronizado (sempre o ÚLTIMO resultset antes de sair)
+    SET @__sucesso = 1;
+    SET @__codigo  = 200;
+    SET @__mensagem = N'OK';
+    SELECT @__sucesso AS sucesso, @__codigo AS codigo, @__mensagem AS mensagem;
+ 
   return
 end
 
---Módulos Disponíveis------------------------------------------------------------
+--Mdulos Disponveis------------------------------------------------------------
 
 if @cd_parametro = 20
 begin
@@ -430,11 +457,18 @@ begin
     m.nm_modulo
 
   --select * from egisadmin.dbo.Modulo_GrupoUsuario
+ 
+    -- Status padronizado (sempre o ÚLTIMO resultset antes de sair)
+    SET @__sucesso = 1;
+    SET @__codigo  = 200;
+    SET @__mensagem = N'OK';
+    SELECT @__sucesso AS sucesso, @__codigo AS codigo, @__mensagem AS mensagem;
+ 
   return
 
 end
 -----------------------
---Atualização dos Modulo_GrupoUsuario
+--Atualizao dos Modulo_GrupoUsuario
 
 if @cd_parametro = 30
 begin
@@ -445,12 +479,26 @@ begin
   if NULLIF(@dados_registro, N'') IS NULL
   begin
      select 'Nenhum registro selecionado (dados_registro vazio).' as Msg
+ 
+    -- Status padronizado (sempre o ÚLTIMO resultset antes de sair)
+    SET @__sucesso = 1;
+    SET @__codigo  = 200;
+    SET @__mensagem = N'OK';
+    SELECT @__sucesso AS sucesso, @__codigo AS codigo, @__mensagem AS mensagem;
+ 
      return
   end
 
   if ISJSON(@dados_registro) <> 1
   begin
      select 'Lista de registros invlida em dados_registro.' as Msg
+ 
+    -- Status padronizado (sempre o ÚLTIMO resultset antes de sair)
+    SET @__sucesso = 1;
+    SET @__codigo  = 200;
+    SET @__mensagem = N'OK';
+    SELECT @__sucesso AS sucesso, @__codigo AS codigo, @__mensagem AS mensagem;
+ 
      return
   end
 
@@ -478,7 +526,14 @@ begin
 
   if isnull(@cd_grupo_usuario,0) = 0
   begin
-     select 'Grupo de usurio inválido para gravação.' as Msg
+     select 'Grupo de usurio invlido para gravao.' as Msg
+ 
+    -- Status padronizado (sempre o ÚLTIMO resultset antes de sair)
+    SET @__sucesso = 1;
+    SET @__codigo  = 200;
+    SET @__mensagem = N'OK';
+    SELECT @__sucesso AS sucesso, @__codigo AS codigo, @__mensagem AS mensagem;
+ 
      return
   end
 
@@ -511,13 +566,20 @@ begin
 
   select 'Mdulos do grupo atualizados com sucesso.' as Msg
 
---Atualização dos Modulo_GrupoUsuario
+--Atualizao dos Modulo_GrupoUsuario
 
+ 
+    -- Status padronizado (sempre o ÚLTIMO resultset antes de sair)
+    SET @__sucesso = 1;
+    SET @__codigo  = 200;
+    SET @__mensagem = N'OK';
+    SELECT @__sucesso AS sucesso, @__codigo AS codigo, @__mensagem AS mensagem;
+ 
   return
 
 end
 
---Menus dos Módulos--------------------------------------------------------------
+--Menus dos Mdulos--------------------------------------------------------------
 
 if @cd_parametro = 40
 begin
@@ -560,10 +622,17 @@ begin
 
   --select * from egisadmin.dbo.modulo_funcao_menu
 
+ 
+    -- Status padronizado (sempre o ÚLTIMO resultset antes de sair)
+    SET @__sucesso = 1;
+    SET @__codigo  = 200;
+    SET @__mensagem = N'OK';
+    SELECT @__sucesso AS sucesso, @__codigo AS codigo, @__mensagem AS mensagem;
+ 
   return
 end
 
---Menus dos Módulos Selecionados --------------------------------------------------------------
+--Menus dos Mdulos Selecionados --------------------------------------------------------------
 
 if @cd_parametro = 45
 begin
@@ -609,11 +678,18 @@ begin
 
   --select * from egisadmin.dbo.modulo_funcao_menu
 
+ 
+    -- Status padronizado (sempre o ÚLTIMO resultset antes de sair)
+    SET @__sucesso = 1;
+    SET @__codigo  = 200;
+    SET @__mensagem = N'OK';
+    SELECT @__sucesso AS sucesso, @__codigo AS codigo, @__mensagem AS mensagem;
+ 
   return
 end
 
 
---Usuários do Grupo de usuários
+--Usurios do Grupo de usurios
 
 if @cd_parametro = 50
 begin
@@ -637,12 +713,19 @@ begin
 
   order by
      u.nm_usuario
+ 
+    -- Status padronizado (sempre o ÚLTIMO resultset antes de sair)
+    SET @__sucesso = 1;
+    SET @__codigo  = 200;
+    SET @__mensagem = N'OK';
+    SELECT @__sucesso AS sucesso, @__codigo AS codigo, @__mensagem AS mensagem;
+ 
   return
 
 end
 
 
---Atualização dos menus do grupo de usuários
+--Atualizao dos menus do grupo de usurios
 
 if @cd_parametro = 60
 begin
@@ -653,12 +736,26 @@ begin
   if NULLIF(@dados_registro, N'') IS NULL
   begin
      select 'Nenhum menu selecionado (dados_registro vazio).' as Msg
+ 
+    -- Status padronizado (sempre o ÚLTIMO resultset antes de sair)
+    SET @__sucesso = 1;
+    SET @__codigo  = 200;
+    SET @__mensagem = N'OK';
+    SELECT @__sucesso AS sucesso, @__codigo AS codigo, @__mensagem AS mensagem;
+ 
      return
   end
 
   if ISJSON(@dados_registro) <> 1
   begin
      select 'Lista de menus invlida em dados_registro.' as Msg
+ 
+    -- Status padronizado (sempre o ÚLTIMO resultset antes de sair)
+    SET @__sucesso = 1;
+    SET @__codigo  = 200;
+    SET @__mensagem = N'OK';
+    SELECT @__sucesso AS sucesso, @__codigo AS codigo, @__mensagem AS mensagem;
+ 
      return
   end
 
@@ -689,10 +786,24 @@ begin
   if isnull(@cd_grupo_usuario,0) = 0
   begin
      select 'Grupo de usurio invlido para gravao.' as Msg
+ 
+    -- Status padronizado (sempre o ÚLTIMO resultset antes de sair)
+    SET @__sucesso = 1;
+    SET @__codigo  = 200;
+    SET @__mensagem = N'OK';
+    SELECT @__sucesso AS sucesso, @__codigo AS codigo, @__mensagem AS mensagem;
+ 
      return
   end
 
   select * from egisadmin.dbo.grupo_usuario_menu where cd_grupo_usuario = 2512
+ 
+    -- Status padronizado (sempre o ÚLTIMO resultset antes de sair)
+    SET @__sucesso = 1;
+    SET @__codigo  = 200;
+    SET @__mensagem = N'OK';
+    SELECT @__sucesso AS sucesso, @__codigo AS codigo, @__mensagem AS mensagem;
+ 
   return
 
   -------------------------------------------------------------------
@@ -720,6 +831,13 @@ begin
 
   select 'Menus do grupo atualizados com sucesso.' as Msg
 
+ 
+    -- Status padronizado (sempre o ÚLTIMO resultset antes de sair)
+    SET @__sucesso = 1;
+    SET @__codigo  = 200;
+    SET @__mensagem = N'OK';
+    SELECT @__sucesso AS sucesso, @__codigo AS codigo, @__mensagem AS mensagem;
+ 
   return
 end
 
@@ -735,7 +853,8 @@ begin
     f.nm_funcao,
     mu.cd_menu,
     mu.nm_menu_titulo,
-    mu.cd_rota
+    mu.cd_rota,
+    isnull(m.nm_icone_modulo,'') as nm_icone_modulo
 
   from
     egisadmin.dbo.modulo m
@@ -750,6 +869,13 @@ begin
 
   --select * from egisadmin.dbo.modulo_funcao_menu
 
+ 
+    -- Status padronizado (sempre o ÚLTIMO resultset antes de sair)
+    SET @__sucesso = 1;
+    SET @__codigo  = 200;
+    SET @__mensagem = N'OK';
+    SELECT @__sucesso AS sucesso, @__codigo AS codigo, @__mensagem AS mensagem;
+ 
   return
 end
 
@@ -793,7 +919,7 @@ from
   left outer join egisadmin.dbo.empresa e          with(nolock) on e.cd_empresa = ue.cd_empresa
 
 where
-     isnull(ic_ativo,'A') = 'A'  and   --Usuário Ativo
+     isnull(ic_ativo,'A') = 'A'  and   --Usurio Ativo
       (day(dt_nascimento_usuario) >= day(@dt_dia+@cd_dias) and  
        month(dt_nascimento_usuario) >= month(@dt_dia+@cd_dias)) and  
       (day(dt_nascimento_usuario) <= day(@dt_dia_F+@cd_dias) and  
@@ -827,7 +953,7 @@ begin
   
       select @ic_dia_util = IsNull(ic_util,'S')  
       from Agenda with(nolock)  
-      -- Na comparação específica da data, o Sql considera o horário (DateTime) e não trazia  
+      -- Na comparao especfica da data, o Sql considera o horrio (DateTime) e no trazia  
       -- nenhum registro  
       where day(dt_agenda)   = day( @dt_dia_F + @cd_dias ) and  
             month(dt_agenda) = month( @dt_dia_F + @cd_dias ) and  
@@ -836,7 +962,7 @@ begin
       if @ic_dia_util = 'N'   
       begin  
   
-         -- Aniversariantes de dias não úteis posteriores  
+         -- Aniversariantes de dias no teis posteriores  
   
          insert into #TmpAniversariantesDia  
   
@@ -867,7 +993,7 @@ begin
 
 
          where 
-		   isnull(ic_ativo,'A') = 'A'  and   --Usuário Ativo
+		   isnull(ic_ativo,'A') = 'A'  and   --Usurio Ativo
            
 		   day(u.dt_nascimento_usuario) = day(@dt_dia_F+@cd_dias)     and  
                month(u.dt_nascimento_usuario) = month(@dt_dia_F+@cd_dias) and  
@@ -889,7 +1015,7 @@ end
 
 --select @dt_hoje, @cd_usuario
 --select cd_usuario,dt_ultimo_acesso_usuario from egisadmin.dbo.usuario
---Atualiza a Data do último Acesso----------------------------------------------------------------
+--Atualiza a Data do ltimo Acesso----------------------------------------------------------------
 
 if @cd_usuario > 0 and exists ( select top 1 * from #TmpAniversariantesDia )
 begin
@@ -916,12 +1042,14 @@ select
   a.cd_empresa,
   cast(dbo.fn_strzero(datepart(dd,a.dt_nascimento_usuario),2) as varchar)+'/'+
   cast(dbo.fn_strzero(datepart(mm,a.dt_nascimento_usuario),2) as varchar)      as nm_niver,
-  u.nm_email_usuario
+  u.nm_email_usuario,
+  isnull(ui.nm_caminho_imagem,'')                                              as nm_caminho_imagem
 
 from 
   #TmpAniversariantesDia a  
   LEFT OUTER JOIN Departamento b               with(nolock) on (a.cd_departamento = b.cd_departamento)  
   left outer join egisadmin.dbo.usuario u      with(nolock) on u.cd_usuario = a.cd_usuario
+  left outer join egisadmin.dbo.usuario_imagem ui           on ui.cd_usuario = u.cd_usuario
 where
   isnull(a.cd_empresa,0) = case when isnull(@cd_empresa,0) = 0 then isnull(a.cd_empresa,0) else @cd_empresa end
 
@@ -929,6 +1057,13 @@ order by
   month(u.dt_nascimento_usuario), day(u.dt_nascimento_usuario),a.nm_usuario
 
 
+ 
+    -- Status padronizado (sempre o ÚLTIMO resultset antes de sair)
+    SET @__sucesso = 1;
+    SET @__codigo  = 200;
+    SET @__mensagem = N'OK';
+    SELECT @__sucesso AS sucesso, @__codigo AS codigo, @__mensagem AS mensagem;
+ 
   return
 
 end
@@ -936,44 +1071,53 @@ end
 
 if @cd_parametro = 9999
 begin
+ 
+    -- Status padronizado (sempre o ÚLTIMO resultset antes de sair)
+    SET @__sucesso = 1;
+    SET @__codigo  = 200;
+    SET @__mensagem = N'OK';
+    SELECT @__sucesso AS sucesso, @__codigo AS codigo, @__mensagem AS mensagem;
+ 
   return
 end
 
 --use egissql_317
 --
-/* Padrão se nenhum caso for tratado */
-SELECT CONCAT('Nenhuma ação mapeada para cd_parametro=', @cd_parametro) AS Msg;
+/* Padro se nenhum caso for tratado */
+SELECT CONCAT('Nenhuma ao mapeada para cd_parametro=', @cd_parametro) AS Msg;
    
+ 
+    -- Status padronizado (sempre o ÚLTIMO resultset)
+    SET @__sucesso = 1;
+    SET @__codigo  = 200;
+    SET @__mensagem = N'OK';
+    SELECT @__sucesso AS sucesso, @__codigo AS codigo, @__mensagem AS mensagem;
+ 
  END TRY
     BEGIN CATCH
+        IF XACT_STATE() <> 0 ROLLBACK TRAN;
+
         DECLARE
-            @errnum   INT          = ERROR_NUMBER(),
-            @errmsg   NVARCHAR(4000) = ERROR_MESSAGE(),
-            @errproc  NVARCHAR(128) = ERROR_PROCEDURE(),
-            @errline  INT          = ERROR_LINE(),
-            @fullmsg  NVARCHAR(2048);
+            @errnum  INT = ERROR_NUMBER(),
+            @errsev  INT = ERROR_SEVERITY(),
+            @errsta  INT = ERROR_STATE(),
+            @errline INT = ERROR_LINE(),
+            @errmsg  NVARCHAR(2048) = ERROR_MESSAGE(),
+            @errproc NVARCHAR(256)  = ERROR_PROCEDURE();
 
+        SET @__sucesso = 0;
+        SET @__codigo  = 500;
+        SET @__mensagem =
+            N'Erro em pr_egis_admin_processo_modulo ('
+            + ISNULL(@errproc, N'(sem_procedure)')
+            + N':' + CONVERT(NVARCHAR(10), @errline)
+            + N') #' + CONVERT(NVARCHAR(10), @errnum)
+            + N' - ' + ISNULL(@errmsg, N'');
 
-
-         -- Monta a mensagem (THROW aceita até 2048 chars no 2º parâmetro)
-    SET @fullmsg =
-          N'Erro em pr_egis_admin_processo_modulo ('
-        + ISNULL(@errproc, N'SemProcedure') + N':'
-        + CONVERT(NVARCHAR(10), @errline)
-        + N') #' + CONVERT(NVARCHAR(10), @errnum)
-        + N' - ' + ISNULL(@errmsg, N'');
-
-    -- Garante o limite do THROW
-    SET @fullmsg = LEFT(@fullmsg, 2048);
-
-    -- Relança com contexto (state 1..255)
-    THROW 50000, @fullmsg, 1;
-
-        -- Relança erro com contexto
-        --THROW 50000, CONCAT('Erro em pr_egis_admin_processo_modulo (',
-        --                    ISNULL(@errproc, 'SemProcedure'), ':',
-        --                    @errline, ') #', @errnum, ' - ', @errmsg), 1;
+        -- Status padronizado (sempre o ÚLTIMO resultset)
+        SELECT @__sucesso AS sucesso, @__codigo AS codigo, @__mensagem AS mensagem;
     END CATCH
+GO
 
 ---------------------------------------------------------------------------------------------------------------------------------------------------------    
 go
@@ -983,7 +1127,7 @@ go
 ------------------------------------------------------------------------------
 --Testando a Stored Procedure
 ------------------------------------------------------------------------------
---exec  pr_egis_admin_processo_modulo
+--exec  dbo.pr_egis_admin_processo_modulo
 ------------------------------------------------------------------------------
 --use egissql
 --go
@@ -993,41 +1137,44 @@ go
 --select * from egisadmin.dbo.usuario
 
 
---exec  pr_egis_admin_processo_modulo '[{"cd_parametro": 0 }]' 
---exec  pr_egis_admin_processo_modulo '[{"cd_parametro": 1, "cd_usuario": 113 }]' 
+--exec  dbo.pr_egis_admin_processo_modulo '[{"cd_parametro": 0 }]' 
+--exec  dbo.pr_egis_admin_processo_modulo '[{"cd_parametro": 1, "cd_usuario": 113 }]' 
 go
---exec  pr_egis_admin_processo_modulo '[{"ic_json_parametro": "S", "cd_parametro": 2, "cd_usuario": 113 }]' 
+--exec  dbo.pr_egis_admin_processo_modulo '[{"ic_json_parametro": "S", "cd_parametro": 2, "cd_usuario": 113 }]' 
 --go
 
---exec  pr_egis_admin_processo_modulo '[{"ic_json_parametro": "S", "cd_parametro": 10, "cd_usuario": 113 }]' 
+--exec  dbo.pr_egis_admin_processo_modulo '[{"ic_json_parametro": "S", "cd_parametro": 10, "cd_usuario": 113 }]' 
 
---exec  pr_egis_admin_processo_modulo '[{"ic_json_parametro": "S", "cd_parametro": 20, "cd_grupo_usuario": 2512 }]' 
+--exec  dbo.pr_egis_admin_processo_modulo '[{"ic_json_parametro": "S", "cd_parametro": 20, "cd_grupo_usuario": 2512 }]' 
 
---exec  pr_egis_admin_processo_modulo '[{"ic_json_parametro": "S", "cd_parametro": 40, "cd_grupo_usuario": 2512 }]' 
+--exec  dbo.pr_egis_admin_processo_modulo '[{"ic_json_parametro": "S", "cd_parametro": 40, "cd_grupo_usuario": 2512 }]' 
 
---exec  pr_egis_admin_processo_modulo '[{"ic_json_parametro": "S", "cd_parametro": 45, "cd_grupo_usuario": 2512 }]' 
+--exec  dbo.pr_egis_admin_processo_modulo '[{"ic_json_parametro": "S", "cd_parametro": 45, "cd_grupo_usuario": 2512 }]' 
 go
 
---exec  pr_egis_admin_processo_modulo '[{"ic_json_parametro": "S", "cd_parametro": 50, "cd_grupo_usuario": 2512 }]' 
+--exec  dbo.pr_egis_admin_processo_modulo '[{"ic_json_parametro": "S", "cd_parametro": 50, "cd_grupo_usuario": 2512 }]' 
 
 
---exec  pr_egis_admin_processo_modulo '[{"ic_json_parametro": "S", "cd_parametro": 100, "cd_modulo": 264 }]'
+--exec  dbo.pr_egis_admin_processo_modulo '[{"ic_json_parametro": "S", "cd_parametro": 100, "cd_modulo": 0 }]'
 
+--SET STATISTICS IO, TIME OFF;
+--EXEC dbo.pr_egis_admin_processo_modulo @json = '{...}';
 
-exec  pr_egis_admin_processo_modulo '[{"ic_json_parametro": "S", "cd_parametro": 200, "dt_inicial": "01/01/2025" , "dt_final": "12/31/2025" }]'
+--exec  dbo.pr_egis_admin_processo_modulo '[{"ic_json_parametro": "S", "cd_parametro": 200, "dt_inicial": "01/01/2025" , "dt_final": "12/31/2025" }]'
 go
 go
 go
 ------------------------------------------------------------------------------
 GO
 
-use egissql
+--use egissql
+go
 
 /*
 
 
 
-exec  pr_egis_admin_processo_modulo '[
+exec  dbo.pr_egis_admin_processo_modulo '[
     {
         "ic_json_parametro": "S",
         "cd_parametro": 20,

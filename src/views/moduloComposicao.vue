@@ -45,8 +45,20 @@
       <q-card flat bordered class="modulo-selecionado shadow-1">
         <q-card-section class="row items-center q-col-gutter-md">
           <div class="col-auto">
-            <div class="logo-modulo pequeno">
-              <span class="logo-letter">
+            <div class="logo-modulo pequeno"
+             :class="(moduloSelecionado.nm_icone_modulo !== '')
+    ? 'bg-cyan-7 text-white'
+    : 'bg-deep-purple-7 text-white'"
+            >
+
+              <q-icon
+              v-if="moduloSelecionado.nm_icone_modulo && moduloSelecionado.nm_icone_modulo !== ''"
+              :name="moduloSelecionado.nm_icone_modulo"
+              size="16px"  
+              
+            />
+            <span v-else               
+               class="logo-letter">
                 {{ (moduloSelecionado.sg_modulo || moduloSelecionado.nm_modulo || '').charAt(0) }}
               </span>
             </div>
@@ -82,8 +94,18 @@
         @click="selecionarModulo(modulo)"
       >
         <div class="modulo-card-body">
-          <div class="logo-modulo">
-            <span class="logo-letter">
+          <div class="logo-modulo"
+                  :class="(modulo.nm_icone_modulo && modulo.nm_icone_modulo !== '')
+    ? 'bg-cyan-7 text-white'
+    : 'bg-deep-purple-7 text-white'"
+        
+          >
+                <q-icon
+              v-if="modulo.nm_icone_modulo && modulo.nm_icone_modulo !== ''"
+              :name="modulo.nm_icone_modulo"
+              size="32px"              
+            />
+            <span v-else class="logo-letter">            
               {{ (modulo.sg_modulo || modulo.nm_modulo || '').charAt(0) }}
             </span>
           </div>
