@@ -8,12 +8,12 @@ labels: ["ui", "vue2", "quasar", "devextreme"]
 ## Vue 2 component
 
 **Arquivo:** `src/components/<xxxx>.vue`  
-*(opcional)* **Service:** `src/services/api/<yyyy>.js`
 
 ### Objetivo
 
 - <descreva 1 coisa só, bem específica>
-s
+- Mostrar apenas o diff
+
 ### Regras
 - Alterar somente este componente 
 - Patch mínimo
@@ -24,19 +24,13 @@ s
 - Não alterar endpoints nem contrato de API
 
 ### Entrada
-- Campos/props/dados já existentes que devem ser usados:
 
 ### Entrega
-- Componente completo atualizado
 - Manter toda a lógica existente
 - Somente implementar o objetivo acima (sem melhorias extras)
 
 ### Critérios de aceite
-- [ ] Mantém comportamento anterior quando a condição não se aplica
-- [ ] Sem warnings críticos no console
-- [ ] Sem alterar layout geral do módulo
 
 ### Como testar
 
----
 

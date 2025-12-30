@@ -35,6 +35,7 @@
         </h2>
         
       </transition>
+
       <!-- Atualizar -->
         <q-btn
           rounded
@@ -96,7 +97,8 @@
     </div>
 
     <!-- Scheduler padrão (somente leitura) -->
-    <div class="q-mt-md">
+    
+    <div class="q-mt-md" style="margin-left: 10px; margin-right: 10px">
       <dx-scheduler
         :data-source="appointments"
         :current-date="currentDate"
@@ -120,7 +122,7 @@
           slot="AppointmentTooltipTemplateSlot"
           slot-scope="{ data }"
         >
-          <div class="q-pa-sm" style="max-width: 380px;">
+          <div class="q-pa-sm" style="max-width: 420px;">
             <!-- título -->
             <div class="text-subtitle2 q-mb-xs">
               {{ data.appointmentData.text }}
