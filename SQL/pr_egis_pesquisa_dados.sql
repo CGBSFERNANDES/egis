@@ -1,7 +1,7 @@
 --BANCO DO CLIENTE
 --USE EGISSQL_341
 --GO
---use egissql_377
+--use egisadmin
 
 IF EXISTS (SELECT name 
 	   FROM   sysobjects 
@@ -910,5 +910,17 @@ go
 --        "cd_cep": "09811",
 --        "nm_endereco_cep": "",
 --        "sg_estado": ""
+--    }
+--]'
+
+
+
+--exec pr_egis_pesquisa_dados '[
+--    {
+--        "cd_parametro": 0,
+--        "cd_menu": 8830,
+--        "cd_usuario": "113",
+--        "cd_chave_pesquisa": 0,
+--        "ic_modal_pesquisa": "N"
 --    }
 --]'

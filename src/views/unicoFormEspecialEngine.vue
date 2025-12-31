@@ -7635,12 +7635,6 @@ async syncLookupsFromFormData() {
 
     async salvarCRUD(opts) {
       const params = opts || {};
-
-      // 1) registro canônico (o que está no form)
-      const registro = params.registro != null ? params.registro : (this.formData || this.formulario || this.registroAtual || {})
-      //
-
-
       const modoIn = params.modo != null ? params.modo : this.modoCRUD; // pode vir 'I' | 'A' | 'E' | 1 | 2 | 3
       function mapModo(m) {
         const s = String(m).toUpperCase();
@@ -7894,7 +7888,6 @@ async syncLookupsFromFormData() {
         let payload = unico;
         //
 
-        const modo = cd_parametro_form
         const mapped = await this.runHook("mapPayload", { modo, registro, payload })
         if (mapped) payload = mapped
 
@@ -7914,10 +7907,7 @@ async syncLookupsFromFormData() {
         ////
         ///pr_egis_api_crud_dados_especial
         ///
-        
-        let response = null
-
-        response = await api.post("/api-dados-form", payload, {
+        await api.post("/api-dados-form", payload, {
           headers: { "Content-Type": "application/json" },
         });
         ///

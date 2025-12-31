@@ -391,6 +391,7 @@ begin
   --insert into visita select * from egissql_317.dbo.visita where dt_visita>'12/25/2025' and cd_vendedor = 9
   
   select
+
     v.nm_fantasia_vendedor       as nm_agenda,
     vi.dt_visita                 as dt_agenda,
     c.cd_cliente,

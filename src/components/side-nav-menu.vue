@@ -84,6 +84,7 @@ import Rota from "../http/rota";
 import Router from "../router";
 import defaultLayout from "../layouts/side-nav-outer-toolbar";
 import funcao from "../http/funcoes-padroes";
+import { resolveMenuContent } from "@/menus/menu-component-resolver"
 
 const treeViewRef = "treeViewRef";
 
@@ -95,33 +96,31 @@ async function buscaRota(srota) {
   return await Rota.apiMenu(srota);
 }
 
-const addedRouteNames = new Set();
+const addedRoutes = new Set()
+
+function ensureRoute(router, route) {
+  if (addedRoutes.has(route.name)) return false
+  router.addRoutes([route])
+  addedRoutes.add(route.name)
+  return true
+}
 
 // --- Helpers para rotas dinâmicas (evita duplicidades) -----------------------
-function routeExists (router, name) {
-  if (typeof router.getRoutes === 'function') {
-    return router.getRoutes().some(r => r.name === name)
-  }
-  // Vue Router 3 clássico
-  return router.options && Array.isArray(router.options.routes) &&
-         router.options.routes.some(r => r.name === name)
+
+function routeExists(router, name) {
+  const n = String(name)
+  // tenta ler as rotas já registradas (quando existe)
+  const all =
+    (router.getRoutes && router.getRoutes()) ||
+    (router.matcher && router.matcher.getRoutes && router.matcher.getRoutes()) ||
+    []
+  if (all.length) return all.some(r => r.name === n)
+
+  // fallback: tenta resolver por path único (se você tiver)
+  // se não tiver, retorna false
+  return false
 }
 
-function ensureRoute(router, def) {
-  if (!def?.name || !def?.path || !def?.component) return;
-
-  if (addedRouteNames.has(def.name) || routeExists(router, def.name)) {
-    return; // já existe
-  }
-
-  router.addRoutes([{
-    name: def.name,
-    path: def.path,
-    component: def.component
-  }]);
-
-  addedRouteNames.add(def.name);
-}
 
 function addRouteIfMissing (router, route) {
   if (routeExists(router, route.name)) return
@@ -137,19 +136,13 @@ function addRouteIfMissing (router, route) {
 }
 
 
-function ensureRouteExists(route) {
-  // v3 (com addRoutes):
-  const exists = (Router.options?.routes || []).some(r => r.name === route.name || r.path === route.path)
-  if (!exists) {
-    Router.addRoutes([route])
-  }
-}
   
 /**
  * Monta a definição da rota a partir de "dados".
  * Sempre path único: /menu/<cd_menu>
  * Faz import dinâmico por pasta com base em nm_local_componente.
  */
+
 function buildRouteFromDados(dados, defaultLayout) {
   const name = String(dados.cd_menu)
   const path = `/menu/${name}` // nunca "/" e nunca vazio!
@@ -176,12 +169,6 @@ function buildRouteFromDados(dados, defaultLayout) {
       content
     }
   }
-}
-
-function routeExistsByName(router, name) {
-  try {
-    return (router && router.matcher && router.match({ name })) ? true : false;
-  } catch (_) { return false; }
 }
 
 export default {
@@ -360,114 +347,108 @@ export default {
       var imagem = "http://www.egisnet.com.br/img/" + this.caminho;
       return imagem;
     },
-
-    async handleItemClicknovo(e) {
-  // Home
-  if (e.itemData.text === 'Home') {
-    this.$router.push({ name: 'home' })
+   //
+   async handleItemClick(e) {
+  if (e.itemData.text === "Home") {
+    this.$router.push({ name: "home" }).catch(() => {})
     return
   }
 
   localStorage.cd_tipo_consulta = 0
-
-  // sem path configurado no item do menu
   if (!e.itemData.path) return
 
-  // Busca mapeamento da rota -> menu/api
+  // 1) Busca dados do menu
   const dados = await buscaRota(e.itemData.path)
+  //
+  console.log('dados-->', dados);
+  //
   this.$store._mutations.SET_Rotas = dados
 
-  
   if (!dados) return
 
-  // Seta contexto no localStorage (mantive sua lógica)
-  localStorage.cd_menu = 0
-  localStorage.nm_identificacao_api = ''
-  localStorage.cd_api = 0
-
-  localStorage.cd_menu = dados.cd_menu
+  // 2) Persistências
+  localStorage.cd_menu              = dados.cd_menu
   localStorage.nm_identificacao_api = dados.nm_identificacao_api
-  localStorage.cd_api = dados.cd_api
+  localStorage.cd_api               = dados.cd_api
+  localStorage.nm_menu_titulo       = dados.nm_menu_titulo
 
-  if (dados && Number(dados.cd_api) === 0) {
-    alert('Falta configuração da API: ' + dados.cd_api)
+  if (dados.cd_api === 0) {
+    alert("Falta configuração da API: " + dados.cd_api)
   }
 
-  // Monta rota única por menu e registra só se não existir
-  const routeDef = buildRouteFromDados(dados, defaultLayout)
-  addRouteIfMissing(this.$router, routeDef)
+  const cd_menu = Number(dados.cd_menu) || 0
 
-  // guarda path atual só por compatibilidade com seu código
-  this.path = routeDef.path
+  if (!cd_menu) return
 
-  // Para qualquer polling pendente dos forms
+  const nm_local_componente = (dados.nm_local_componente || "").trim()
+
+  // 3) Define rota SEMPRE com name único e path único
+  //const routeName = `menu_${cd_menu}`
+  //const routePath = `/__m/${cd_menu}`
+
+  const routeName = `${cd_menu}`
+  const routePath = '/' //${cd_menu}`
+  const cd_rota   = dados.rota || 0;
+
+  // 4) Define loader do componente (Financeiro/Compras/gestaoFood OU genérico com wrapper)
+  let contentLoader = null
+
+  if (nm_local_componente === "Financeiro") {
+    contentLoader = () => import(`@/Financeiro/${dados.nm_caminho_componente}`)
+  } else if (nm_local_componente === "Compras") {
+    // você estava importando Compras dentro de Financeiro (provável bug)
+    contentLoader = () => import(`@/Compras/${dados.nm_caminho_componente}`)
+  } else if (nm_local_componente === "gestaoFood") {
+    contentLoader = () => import(`@/gestaoFood/${dados.nm_caminho_componente}`)
+  } else {
+    // genérico: aqui entra seu resolver (my_<id>.vue se existir, senão unicoFormEspecial)
+    let caminho = ''
+    caminho = dados.nm_caminho_componente
+    if ( dados.cd_rota === 204) {
+      caminho = `my_${cd_menu}`
+      contentLoader = () => import(`@/views/${caminho}`)
+      console.log('caminho --> ', caminho);
+    } else {
+      contentLoader = resolveMenuContent(cd_menu, caminho)
+    }
+    console.log('content--> ' ,caminho, contentLoader)
+  }
+
+  // 5) Monta rota
+  const route = {
+    path: routePath,
+    name: routeName,
+    meta: { requiresAuth: true },
+    components: {
+      layout: defaultLayout,
+      content: contentLoader,
+    },
+  }
+
+  // 6) Adiciona rota no router REAL
+  ensureRoute(this.$router, route)
+  //
+
+  // 7) Rotina polling
   if (localStorage.polling == 1) {
     clearInterval(localStorage.polling)
     localStorage.polling = 0
   }
 
-  // Navega pela rota PELO NAME (não use path "/")
-  this.$router.push({ name: routeDef.name }).catch(err => err)
+  // 8) Navega SEMPRE por name
+  this.$router.push({ name: routeName }).catch(() => {})
 
-  // evita propagação do clique no treeview/devextreme
+  // 9) stopPropagation
   const pointerEvent = e.event
-  pointerEvent && pointerEvent.stopPropagation && pointerEvent.stopPropagation()
-  
+  if (pointerEvent?.stopPropagation) pointerEvent.stopPropagation()
 },
 
-//
-async handleItemClicknaofunciona(e) {
-  // 1) Home
-  if (e.itemData?.text === 'Home') {
-    this.$router.push({ name: 'home' })
-    return
-  }
-
-  // 2) Sem path no item do menu → avisa e sai
-  if (!e.itemData?.path) {
-    this.$q?.notify?.({ type: 'warning',
-     position: 'center',    
-     message: 'Menu sem rota configurada.',
-     classes: 'my-notify' })
-    return
-  }
-
-  // 3) Busca mapeamento da API/rota
-  const dados = await buscaRota(e.itemData.path)
-
-  // Se o backend não devolveu dados OU o componente não foi configurado → vai para "Indisponível"
-  if (!dados || !dados.nm_caminho_componente) {
-    this.$q?.dialog?.({
-      title: 'Indisponível',
-      message: 'Componente/rota inexistente ou em manutenção.'
-    })
-    this.$router.push({ name: 'unavailable' })
-    return
-  }
-
-  // 4) Guarda contexto (mantive sua lógica)
-  localStorage.cd_tipo_consulta = 0
-  localStorage.cd_menu = String(dados.cd_menu || '')
-  localStorage.nm_identificacao_api = dados.nm_identificacao_api || ''
-  localStorage.cd_api = Number(dados.cd_api || 0)
-
-  // 5) Monta rota dinâmica, garantindo path único
-  const route = buildRouteFromDados(dados, defaultLayout)
-
-  // 6) Evita duplicar rota (checa por nome OU path)
-  ensureRouteExists(route)
-
-  // 7) Navega SEM duplicar (use path único)
-  this.$router.push(route.path)
-  //this.$router.push({ name: route.name })
-},
+   // 
+   async handleItemClickOld(e) {
 
 
-//
+      //console.log('e--->', e)
 
-   async handleItemClick(e) {
-
-      
       if (e.itemData.text == "Home") {
         this.$router.push({ name: "home" });
       }
@@ -594,26 +575,46 @@ async handleItemClicknaofunciona(e) {
           //
           //Kelvin-Carlos -> 30.04.2022
           //
+
           else {
             
             console.log('Adicionando rota genérica para menu', name, cd_menu, dados.nm_caminho_componente);
 
             /////////////////////////////////////////////////////////////////////////////////////////
             if (!routeExists(this.$router, name)) {
+            ////
+
+              let caminho = ''
+
+              caminho = dados.nm_caminho_componente
+              
+             // if ( cd_menu === 8832 ) {
+             //   caminho = 'my_8832'
+             // }
+
+              console.log('gerando routes -->', name, cd_menu, caminho, dados.nm_caminho_componente);
+              
+              //
               Router.addRoutes([
                 {
-                path: "/",
-                name: `${cd_menu}`,
+                //path: "/",
+                path: `/__m/${cd_menu}`, 
+               // name: `${cd_menu}`,
+                name: `menu_${cd_menu}`,
                 meta: { requiresAuth: true },
                 components: {
                   layout: defaultLayout,
-                  content: () =>
-                    import(
-                      /* webpackChunkName: "display-data" */ `@/views/${dados.nm_caminho_componente}`
-                    ),
+                  content: resolveMenuContent(cd_menu, caminho),
+                  //content: () =>
+                  //  import(
+                  //    /* webpackChunkName: "display-data" */ `@/views/${dados.nm_caminho_componente}`
+                  //  ),
                 },
               },
+              //
             ]);
+            } else {
+               console.log("rota já existe, não vou adicionar de novo:", name)
             }
           }
         }
@@ -636,10 +637,17 @@ async handleItemClicknaofunciona(e) {
         //
 
         //Ativa a Rota
+
+        //this.$router.push({ path: "/", name: String(dados.cd_menu), key: dados.cd_menu }).catch(err => err);
+
+        console.log('dados da rota para adicionar router --> ',e.itemData.path);
+
         this.$router
           .push({
-            path: "/",
-            name: e.itemData.path,
+            //path: "/",
+            path: `menu_${cd_menu}`,
+            //name: e.itemData.path,
+            name: `menu_${cd_menu}`,
             key: dados.cd_menu,
             //query: { redirect: this.$route.path }
           })

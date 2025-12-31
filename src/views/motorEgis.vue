@@ -13,6 +13,8 @@
       <q-btn flat dense icon="settings" label="Configurações" @click="showConfig = !showConfig" />
       <q-btn flat dense icon="description" label="Documentos" />
       <q-btn round dense icon="account_circle" />
+      <q-btn flat dense icon="arrow_back" label="Voltar ao Motor" @click="voltarMotor" />
+
     </div>
 
     <!-- Título grande central -->
@@ -53,8 +55,8 @@
             dense
             borderless
             v-model="prompt"
-            placeholder="O que vamos fazer a seguir?"
-            @keyup.enter="enviarPrompt()"
+            placeholder="Digite aqui ... "
+            @keyup.enter="confirmarPrompt()"
             :disable="loading"
             input-class="prompt-input"
           />
@@ -68,7 +70,7 @@
             text-color="black"
             icon="north"
             :loading="loading"
-            :disable="loading || !prompt.trim()"
+            :disable="loading || !((prompt || '').trim())"
             @click="enviarPrompt()"
           />
         </div>
@@ -78,20 +80,46 @@
       <q-card-section class="q-pt-none">
         <div class="row q-col-gutter-sm items-center">
           <div class="col-12 col-md">
-            <div class="row q-gutter-sm">
+
+            <!-- PESQUISA: mostra Menus do ERP + Sugestões do Motor -->
+
+            <div v-if="(prompt || '').trim().length >= 3">
+
+             <div class="text-caption q-mt-sm">Menus do ERP</div>
+
+                <div v-for="m in sugestoesMenus" :key="'m'+(m.cd_menu||m.cd_rota||m.nm_rota)">
+                  <q-btn flat dense align="left" @click="abrirMenu(m)">
+                    {{ m.nm_menu_titulo || m.nm_menu || m.nm_sugestao }}
+                  </q-btn>
+                </div>
+
+
+              <div class="text-caption text-grey-6 q-mb-xs">Sugestões do Motor</div>
+
+              <div class="row q-gutter-sm">
+                <div v-for="s in sugestoesMotor" :key="'s'+(s.cd_sugestao||s.nm_sugestao)">
+  <q-btn flat dense align="left" @click="executarSugestao(s)">
+    {{ s.nm_sugestao }}
+  </q-btn>
+</div>
+              </div>
+            </div>
+
+            <!-- SEM PESQUISA: Top do usuário (param=50) -->
+            <div v-else class="row q-gutter-sm">
               <q-chip
                 v-for="(s, idx) in sugestoesUsuario"
-                :key="idx"
+                :key="'user-' + idx"
                 clickable
-                @click="executarSugestao(s)"
+                @click="executarSugestao(normalizarItemMotor(s))"
                 class="chip-sugestao"
                 :disable="loading"
               >
-                <q-icon :name="s.tp_destino === 'MENU' ? 'menu' : (s.tp_destino === 'PROC' ? 'bolt' : 'widgets')" class="q-mr-xs" />
-                  {{ s.ds_titulo || s.label }}
-           
+                <q-icon :name="iconeDestino(s.tp_destino)" class="q-mr-xs" />
+                {{ s.nm_sugestao || s.label }}
               </q-chip>
             </div>
+
           </div>
 
           <div class="col-12 col-md-auto text-caption text-grey-5 q-mt-sm q-mt-md-none">
@@ -176,6 +204,7 @@
     </q-card>
 
     <!-- Resultado tabular -->
+
     <q-card v-if="rows.length" class="q-mt-md">
       <q-card-section class="row items-center">
         <div class="text-h6">Resultado</div>
@@ -206,9 +235,24 @@ import Router from "../router";
 import defaultLayout from "../layouts/side-nav-outer-toolbar";
 
 function addRouteIfMissing(router, route) {
-  const exists = (router.options?.routes || []).some(r => r.name === route.name || r.path === route.path);
-  if (!exists) router.addRoutes([route]);
-  if (router.options?.routes) router.options.routes.push(route);
+  try {
+    // Se já existe rota com esse path, não adiciona de novo
+    const matched = router.match(route.path);
+    if (matched && matched.matched && matched.matched.length) return;
+
+    router.addRoutes([route]);
+
+    // mantém compatibilidade com seu push em options.routes, mas sem duplicar
+
+    if (router.options && Array.isArray(router.options.routes)) {
+      const exists = router.options.routes.some(r => r.path === route.path || r.name === route.name);
+      if (!exists) router.options.routes.push(route);
+    }
+
+  } catch (e) {
+    // fallback: se algo der errado, não derruba
+    console.warn("addRouteIfMissing warn:", e);
+  }
 }
 
 function buildRouteFromDados(dados) {
@@ -252,15 +296,14 @@ api.interceptors.request.use((cfg) => {
 });
 
 
-const PARAM_TODAS = 10;
-const PARAM_TOP_USUARIO = 50;
-const PARAM_LOG_USO = 60; // se você tiver implementado; se não, deixe e o método ignora
+const PARAM_MENU_SEARCH = 1;   // busca menus por texto (faturamento -> 28)
+const PARAM_TODAS = 10;        // catálogo de sugestões do motor
+const PARAM_TOP_USUARIO = 50;  // top do usuário
+const PARAM_LOG_USO = 60;      // opcional (se existir no seu SP)
 
 export default {
   name: "motorEgis",
-
   data() {
-
     return {
       // contexto
       headerBanco: localStorage.nm_banco_empresa || "",
@@ -276,39 +319,20 @@ export default {
       // prompt/busca
       prompt: "",
       tmrBusca: null,
-      sugestoesMenus: [],   // dropdown do search
+      sugestoesMenusERP: [],   // param=1 (menus do ERP)
+      sugestoesMenusMotor: [], // param=10 (catálogo do motor)
 
-      // sugestões
-      sugestoesUsuario: [], // param=50
-      sugestoesTodas: [],   // param=10 (opcional para tela “ver todas”)
+      sugestoesMenus: [],
+      sugestoesMotor: [],
+      
+      // sugestões iniciais (param=50)
+      sugestoesUsuario: [],
 
       // chat e resultado
       chat: [],
       rows: [],
       columns: [],
       pagination: { rowsPerPage: 20 },
-  
-      // Sugestões (você “pluga” a procedure/param aqui)
-      sugestoesRapidas: [
-        {
-          key: "vendas_hoje",
-          label: "Vendas de Hoje",
-          icon: "shopping_cart",
-          action: { proc: "pr_egis_motor_processo_modulo", cd_parametro: 101 } // <-- TROCAR p/ seu código real
-        },
-        {
-          key: "produto_campeao",
-          label: "Produto que mais vendeu",
-          icon: "emoji_events",
-          action: { proc: "pr_egis_motor_processo_modulo", cd_parametro: 102 } // <-- TROCAR
-        },
-        {
-          key: "pedido_ou_visita",
-          label: "Pedido ou visita do vendedor",
-          icon: "badge",
-          action: { proc: "pr_egis_motor_processo_modulo", cd_parametro: 103 } // <-- TROCAR
-        }
-      ],
     };
   },
 
@@ -321,268 +345,251 @@ export default {
       clearTimeout(this.tmrBusca);
       const v = (val || "").trim();
       if (v.length < 3) {
+        this.sugestoesMenusERP = [];
+        this.sugestoesMenusMotor = [];
         this.sugestoesMenus = [];
+        this.sugestoesMotor = [];
         return;
       }
-     //this.tmrBusca = setTimeout(() => this.buscarSugestoes(v), 350);
-     this.tmrBusca = setTimeout(() => this.buscarSugestoesPorTexto(v), 350);
+      this.tmrBusca = setTimeout(() => this.buscarSugestoes(v), 350);
     }
   },
 
   methods: {
   
+    voltarMotor() {
+      const to = window.localStorage.getItem("egis_motor_return") || "/"; // ou a rota do motor
+      this.$router.push(to).catch(err => err);
+    },
+
     abrirMenuAcoes() { this.menuAcoes = true; },
 
-    destinoDe(tp) {
-       const n = Number(tp);
-       if (n === 1) return "MENU";
-       if (n === 2) return "PROC";
-       if (n === 3) return "COMPONENTE";
-       return "MENU";
-   },
+    //
+    
+    async abrirMenuComoSideNav(item) {
+  try {
+    console.log("abrir menu ->", item);
+
+    // Salva retorno para voltar ao Motor (opcional)
+    // (não use localStorage no template; use method voltarMotor)
+    window.localStorage.setItem(
+      "egis_motor_return",
+      (this.$route && this.$route.fullPath) ? this.$route.fullPath : "/"
+    );
+
+    // ---- helpers ----
+    const pickStr = (v) => {
+      if (Array.isArray(v)) return String(v.find(x => x) || "").trim();
+      return String(v || "").trim();
+    };
+
+    const pickNum = (v) => {
+      const s = pickStr(v);
+      const n = Number(s);
+      return Number.isFinite(n) ? n : 0;
+    };
+
+    const routeExists = (router, routeName) => {
+      try {
+        return (router?.options?.routes || []).some(r => r.name === routeName);
+      } catch (e) {}
+      return false;
+    };
+
+    // ---- dados vindos do ITEM (sem apiMenu) ----
+    const cd_menu = pickNum(item.cd_menu || item.cd_item_menu);
+    if (!cd_menu) {
+      console.warn("Item sem cd_menu:", item);
+      return;
+    }
+
+    // path/rota "real" (igual side-nav: e.itemData.path)
+    // NÃO usar nm_identificacao_rota aqui
+    const path =
+      pickStr(item.nm_identificacao_rota) ||
+      pickStr(item.nm_rota_menu) ||
+      pickStr(item.nm_rota) ||
+      pickStr(item.nm_executavel) ||
+      pickStr(item.nm_form_menu);
+
+    if (!path) {
+      console.warn("Sugestão sem path (nm_rota/nm_rota_menu):", item);
+      return;
+    }
+
+    // componente
+    const nm_local_componente = pickStr(item.nm_local_componente); // Financeiro/Compras/gestaoFood/""(views)
+    const nm_caminho_componente_raw = item.nm_caminho_componente;
+    const nm_caminho_componente = Array.isArray(nm_caminho_componente_raw)
+      ? pickStr(nm_caminho_componente_raw)
+      : pickStr(nm_caminho_componente_raw);
+
+    if (!nm_caminho_componente) {
+      console.warn("Item sem nm_caminho_componente:", item);
+      return;
+    }
+
+    // ---- localStorage igual side-nav ----
+    localStorage.cd_tipo_consulta = 0;
+
+    localStorage.cd_menu = 0;
+    localStorage.nm_identificacao_api = "";
+    localStorage.cd_api = 0;
+
+    localStorage.cd_menu = cd_menu;
+    localStorage.nm_identificacao_api = pickStr(item.nm_identificacao_api);
+    localStorage.cd_api = pickNum(item.cd_api);
+    localStorage.nm_menu_titulo = pickStr(item.nm_menu_titulo || item.nm_menu);
+
+    // (mantém seu alerta se quiser)
+    //if (localStorage.cd_api == 0) {
+      // alert("Falta configuração da API: " + localStorage.cd_api);
+    //}
+
+    // ---- adiciona rota dinâmica igual side-nav ----
+    const name = String(cd_menu);
+
+    // Define base de import conforme módulo
+    let importBase = "@/views/";
+
+    if (nm_local_componente === "Financeiro") importBase = "@/Financeiro/";
+    else if (nm_local_componente === "Compras") importBase = "@/Compras/";
+    else if (nm_local_componente === "gestaoFood") importBase = "@/gestaoFood/";
+
+    // normaliza caminho vindo do banco (ex: "../views/unicoFormEspecial" -> "unicoFormEspecial")
+    const compLimpo = String(nm_caminho_componente)
+      .replace(/\.vue$/i, "")
+      .replace(/^(\.\.\/)+/g, "")   // remove ../
+      .replace(/^@\/+/g, "")        // remove @/
+      .replace(/^views\//, "")      // remove "views/"
+      .replace(/^\/+/, "");         // remove "/"
+
+    if (!routeExists(this.$router, name)) {
+      console.log("Adicionando rota genérica para menu", name, cd_menu, importBase + compLimpo);
+
+      Router.addRoutes([
+        {
+          path: "/",                // <= igual side-nav
+          name: `${cd_menu}`,       // <= cd_menu
+          meta: { requiresAuth: true },
+          components: {
+            layout: defaultLayout,
+            content: () =>
+              import(
+                /* webpackChunkName: "display-data" */ `${importBase}${compLimpo}`
+              ),
+          },
+        },
+      ]);
+    }
+
+    // ---- polling igual side-nav ----
+    if (localStorage.polling == 1) {
+      clearInterval(localStorage.polling);
+      localStorage.polling = 0;
+    }
+
+    // ---- ativa rota igual side-nav (name: path) ----
+    this.path = path;
+    console.log('path',path)
+    this.$router
+      .push({
+        path: "/",
+        name: cd_menu, //path,     // <= IGUAL seu handleItemClick: name: e.itemData.path
+        key: cd_menu,
+      })
+      .catch((err) => err);
+
+  } catch (e) {
+    console.error("abrirMenuComoSideNav erro:", e);
+  }
+},
+
+   //
+
+    async abrirMenu(item) {
+
+      const nm_rota = item.nm_identificacao_rota || item.nm_rota || item.nm_rota_menu;
+   
+      console.log('dados do menu ', nm_rota);
+
+      if (!nm_rota) throw new Error("Menu sem nm_rota/nm_rota_menu.");
+
+      const dados = await Rota.apiMenu(nm_rota);
+      if (!dados) throw new Error("apiMenu não retornou dados.");
+
+  // se você já tem buildRouteFromDados/addRouteIfMissing no arquivo, usa eles
+  const routeDef = buildRouteFromDados(dados);
+  addRouteIfMissing(Router, routeDef);
+
+  await this.$router.push({ name: routeDef.name }).catch(err => err);
+
+},
 
 
-    // ------------------------------
-  // 1) BUSCA GENÉRICA NA SP
-  // ------------------------------
-  async fetchSugestoes({ cd_parametro, ds_prompt }) {
-    const body = [{
-      ic_json_parametro: "S",
-      cd_parametro,
-      cd_empresa: this.cd_empresa,
-      cd_usuario: this.cd_usuario,
-      ds_prompt: ds_prompt || undefined,
-    }];
+confirmarPrompt() {
 
-    const cfg = this.headerBanco ? { headers: { "x-banco": this.headerBanco } } : undefined;
-    const resp = await api.post("/exec/pr_egis_motor_processo_modulo", body, cfg);
+  // Enter NÃO deve disparar execução do processo.
+  // Se já existem sugestões listadas, só orienta o usuário a clicar nelas.
+  const total =
+    (this.sugestoesMenus ? this.sugestoesMenus.length : 0) +
+    (this.sugestoesMotor ? this.sugestoesMotor.length : 0);
 
-    const { rows, status } = this.normalizarResposta(resp?.data);
-    if (status && status.sucesso === false) return { rows: [], status };
-    return { rows: Array.isArray(rows) ? rows : [], status };
-  },
-
-  // ------------------------------
-  // 2) CARREGA TOP DO USUÁRIO (50) + FALLBACK (10)
-  // ------------------------------
-  async carregarSugestoesUsuario() {
-  const top = await this.fetchSugestoes({ cd_parametro: 50 });
-
-  // Se param=50 vier “resumido” (só nomes), normaliza via param=10
-  if (top.rows?.length) {
-    // tenta resolver cada nm_sugestao no catálogo do param=10
-    const cat = await this.fetchSugestoes({ cd_parametro: 10 });
-    const mapa = new Map((cat.rows || []).map(x => [String(x.nm_sugestao).toLowerCase(), x]));
-
-    this.sugestoesUsuario = top.rows
-      .map(r => mapa.get(String(r.nm_sugestao || "").toLowerCase()) || r)
-      .filter(Boolean)
-      .slice(0, 8);
-
+  if (total > 0) {
+    if (this.pushBot) {
+      this.pushBot({
+        text: `Encontrei ${total} sugestão(ões). Clique em uma delas acima para executar.`,
+        status: { sucesso: true, codigo: 200, mensagem: "OK" }
+      });
+    }
     return;
   }
 
-  // fallback catálogo
-  const all = await this.fetchSugestoes({ cd_parametro: 10 });
-  this.sugestoesUsuario = (all.rows || []).slice(0, 8);
+  // Se não tem sugestões, força uma busca pelo texto
+  const v = (this.prompt || "").trim();
+
+  if (v.length >= 3) {
+    this.buscarSugestoes(v);
+  }
 },
 
-  // ------------------------------
-  // 3) SEARCH NO PROMPT (sugestões em dropdown)
-  // ------------------------------
+async carregarSugestoesUsuario() {
+  try {
+    // carrega top do usuário (param=50) sem passar por buscarSugestoes(texto)
+    const out = await this.execMotor(50, null);
+    this.sugestoesUsuario = Array.isArray(out?.rows) ? out.rows : [];
 
-  async buscarSugestoesPorTexto(texto) {
-    const out = await this.fetchSugestoes({ cd_parametro: 10, ds_prompt: texto });
-    this.sugestoesMenus = (out.rows || []).slice(0, 12);
-  },
-
-  async buscarSugestoesPorTextoOld(texto) {
-    this.loadingBusca = true;
-    try {
-      // aqui a ideia é: param=10 com ds_prompt filtrando no SQL
-      const out = await this.fetchSugestoes({ cd_parametro: PARAM_TODAS, ds_prompt: texto });
-      this.sugestoesMenus = (out.rows || []).slice(0, 12);
-    } finally {
-      this.loadingBusca = false;
+    // fallback: se vazio, pega catálogo (param=10)
+    if (!this.sugestoesUsuario.length) {
+      const all = await this.execMotor(10, null);
+      this.sugestoesUsuario = Array.isArray(all?.rows) ? all.rows.slice(0, 8) : [];
     }
-  },
-
-  // ------------------------------
-  // 4) EXECUÇÃO ÚNICA (MENU / PROC / COMPONENTE)
-  // ------------------------------
-  async executarSugestao(item) {
-    if (!item) return;
-
-    const titulo = item.ds_titulo || item.label || item.nm_menu || item.nm_rota || "Ação";
-    this.pushUser(titulo);
-
-    this.loading = true;
-    this.rows = [];
-    this.columns = [];
-
-    let sucesso = true;
-    let erroMsg = "";
-
-    try {
-      const tp = String(item.tp_destino || "").toUpperCase();
-
-      if (tp === "MENU") {
-        await this.abrirMenu(item);
-        this.pushBot({ text: "Abrindo menu...", status: { sucesso: true, codigo: 200, mensagem: "OK" } });
-      } else if (tp === "COMPONENTE") {
-        const rota = item.nm_rota || item.path;
-        if (!rota) throw new Error("Sugestão sem rota (nm_rota/path).");
-        await this.$router.push(rota).catch(err => err);
-        this.pushBot({ text: "Abrindo tela...", status: { sucesso: true, codigo: 200, mensagem: "OK" } });
-      } else if (tp === "PROC") {
-        await this.executarProcesso(item);
-      } else {
-        // fallback: tenta rota, senão processo
-        if (item.nm_rota || item.path) await this.abrirMenu(item);
-        else if (item.nm_procedure) await this.executarProcesso(item);
-        else throw new Error("Sugestão sem destino configurado (tp_destino).");
-      }
-
-    } catch (e) {
-      sucesso = false;
-      erroMsg = e?.message || "Erro ao executar";
-      this.pushBot({
-        text: "Falha ao executar.",
-        status: { sucesso: false, codigo: 500, mensagem: erroMsg }
-      });
-    } finally {
-      this.loading = false;
-      this.prompt = "";
-      this.sugestoesMenus = [];
-      await this.registrarUso(item, { sucesso, erroMsg });
-    }
-  },
-
-  // ------------------------------
-  // 5) MENU DINÂMICO (igual side-nav-menu.vue)
-  // ------------------------------
-
-  async abrirMenu(item) {
-  const cd_rota = item.cd_rota;
-  if (!cd_rota) throw new Error("Sugestão MENU sem cd_rota.");
-
-  // você cria esse método no mesmo serviço que já tem:
-  const dados = await Rota.apiMenuByRota(cd_rota); // <- implementar no seu http/rota
-  if (!dados) throw new Error("apiMenuByRota não retornou dados.");
-
-  // montar rota dinâmica igual side-nav
-  const routeDef = buildRouteFromDados(dados);
-  addRouteIfMissing(Router, routeDef);
-  await this.$router.push({ name: routeDef.name }).catch(err => err);
+  } catch (e) {
+    this.sugestoesUsuario = [];
+  }
 },
 
+async executarSugestao(item) {
+  try {
+    const destino = this.destinoDe(item.tp_destino); // 1/2/3 -> MENU/PROC/COMPONENTE
 
+    if (destino === "MENU") {
+      //await this.abrirMenu(item);
+      await this.abrirMenuComoSideNav(item);
 
-  async abrirMenuOLD(item) {
-    const path = item.nm_rota || item.path;
-    if (!path) throw new Error("Sugestão MENU sem nm_rota/path.");
-
-    const dados = await Rota.apiMenu(path);
-    if (!dados) throw new Error("apiMenu não retornou dados para a rota.");
-
-    localStorage.cd_menu = dados.cd_menu;
-    localStorage.nm_identificacao_api = dados.nm_identificacao_api || "";
-    localStorage.cd_api = dados.cd_api || 0;
-
-    const routeDef = buildRouteFromDados(dados);
-
-    addRouteIfMissing(Router, routeDef);
-
-    await this.$router.push({ name: routeDef.name }).catch(err => err);
-
-  },
-
-  // ------------------------------
-  // 6) EXECUTA PROCEDURE (PROC)
-  // ------------------------------
-  async executarProcesso(item) {
-    const proc = item.nm_procedure || item.proc;
-    if (!proc) throw new Error("Sugestão PROC sem nm_procedure.");
-
-    const cdParam =
-      item.cd_parametro_exec ??
-      item.cd_parametro_processo ??
-      item.cd_parametro ??
-      (item.action && item.action.cd_parametro);
-
-    const body = [{
-      ic_json_parametro: "S",
-      cd_parametro: cdParam,
-      cd_empresa: this.cd_empresa,
-      cd_usuario: this.cd_usuario,
-      cd_sugestao: item.cd_sugestao,
-    }];
-
-    const cfg = this.headerBanco ? { headers: { "x-banco": this.headerBanco } } : undefined;
-    const resp = await api.post(`/exec/${proc}`, body, cfg);
-
-    const { rows, status } = this.normalizarResposta(resp?.data);
-    this.rows = rows || [];
-    this.columns = this.montarColunas(this.rows);
-
-    this.pushBot({
-      text: this.rows.length ? "Aqui está o resultado:" : "Executado. Nenhuma linha retornada.",
-      status,
-      data: this.rows.length ? this.rows : status
-    });
-  },
-
-  // ------------------------------
-  // 7) LOG DE USO (se você implementou param=60)
-  // ------------------------------
-  async registrarUso(item, { sucesso, erroMsg } = {}) {
-    // se não existir no banco, pode comentar este método inteiro
-    try {
-      const body = [{
-        ic_json_parametro: "S",
-        cd_parametro: PARAM_LOG_USO,
-        cd_empresa: this.cd_empresa,
-        cd_usuario: this.cd_usuario,
-        cd_sugestao: item?.cd_sugestao,
-        tp_destino: item?.tp_destino,
-        ic_sucesso: sucesso ? "S" : "N",
-        ds_erro: erroMsg || undefined,
-      }];
-
-      const cfg = this.headerBanco ? { headers: { "x-banco": this.headerBanco } } : undefined;
-      await api.post("/exec/pr_egis_motor_processo_modulo", body, cfg);
-    } catch (e) {
-      // não quebra UX se log falhar
+    } else if (destino === "COMPONENTE") {
+      if (item.nm_rota) this.$router.push(item.nm_rota);
+    } else if (destino === "PROC") {
+      await this.executarProcesso(item); // se você já tem essa função
     }
-  },
 
+    // se existir registrarUso, ok; se não, remova a linha abaixo
+    if (this.registrarUso) this.registrarUso(item, true);
 
-    async carregarSugestoesUsuarioOLD() {
-     const ok = await this.buscarSugestoes(50);
-     if (!ok) {
-       await this.buscarSugestoes(10);
-     }
-   },
-
-   async executarSugestao(item) {
-    try {
-        if (item.tp_destino === "MENU") {
-        await this.abrirMenu(item);
-        }
-        else if (item.tp_destino === "COMPONENTE") {
-        this.$router.push(item.nm_rota);
-        }
-        else if (item.tp_destino === "PROC") {
-        await this.executarProcesso(item);
-        }
-
-        this.registrarUso(item, true);
-
-    } catch (e) {
-        this.registrarUso(item, false, e.message);
-    }
-    },
-
+  } catch (e) {
+    if (this.registrarUso) this.registrarUso(item, false, e.message);
+  }
+},
 
     async openMenuSuggestion(item) {
   // item.path precisa existir
@@ -600,44 +607,147 @@ export default {
   addRouteIfMissing(Router, routeDef);
 
   this.$router.push({ name: routeDef.name }).catch(err => err);
+
 },
 
-    async buscarSugestoes(texto) {
-     this.loadingBusca = true;
-     try {
-      const body = [{
-      ic_json_parametro: "S",
-      cd_parametro: 1,
-      cd_empresa: this.cd_empresa,
-      cd_usuario: this.cd_usuario,
-      ds_prompt: texto
-    }];
+//
 
-    const cfg = this.headerBanco ? { headers: { "x-banco": this.headerBanco } } : undefined;
-    const resp = await api.post("/exec/pr_egis_motor_processo_modulo", body, cfg);
+async buscarSugestoes(texto) {
 
-    const { rows, status } = this.normalizarResposta(resp?.data);
-    if (!status?.sucesso) {
+  this.sugestoesMenus = [];
+  this.sugestoesMotor = [];
+
+  try {
+    // garante arrays limpos sempre (evita duplicação)
+    if (this.sugestoesMenus) this.sugestoesMenus = [];
+    if (this.sugestoesMotor) this.sugestoesMotor = [];
+
+       // normaliza qualquer tipo (number/object/event) para string
+    let v = "";
+    
+    if (typeof texto === "string") v = texto;
+    else if (typeof texto === "number") v = String(texto);
+    else if (texto && typeof texto === "object") {
+      // caso venha evento do input, ou objeto {target:{value}}
+      if (texto.target && typeof texto.target.value === "string") v = texto.target.value;
+      else if (typeof texto.value === "string") v = texto.value;
+      else v = "";
+    }
+
+    v = v.trim();
+
+    if (v.length < 3) {
       this.sugestoesMenus = [];
+      this.sugestoesMotor = [];
       return;
     }
 
-    // rows aqui são opções de menu/proc/component
-    this.sugestoesMenus = Array.isArray(rows) ? rows : [];
 
-  } finally {
-    this.loadingBusca = false;
+    // 1) MENUS DO ERP (param=1)
+    const r1 = await this.execMotor(1, v);       // <-- usa seu executor
+    const menus = (r1 && r1.rows) ? r1.rows : [];
+
+    // 2) SUGESTÕES DO MOTOR (param=10)
+    const r10 = await this.execMotor(10, v);     // <-- usa seu executor
+    const motor = (r10 && r10.rows) ? r10.rows : [];
+
+    // Dedup por chave forte
+
+    const dedupe = (rows) => {
+      const seen = new Set();
+      return (rows || []).filter(r => {
+        const key =
+          r.cd_sugestao ??
+          (r.nm_rota || r.nm_rota_menu) ??
+          (r.cd_menu ? `m:${r.cd_menu}` : null) ??
+          (r.cd_rota ? `r:${r.cd_rota}` : null) ??
+          r.nm_sugestao ??
+          r.nm_menu;
+
+        const k = String(key || "").toLowerCase().trim();
+
+        if (!k) return true;
+        if (seen.has(k)) return false;
+        seen.add(k);
+        return true;
+
+      });
+
+    };
+
+    // popula as listas que a tela renderiza
+    this.sugestoesMenus = dedupe(menus).slice(0, 20);
+    this.sugestoesMotor = dedupe(motor).slice(0, 20);
+
+  } catch (e) {
+    console.log("buscarSugestoes erro:", e);
   }
 },
+
+async execMotor(cd_parametro, ds_prompt) {
+
+  const body = [{
+    ic_json_parametro: "S",
+    cd_parametro,
+    cd_empresa: this.cd_empresa,
+    cd_usuario: this.cd_usuario,
+    ds_prompt: ds_prompt || undefined
+  }];
+
+  const cfg = this.headerBanco ? { headers: { "x-banco": this.headerBanco } } : undefined;
+
+  console.log('dados de execução-->', cfg, body, cd_parametro, ds_prompt);
+
+
+   // IMPORTANTE: use o cliente que EXISTE no seu projeto.
+  // Opção A: se você tem "api" (axios.create) no arquivo, use "api.post"
+  if (typeof api !== "undefined" && api && api.post) {
+    const resp = await api.post("/exec/pr_egis_motor_processo_modulo", body, cfg);
+    return this.normalizarResposta(resp?.data);
+  }
+
+  throw new Error("Cliente api não disponível.");
+
+  // usa o MESMO axios/api que você já usa no componente
+  //const resp = await this.api.post("/exec/pr_egis_motor_processo_modulo", body, cfg);
+
+  // normaliza no formato {rows, status}
+  //const out = this.normalizarResposta(resp && resp.data ? resp.data : []);
+  //
+
+  //console.log('dados do banco-->', out);
+
+
+  //return out;
+},
+
+    dedupeSugestoes(rows) {
+  const seen = new Set();
+  return (rows || []).filter(r => {
+    const key =
+      r.cd_sugestao ??
+      (r.nm_rota || r.nm_rota_menu) ??
+      (r.cd_menu ? `m:${r.cd_menu}` : null) ??
+      (r.cd_rota ? `r:${r.cd_rota}` : null) ??
+      r.nm_sugestao ??
+      r.nm_menu;
+
+    console.log('key', key);
+
+    const k = String(key || "").toLowerCase().trim();
+
+    
+    if (!k) return true;
+    if (seen.has(k)) return false;
+    seen.add(k);
+    return true;
+  });
+},
+
 
     inserirSugestao(txt) {
       this.prompt = txt;
       this.$nextTick(() => this.enviarPrompt());
-    },
-
-    executarSugestao(s) {
-      this.prompt = s.label;
-      this.enviarPrompt(s.action);
     },
 
     salvarLocal() {
@@ -676,8 +786,37 @@ export default {
       });
     },
 
+    destinoDe(tp) {
+      const n = Number(tp);
+      if (n === 1) return "MENU";
+      if (n === 2) return "PROC";
+      if (n === 3) return "COMPONENTE";
+      return "MENU";
+    },
+
+    iconeDestino(tp_destino) {
+      const d = this.destinoDe(tp_destino);
+      if (d === "MENU") return "menu";
+      if (d === "PROC") return "bolt";
+      if (d === "COMPONENTE") return "widgets";
+      return "menu";
+    },
+
+    normalizarItemMotor(s) {
+      return { ...s, tp_destino: this.destinoDe(s.tp_destino) };
+    },
+
+    normalizarItemERP(s) {
+      return {
+        ...s,
+        tp_destino: "MENU",
+        nm_rota: s.nm_rota || s.nm_rota_menu || s.nm_executavel || s.nm_form_menu,
+      };
+    },
+
     // Heurística simples para transformar texto em “intenção”
     // (Depois a gente deixa isso 100% alinhado ao teu Word/Excel)
+
     identificarAcaoPorTexto(texto) {
       const t = (texto || "").toLowerCase();
 
@@ -770,10 +909,15 @@ export default {
 
     // Normaliza retorno (suporta: array, array de resultsets, status no final, etc.)
     normalizarResposta(data) {
+    //
+
       let payload = data;
+      
       if (payload && payload.dados) payload = payload.dados;
 
       let status = null;
+
+      console.log('payload-->', payload);
 
       // caso: [ [rs1], [status] ]
       if (Array.isArray(payload) && payload.length && Array.isArray(payload[payload.length - 1])) {

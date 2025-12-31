@@ -1,6 +1,6 @@
  --BANCO DA EMPRESA
 --------------------
---USE EGISSQL_360
+--USE EGISadmin
 
 IF EXISTS (SELECT name 
 	   FROM   sysobjects 
@@ -266,7 +266,7 @@ select
  --ISNULL(0,0)                                                    as cd_processo,
 isnull(( select top 1 mp.cd_processo_sistema from egisadmin.dbo.menu_processo mp 
    where
-     mp.cd_menu = m.cd_menu ),0) as                                   cd_processo,
+     mp.cd_menu = m.cd_menu ),0)                                as cd_processo,
  isnull(t.ic_sap_admin,'N')                                     as ic_admin
 
 into
@@ -283,6 +283,8 @@ where
   m.cd_menu = @cd_menu
 
 --select * from #AtributoMenu
+
+--RETURN
 
 insert into #AtributoForm
 select * from #AtributoMenu
@@ -371,7 +373,9 @@ select
                  end
 				end
 			  end),
+  
   MAX(a.nm_tabela)           as nm_tabela,
+  
   a.cd_tabela,
   a.cd_atributo,
   max(a.nm_atributo)          as nm_atributo,
@@ -403,6 +407,7 @@ group by
  --j.valor
 
  --select * from #aux
+-- return
 
  --Nova tabela para fazer abaixo a inclusao dos campos novamente, devido a mudanca de chave
 ------------------------------------
@@ -567,8 +572,12 @@ begin
 
 end
 
---select @inclusao
+--select
+--  @nm_tabela
+--return
 
+--select @inclusao
+--return
 
 --Validação se existe registro na Tabela requerida, se não gerar insert (Solicitação CCF)
 
@@ -705,7 +714,7 @@ begin try
 	   --
 
 	   --select * from #AuxInclusao
-
+       --return
 
        while exists ( select top 1 id from #auxInclusao)
        begin
@@ -713,7 +722,8 @@ begin try
          select top 1
            @id                   = id,
 	       @campo                = campo,
-	       @nm_tabela            = isnull(nm_tabela,''),
+	       --@nm_tabela            = isnull(nm_tabela,''),
+           @nm_tabela            = case when ic_admin = 'S' then 'egisadmin.dbo.' else cast('' as varchar(1)) end + isnull(nm_tabela,''),
 	       @nm_atributo          = ISNULL(nm_atributo,''),
            @valor                = ltrim(rtrim(valor)),
 	       @cd_natureza_atributo = cd_natureza_atributo,
@@ -833,12 +843,13 @@ end
 
   --select @nm_tabela, @campos, @inclusao
 
+  ----------------------------------------------------------------------------------
   set @sql = 'INSERT INTO '+@nm_tabela+'( '+@campos+' ) VALUES (' + @inclusao + ' )'
-
+  ----------------------------------------------------------------------------------
   --ccf 
   --select @sql
-
-
+  --return
+  ----------------------------------------------------------------------------------
   --ccf 
   --abrir aqui para teste
  -- select @sql, @valor
@@ -1116,7 +1127,7 @@ end
 	   set @sql = 'UPDATE  '+@nm_tabela+' set ' + @alteracao + ' where '+@nm_atributo_where
 	   
 	   --select @sql
-
+       --return
 
 	   --select @nm_atributo_chave, @nm_chave, @nm_atributo_pai, @vl_atributo_pai
 	   --return
@@ -1133,7 +1144,7 @@ end
      
 	 --select @sql
      -- exec (@sql)
-
+     --return
 	 ------------------------
 	 EXEC sp_executesql @sql
 	 ------------------------
@@ -1425,3 +1436,63 @@ go
 --go
 
 --select * from consulta order by cd_consulta desc
+
+
+
+
+
+--exec pr_egis_api_crud_dados_especial '[{
+--    "cd_menu": 8830,
+--    "cd_form": "0",
+--    "cd_parametro_form": 1,
+--    "cd_usuario": "113",
+--    "cd_cliente_form": "0",
+--    "cd_contato_form": "",
+--    "lookup_formEspecial": {},
+--    "detalhe": [],
+--    "lote": [],
+--    "cd_modulo": "",
+--    "cd_documento_form": "0",
+--    "cd_sugestao": "",
+--    "nm_sugestao": "Vendas de Hoje",
+--    "ds_sugestao": "",
+--    "ds_exemplos": "",
+--    "ds_keywords": "",
+--    "tp_destino": 1,
+--    "cd_rota": 187,
+--    "nm_procedure": "",
+--    "nm_local_componente": "",
+--    "nm_caminho_componente": "",
+--    "ic_ativo": "N",
+--    "cd_grupo_usuario": "",
+--    "cd_parametro": ""
+--}]'
+
+
+
+--exec pr_egis_api_crud_dados_especial '[{
+--    "cd_menu": 8830,
+--    "cd_form": "0",
+--    "cd_parametro_form": 2,
+--    "cd_usuario": "113",
+--    "cd_cliente_form": "0",
+--    "cd_contato_form": "",
+--    "lookup_formEspecial": {},
+--    "detalhe": [],
+--    "lote": [],
+--    "cd_modulo": "",
+--    "cd_documento_form": 2,
+--    "cd_sugestao": 2,
+--    "nm_sugestao": "Vendas Mensais",
+--    "ds_sugestao": "",
+--    "ds_exemplos": "",
+--    "ds_keywords": "",
+--    "tp_destino": 1,
+--    "cd_rota": 187,
+--    "nm_procedure": "",
+--    "nm_local_componente": "",
+--    "nm_caminho_componente": "",
+--    "ic_ativo": "N",
+--    "cd_grupo_usuario": "",
+--    "cd_parametro": ""
+--}]'

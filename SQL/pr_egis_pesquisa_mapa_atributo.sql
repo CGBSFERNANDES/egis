@@ -161,6 +161,10 @@ BEGIN
 
 END
 
+
+--Pesquisa da Lista de Atributos------------------------------------
+
+
 if @cd_parametro = 1
 begin
 
@@ -516,18 +520,20 @@ exec  pr_egis_pesquisa_mapa_atributo '[{"cd_parametro": 2, "cd_tabela": 201}]'  
 --  ]
 --}
 
+use egissql
+go
 
---EXEC pr_egis_pesquisa_mapa_atributo '[
---  { "cd_parametro": 1, "cd_tabela": 0 },
+EXEC pr_egis_pesquisa_mapa_atributo '[
+  { "cd_parametro": 1, "cd_tabela": 0 },
  
---  {
---    "dados": [
---      { "nm_atributo": "nm_grupo_conta" },
---      { "nm_atributo": "dt_usuario" },
---      { "nm_atributo": "nm_obs_plano_conta" }
---    ]
---  }
---]';
+  {
+    "dados": [
+      { "nm_atributo": "nm_grupo_conta" },
+      { "nm_atributo": "dt_usuario" },
+      { "nm_atributo": "nm_obs_plano_conta" }
+    ]
+  }
+]';
 
 --exec pr_egis_pesquisa_mapa_atributo '
 --[

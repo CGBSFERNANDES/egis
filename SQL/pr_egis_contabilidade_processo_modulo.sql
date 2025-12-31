@@ -35,7 +35,7 @@ GO
 --                   Modelo de Procedure com Processos
 --
 --Data             : 20.07.2025
---Alteração        : 
+--AlteraÃ§Ã£o        : 
 --
 --
 ------------------------------------------------------------------------------
@@ -49,7 +49,7 @@ create procedure  pr_egis_contabilidade_processo_modulo
 
 as
 
--- ver nível atual
+-- ver nÃ­vel atual
 --SELECT name, compatibility_level FROM sys.databases WHERE name = DB_NAME();
 
 -- se < 130, ajustar:
@@ -66,7 +66,7 @@ as
  
  /* 1) Validar payload - parameros de Entrada da Procedure */
  IF NULLIF(@json, N'') IS NULL OR ISJSON(@json) <> 1
-            THROW 50001, 'Payload JSON inválido ou vazio em @json.', 1;
+            THROW 50001, 'Payload JSON invÃ¡lido ou vazio em @json.', 1;
 
  /* 2) Normalizar: aceitar array[0] ou objeto */
  IF JSON_VALUE(@json, '$[0]') IS NOT NULL
@@ -89,7 +89,7 @@ set @json = replace(
                                     replace(
                                     @json, CHAR(13), ' '),
                                   CHAR(10),' '),
-                                ' ',' '),
+                                'Â ',' '),
                               ':\\\"',':\\"'),
                             '\\\";','\\";'),
                           ':\\"',':\\\"'),
@@ -102,7 +102,12 @@ set @json = replace(
              ']"',']'),
           '"]',']') 
 
---Declaração das variaveis que seram utlizadas no procedimento (calculo, consulta, update, delete,insert,etc...)
+--DeclaraÃ§Ã£o das variaveis que seram utlizadas no procedimento (calculo, consulta, update, delete,insert,etc...)
+
+    DECLARE @__sucesso BIT = 0;
+    DECLARE @__codigo  INT = 0;
+    DECLARE @__mensagem NVARCHAR(4000) = N'OK';
+ 
 
 declare @cd_empresa          int
 declare @cd_parametro        int
@@ -128,6 +133,9 @@ declare @nm_resultado        varchar(500)  = ''
 declare @nm_complemento      varchar(500)  = ''
 declare @ds_json_resultado   nvarchar(max) = ''
 declare @nm_conta            varchar(60)   = ''
+declare @cd_lote             int           = 0
+
+--lote_contabil
 
 
 ----------------------------------------------------------------------------------------------------------------
@@ -155,20 +163,20 @@ end
 select                     
  1                                                   as id_registro,
  IDENTITY(int,1,1)                                   as id,
- valores.[key]  COLLATE SQL_Latin1_General_CP1_CI_AI as campo,                     
+ valores.[key]  COLLATE SQL_Latin1_General_CP1_CI_AIÂ as campo,                     
  valores.[value]                                     as valor                    
                     
  into #json                    
  from                
    openjson(@json)root  --Comando que transforma o string json em uma tabela                   
    cross apply openjson(root.value) as valores      
-   -- Para debug os parametros de entrada, descomentar o código abaixo
+   -- Para debug os parametros de entrada, descomentar o cÃ³digo abaixo
    --select * from #json 
    --return
 
 
 --------------------------------------------------------------------------------------------
--- Definição da variavel de trabalho com o valor do atributo da tabela #json
+-- DefiniÃ§Ã£o da variavel de trabalho com o valor do atributo da tabela #json
 
 select @cd_empresa             = valor from #json where campo = 'cd_empresa'             
 select @cd_parametro           = valor from #json where campo = 'cd_parametro'          
@@ -182,6 +190,8 @@ select @nm_menu				   = valor from #json where campo = 'nm_menu'
 select @cd_modulo              = valor from #json where campo = 'cd_modulo'  
 select @cd_movimento           = valor from #json where campo = 'cd_movimento'  
 select @nm_conta               = valor from #json where campo = 'nm_conta' 
+select @cd_lote                = valor from #json where campo = 'cd_lote' 
+
 --------------------------------------------------------------------------------------
 
 set @cd_empresa = ISNULL(@cd_empresa,0)
@@ -199,8 +209,9 @@ set @nm_atributo      = isnull(@nm_atributo,0)
 set @cd_usuario       = isnull(@cd_usuario,0)
 set @cd_modulo        = isnull(@cd_modulo,0)
 set @nm_conta         = isnull(@nm_conta,'')
+set @cd_lote          = isnull(@cd_lote,0)
 
---Teste de execução para validar 
+--Teste de execuÃ§Ã£o para validar 
 
 
 IF ISNULL(@cd_parametro,0) = 0
@@ -212,6 +223,13 @@ BEGIN
      @dt_inicial  AS dt_inicial,
      @dt_final    AS dt_final,
 	 @cd_usuario  as cd_usuario
+
+    -- Status padronizado (sempre o ÃšLTIMO resultset antes de sair)
+    SET @__sucesso = 1;
+    SET @__codigo  = 200;
+    SET @__mensagem = N'OK';
+    SELECT @__sucesso AS sucesso, @__codigo AS codigo, @__mensagem AS mensagem;
+ 
 
 
   RETURN;
@@ -259,19 +277,77 @@ begin
   order by
     pc.cd_mascara_conta
 
+    -- Status padronizado (sempre o ÃšLTIMO resultset antes de sair)
+    SET @__sucesso = 1;
+    SET @__codigo  = 200;
+    SET @__mensagem = N'OK';
+    SELECT @__sucesso AS sucesso, @__codigo AS codigo, @__mensagem AS mensagem;
+ 
+
   return
 
 end
 
+
+if @cd_parametro = 2
+begin
+  --select * from movimento_contabil
+
+  select
+    mc.cd_empresa,
+    mc.cd_exercicio,
+    mc.cd_lote,
+    mc.cd_lancamento_contabil,
+    mc.dt_lancamento_contabil,
+    mc.cd_reduzido_debito,
+    mc.cd_reduzido_credito,
+    mc.vl_lancamento_contabil,
+    mc.cd_historico_contabil,
+    mc.ds_historico_contabil,
+    mc.cd_usuario,
+    mc.dt_usuario,
+    mc.cd_centro_receita,
+    mc.cd_centro_custo,
+    mc.cd_lancamento_padrao,
+    case when mc.cd_reduzido_debito > 0  then mc.vl_lancamento_contabil else 0.00 end as vl_debito,
+    case when mc.cd_reduzido_credito > 0 then mc.vl_lancamento_contabil else 0.00 end as vl_credito,
+    mc.cd_centro_custo_debito,
+    mc.cd_centro_custo_credito,
+    mc.cd_conta_debito,
+    mc.cd_conta_credito
+
+
+  from
+    movimento_contabil mc
+  where
+    mc.cd_lote = @cd_lote
+
+
+    -- Status padronizado (sempre o ÃšLTIMO resultset antes de sair)
+    SET @__sucesso = 1;
+    SET @__codigo  = 200;
+    SET @__mensagem = N'OK';
+    SELECT @__sucesso AS sucesso, @__codigo AS codigo, @__mensagem AS mensagem;
+ 
+    return
+
+ end
+
 if @cd_parametro = 999
 begin
   
-   return
+     -- Status padronizado (sempre o ÃšLTIMO resultset antes de sair)
+    SET @__sucesso = 1;
+    SET @__codigo  = 200;
+    SET @__mensagem = N'OK';
+    SELECT @__sucesso AS sucesso, @__codigo AS codigo, @__mensagem AS mensagem;
+ 
+ return
 
 end
    
-/* Padrão se nenhum caso for tratado */
-SELECT CONCAT('Nenhuma ação mapeada para cd_parametro=', @cd_parametro) AS Msg;
+/* PadrÃ£o se nenhum caso for tratado */
+SELECT CONCAT('Nenhuma aÃ§Ã£o mapeada para cd_parametro=', @cd_parametro) AS Msg;
    
  END TRY
     BEGIN CATCH
@@ -284,7 +360,7 @@ SELECT CONCAT('Nenhuma ação mapeada para cd_parametro=', @cd_parametro) AS Msg;
 
 
 
-         -- Monta a mensagem (THROW aceita até 2048 chars no 2º parâmetro)
+         -- Monta a mensagem (THROW aceita atÃ© 2048 chars no 2Âº parÃ¢metro)
     SET @fullmsg =
           N'Erro em pr_egis_contabilidade_processo_modulo ('
         + ISNULL(@errproc, N'SemProcedure') + N':'
@@ -295,10 +371,10 @@ SELECT CONCAT('Nenhuma ação mapeada para cd_parametro=', @cd_parametro) AS Msg;
     -- Garante o limite do THROW
     SET @fullmsg = LEFT(@fullmsg, 2048);
 
-    -- Relança com contexto (state 1..255)
+    -- RelanÃ§a com contexto (state 1..255)
     THROW 50000, @fullmsg, 1;
 
-        -- Relança erro com contexto
+        -- RelanÃ§a erro com contexto
         --THROW 50000, CONCAT('Erro em pr_egis_contabilidade_processo_modulo (',
         --                    ISNULL(@errproc, 'SemProcedure'), ':',
         --                    @errline, ') #', @errnum, ' - ', @errmsg), 1;

@@ -408,138 +408,7 @@ update
 --781
 --	   )
 
---	   update
---	   meta_procedure_colunas
---	     set
---		   visivel = 0
---		   where
---		     id = 778
-
---			   update
---	   egisadmin.dbo.meta_procedure_colunas
---	     set
---		   visivel = 0
---		   where
---		     id = 778
-
-use egisadmin
-go
-
-			   update
-	   meta_procedure_colunas
-	     set
-		   formato_coluna = 'shortDate'
-		   where
-		     tipo_coluna = 'datetime'
-			 and
-			 isnull(formato_coluna,'')=''
-
-
-use egissql_rubio
-go
-
-update
-  egisadmin.dbo.menu
-  set 
-    ic_json_parametro = 'N'
-where
-  cd_menu = 8292
-
-
---pr_mapa_carteira_cliente_aberto
-select * from meta_procedure_colunas where cd_menu_id = '8292'
-select * from meta_procedure_parametros where cd_menu_id = '8261'
-update
-  meta_procedure_colunas
-set
- cd_menu_id = 8261
- where
-   cd_menu_id = 7377
-
-
-   update
-     egisadmin.dbo.menu
-	 set
-	   ic_json_parametro = 'S',
-	   cd_parametro = 1000
-	   where
-	     cd_menu = 8517
-
-
-	  
-select * from meta_procedures
-use egissql_rubio
-
-select * from meta_procedures where nome_procedure = 'pr_egis_pagar_processo_modulo'
--- insert meta_procedures ( nome_procedure, criado_em ) values ('pr_egis_visita_processo_modulo', getdate())
-
-select * into #incMetaColuna from meta_procedure_colunas where nome_procedure = 'pr_egis_supnet_processo_modulo'
-
-select * from #incMetaColuna
-
-update
-  #incMetaColuna
-  set
-   cd_menu_id = 7355
-
-INSERT INTO meta_procedure_colunas
-            (nome_procedure, cd_menu_id, menu, nome_coluna, tipo_coluna,
-             titulo_exibicao, qt_ordem_coluna, visivel)
-select
-nome_procedure, cd_menu_id, menu, nome_coluna, tipo_coluna,
-             titulo_exibicao, qt_ordem_coluna, visivel
-from
-  #incMetaColuna
-
-			 go
-			 use egissql_rubio
-			 use egisadmin
-			 --select * into #incMetaColuna from meta_procedure_colunas where nome_procedure = 'pr_egis_supnet_processo_modulo'
-			 --select * from meta_procedures where nome_procedure = 'pr_consulta_trans_estado'
-			 
-			 --select * from meta_procedure_colunas where nome_procedure = 'pr_nota_transportadora'
-			 --select * from meta_procedure_parametros where nome_procedure = 'pr_nota_transportadora'
-			 update
-			   meta_procedure_colunas
-			   set
-			     cd_menu_id = 8517
-				where  
-				  cd_menu_id = 4098
-
-				  update
-				     meta_procedure_colunas 
-					 set
-					   titulo_exibicao = 'Descritivo'
-					where
-					  id = 1880
-
-
-
-			--where 
-			--delete from meta_procedure_colunas where cd_menu_id = 8241
-			use egissql_rubio
-
-			select * from meta_procedures     where nome_procedure='pr_egis_visita_processo_modulo' 
-			--= 8261
-			delete from meta_procedure_colunas   where id = 2289
-			select * from meta_procedure_colunas where cd_menu_id = 8676
-			select * from meta_procedure_colunas where cd_menu_id = 8789
-			select * from meta_procedure_colunas where nome_procedure = 'pr_egis_ativo_processo_modulo'
-
-use egissql_rubio
-go
-
-drop table egisadmin.dbo.meta_procedures 
-drop table egisadmin.dbo.meta_procedure_colunas 
-drop table egisadmin.dbo.meta_procedure_parametros 
-go
-use egissql_rubio
-go
-
-select * into egisadmin.dbo.meta_procedures           from meta_procedures 
-select * into egisadmin.dbo.meta_procedure_parametros from meta_procedure_parametros
-select * into egisadmin.dbo.meta_procedure_colunas    from meta_procedure_colunas      
-
+/*
 use egisadmin
 go
 use egissql_rubio
@@ -706,5 +575,144 @@ set
 
 
 drop table #mpp
+
+
+*/
+--	   update
+--	   meta_procedure_colunas
+--	     set
+--		   visivel = 0
+--		   where
+--		     id = 778
+
+--			   update
+--	   egisadmin.dbo.meta_procedure_colunas
+--	     set
+--		   visivel = 0
+--		   where
+--		     id = 778
+/*
+use egisadmin
+go
+
+			   update
+	   meta_procedure_colunas
+	     set
+		   formato_coluna = 'shortDate'
+		   where
+		     tipo_coluna = 'datetime'
+			 and
+			 isnull(formato_coluna,'')=''
+
+
+use egissql_rubio
+go
+
+update
+  egisadmin.dbo.menu
+  set 
+    ic_json_parametro = 'N'
+where
+  cd_menu = 8292
+
+
+--pr_mapa_carteira_cliente_aberto
+select * from meta_procedure_colunas where cd_menu_id = '8292'
+select * from meta_procedure_parametros where cd_menu_id = '8261'
+update
+  meta_procedure_colunas
+set
+ cd_menu_id = 8261
+ where
+   cd_menu_id = 7377
+
+
+   update
+     egisadmin.dbo.menu
+	 set
+	   ic_json_parametro = 'S',
+	   cd_parametro = 1000
+	   where
+	     cd_menu = 8517
+
+
+	  
+select * from meta_procedures
+use egissql_rubio
+
+select * from meta_procedures where nome_procedure = 'pr_egis_pagar_processo_modulo'
+-- insert meta_procedures ( nome_procedure, criado_em ) values ('pr_egis_visita_processo_modulo', getdate())
+
+select * into #incMetaColuna from meta_procedure_colunas where nome_procedure = 'pr_egis_supnet_processo_modulo'
+
+select * from #incMetaColuna
+
+update
+  #incMetaColuna
+  set
+   cd_menu_id = 7355
+
+INSERT INTO meta_procedure_colunas
+            (nome_procedure, cd_menu_id, menu, nome_coluna, tipo_coluna,
+             titulo_exibicao, qt_ordem_coluna, visivel)
+select
+nome_procedure, cd_menu_id, menu, nome_coluna, tipo_coluna,
+             titulo_exibicao, qt_ordem_coluna, visivel
+from
+  #incMetaColuna
+
+			 go
+			 use egissql_rubio
+			 use egisadmin
+			 --select * into #incMetaColuna from meta_procedure_colunas where nome_procedure = 'pr_egis_supnet_processo_modulo'
+			 --select * from meta_procedures where nome_procedure = 'pr_consulta_trans_estado'
+			 
+			 --select * from meta_procedure_colunas where nome_procedure = 'pr_nota_transportadora'
+			 --select * from meta_procedure_parametros where nome_procedure = 'pr_nota_transportadora'
+			 update
+			   meta_procedure_colunas
+			   set
+			     cd_menu_id = 8517
+				where  
+				  cd_menu_id = 4098
+
+				  update
+				     meta_procedure_colunas 
+					 set
+					   titulo_exibicao = 'Descritivo'
+					where
+					  id = 1880
+
+
+
+			--where 
+			--delete from meta_procedure_colunas where cd_menu_id = 8241
+			use egissql_rubio
+
+			select * from meta_procedures     where nome_procedure='pr_egis_visita_processo_modulo' 
+			--= 8261
+			delete from meta_procedure_colunas   where id = 2289
+			select * from meta_procedure_colunas where cd_menu_id = 8676
+			select * from meta_procedure_colunas where cd_menu_id = 8789
+			select * from meta_procedure_colunas where nome_procedure = 'pr_egis_ativo_processo_modulo'
+
+			*/
+
+ insert meta_procedures ( nome_procedure, criado_em ) values ('pr_egis_servicos_processo_modulo', getdate())
+
+
+use egissql_rubio
+go
+
+drop table egisadmin.dbo.meta_procedures 
+drop table egisadmin.dbo.meta_procedure_colunas 
+drop table egisadmin.dbo.meta_procedure_parametros 
+go
+use egissql_rubio
+go
+
+select * into egisadmin.dbo.meta_procedures           from meta_procedures 
+select * into egisadmin.dbo.meta_procedure_parametros from meta_procedure_parametros
+select * into egisadmin.dbo.meta_procedure_colunas    from meta_procedure_colunas      
 
 

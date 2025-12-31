@@ -157,6 +157,16 @@ end
 
 --Cadastramento Geral Net ---------
 
+if @cd_modulo = 238 or @cd_modulo = 54
+begin
+ 
+  exec pr_dashboard_modulo_servicos @json --@cd_modulo, 100,@dt_inicial, @dt_final, @cd_usuario
+  return
+
+end
+
+--Cadastramento Geral Net ---------
+
 if @cd_modulo = 243 or @cd_modulo = 54
 begin
  

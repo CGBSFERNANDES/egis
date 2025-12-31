@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div class="unico-root">
     <meta
       name="viewport"
       content="width=device-width,initial-scale=1,user-scalable=no"
@@ -7,17 +7,18 @@
 
     <!-- TOPO no estilo -->
 
-    <div class="row items-center">
+    <div       
+      class="row items-center">
       <transition name="slide-fade">
         <!-- título + seta + badge -->
-        <h2 class="content-block col-8" v-show="tituloMenu || title">
+      <h2 class="content-block col-8 row items-center no-wrap toolbar-scroll" v-show="tituloMenu || title">
           <!-- seta voltar -->
-          <q-btn
+          <q-btn            
             flat
             round
             dense
             icon="arrow_back"
-            class="q-mr-sm"
+            class="q-mr-sm seta-form"
             aria-label="Voltar"
             @click="onVoltar"
           />
@@ -29,15 +30,16 @@
 
           <!-- badge com total de registros -->
 
-          <q-badge
-            v-if="(qt_registro || recordCount) >= 0"
-            align="middle"
-            rounded            
-            color="red"
-            :label="qt_registro || recordCount"
-            class="q-ml-sm bg-form"
-          />
-
+     <div style="display: flex; align-items: center;">
+    <q-badge
+    v-if="(qt_registro || recordCount) >= 0"
+    align="middle"
+    rounded
+    color="red"
+    :label="qt_registro || recordCount"   
+    class="q-ml-sm bg-form"
+  />
+</div>
           <q-btn
             v-if="cd_tabela > 0"
             dense
@@ -47,8 +49,23 @@
             icon="add"
             size="lg"
             @click="abrirFormEspecial({ modo: 'I', registro: {} })"
-          />
+          >
+          <q-tooltip>Novo Registro</q-tooltip>
+          </q-btn>
           
+          <q-btn
+            v-if="cd_tabela > 0"
+            dense
+            rounded
+            color="deep-purple-7"
+            :class="['q-mt-sm', 'q-ml-sm']"
+            icon="filter_alt"
+            size="lg"
+            @click="abrirFiltroSelecao"
+          >
+          <q-tooltip>Filtros</q-tooltip>
+          </q-btn>
+
         <q-btn
           dense
           rounded
@@ -57,8 +74,10 @@
           size="lg"
           :class="['q-mt-sm', 'q-ml-sm', cd_tabela === 0 ? 'fo-margin' : '']"
           @click="onRefreshConsulta"
-       />
-   
+       >
+       <q-tooltip>Atualizar os Dados</q-tooltip>
+       </q-btn>
+       
            <q-btn
             v-if="cd_form_modal>0"
           rounded
@@ -69,13 +88,24 @@
           size="lg"
           :disable="cd_form_modal <= 0"
           @click="abrirModalComposicao"
-        />
+        >
+        <q-tooltip>Detalhe</q-tooltip>
+       
+        </q-btn>
 
 <modal-composicao
-  v-if="mostrarBotaoModalComposicao"
+  v-if="mostrarBotaoModalComposicao && this.ic_grid_modal === 'N'"
   v-model="dialogModalComposicao"
   :cd-modal="cd_form_modal"
   :registros-selecionados="registrosSelecionados"  
+  @sucesso="onRefreshConsulta"
+/>
+
+<modal-grid-composicao
+  v-if="mostrarBotaoModalComposicao && ic_grid_modal === 'S'"
+  v-model="dialogModalGridComposicao"
+  :cd-modal="cd_form_modal"
+  :registros-selecionados="registrosSelecionados"
   @sucesso="onRefreshConsulta"
 />
 
@@ -87,7 +117,9 @@
           class="q-mt-sm q-ml-sm"
           size="lg"
           @click="exportarExcel && exportarExcel()"
-        />
+        >
+         <q-tooltip>Exportar Excel</q-tooltip>
+       </q-btn>
 
         <q-btn
           rounded
@@ -97,8 +129,9 @@
           icon="picture_as_pdf"
           size="lg"
           @click="exportarPDF && exportarPDF()"
-        />
-
+        >
+         <q-tooltip>Exportar PDF</q-tooltip>
+        </q-btn>
         <q-btn
           rounded
           dense
@@ -107,7 +140,9 @@
           icon="description"
           size="lg"
           @click="abrirRelatorio"
-        />
+        >
+        <q-tooltip>Abrir Relatório</q-tooltip>
+        </q-btn>
 
       <q-btn
         dense
@@ -133,7 +168,9 @@
       icon="more_horiz"
       size="lg"
       @click="abrirMenuProcessos"
-     />
+     >
+     <q-tooltip>Processos</q-tooltip>
+     </q-btn>
         <q-btn
            rounded
            dense
@@ -142,7 +179,9 @@
            icon="view_list"   
            size="lg"        
            @click="dlgMapaAtributos = true"
-        />
+        >
+        <q-tooltip>Mapa de Atributos</q-tooltip>
+        </q-btn>
         <q-btn
           dense
           rounded
@@ -151,9 +190,34 @@
           icon="info"
           size="lg"
           @click="onInfoClick && onInfoClick()"
-        />
-        
+        >
+        <q-tooltip>Informações</q-tooltip>
+        </q-btn>
 
+
+      <!-- TOGGLE: GRID x CARDS (só aparece quando meta permite) -->
+      <q-toggle
+          v-if="String(ic_card_menu || 'N').toUpperCase() === 'S'"
+          v-model="exibirComoCards"
+          color="deep-purple-7"
+          checked-icon="view_module"
+          unchecked-icon="view_list"
+          :label="exibirComoCards ? 'cards' : 'grid'"
+          keep-color
+          class="q-mt-sm q-ml-sm"
+      />
+
+      <!-- TOGGLE TreeView x Grid -->
+      <q-toggle
+        v-if="String(ic_treeview_menu || 'N').toUpperCase() === 'S'"
+        v-model="exibirComoTree"
+        color="deep-purple-7"
+        checked-icon="account_tree"
+        unchecked-icon="view_list"
+        :label="exibirComoTree ? 'tree' : 'grid'"
+        keep-color
+        class="q-mt-sm q-ml-sm"
+      />
 
       <q-chip
         v-if="(cdMenu || cd_menu )  && ( 1==1 )"
@@ -164,7 +228,9 @@
         size="16px"
         text-color="white"
         :label="`${cdMenu || cd_menu}`"
-      />
+      >
+      <q-tooltip>identificação</q-tooltip>
+      </q-chip>
         </h2>
       </transition>
 
@@ -175,20 +241,22 @@
         <!-- Modal -->
 
 <!-- Dialog para exibir o dashboard -->
-<q-dialog v-model="showDashDinamico" maximized>
+
+<q-dialog v-model="showDashDinamico" maximized content-class="dlg-form-branco">
   <q-card class="q-pa-sm" style="height:100vh;width:100vw;">
     <q-btn flat dense round icon="close" class="absolute-top-right q-ma-sm" @click="showDashDinamico=false" />
-    <dashboard-dinamico
+    <dashboard-dinamico      
       :rows="rowsParaDashboard"
       :columns="colsParaDashboard"
       :titulo="tituloDashboard"
       :cd-menu="cd_menu || cdMenu"
+      :return-to="returnTo"
       @voltar="showDashDinamico = false"
     />
   </q-card>
 </q-dialog>
 
-<q-dialog v-model="infoDialog">
+<q-dialog v-model="infoDialog" content-class="dlg-form-branco">
   <q-card style="min-width: 640px">
     <q-card-section class="text-h6">
       <q-icon name="info" color="deep-orange-9" size="48px" class="q-mr-sm" /> 
@@ -204,29 +272,66 @@
     </q-card-actions>
   </q-card>
 </q-dialog>
+
       </div>
     </div>
 
+
+    <!-- ✅ Tudo do PAI (tabs/form/grid/modais) some quando takeoverFilhoGrid -->
+    <div v-show="!takeoverFilhoGrid">
+      
+   <!-- ✅ fecha wrapper do PAI -->
+   </div> 
+
     <!-- MODAL DO FORM ESPECIAL -->
 
-    <q-dialog v-model="dlgForm" persistent>
-      <q-card class="dlg-form-card">
-        <q-card-section class="row items-center justify-between">
-          <div class="text-h6">
-            {{ tituloMenu || title }} —
-            {{
-               formSomenteLeitura
-               ? "Consulta de registro"
-               : formMode === "I"
-               ? "Novo registro"
-               : "Editar registro"
-              }}
-           </div>
-
-        <q-btn icon="close" flat round dense @click="fecharForm()" />
+    <q-dialog 
+       v-model="dlgForm"      
+       persistent
+       maximized
+       transition-show="slide-up"
+       transition-hide="slide-down"
+       content-class="dlg-form-branco"
+    >
+      <q-card 
+         class="dlg-form-card dlg-form-premium"         
+      >
+        <q-card-section class="dlg-form-card__hero row items-center justify-between no-wrap q-gutter-md">
+          <div class="row items-center no-wrap q-gutter-md dlg-form-card__hero-main">
+            <div class="col-auto">
+              <div class="dlg-form-card__hero-icon">
+                <q-icon name="tune" size="48px" color="white" />
+              </div>
+            </div>
+            <div class="col">
+              <div class="dlg-form-card__eyebrow">
+                {{ modulo }}
+              </div>
+              <div class="dlg-form-card__title">
+                {{ tituloMenu || title }} —
+                {{
+                   formSomenteLeitura
+                   ? "Consulta de registro"
+                   : formMode === "I"
+                   ? "Novo registro"
+                   : "Editar registro"
+                  }}
+              </div>
+            </div>
+          </div>
+          <div class="col-auto">
+            <q-btn
+              icon="close"
+              flat
+              round
+              dense
+              class="dlg-form-card__close"
+              @click="fecharForm()"
+            />
+          </div>
         </q-card-section>
 
-        <q-separator />
+        <q-separator class="dlg-form-card__divider" />
 
         <q-card-section class="dlg-form-card__body">
           <!-- área para renderizador dinâmico (form_especial.js) -->
@@ -243,10 +348,10 @@
       <q-tabs
         v-model="activeTabsheet"
         dense
-        align="left"
-        class="text-deep-orange-9"
-        active-color="deep-purple-7"
-        
+        align="center"
+        class="tabsheets-form"
+        active-color="white"
+        indicator-color="cyan-6"       
       >
         <q-tab
          v-for="(t, idx) in tabsheetsForm"
@@ -270,90 +375,99 @@
               >
                 
                 <!-- 3A.2 — LOOKUP com pesquisa dinâmica (cd_menu_pesquisa > 0) -->
+                <!-- 3A.2 — LOOKUP com pesquisa dinâmica (cd_menu_pesquisa > 0) -->
 
-                <div v-if="temPesquisaDinamica(attr)">
-                  <q-input
-                    v-model="formData[attr.nm_campo_mostra_combo_box || attr.nm_atributo || attr.nm_atributo_consulta ]"
-                    :label="labelCampo(attr)"
-                    :type="inputType(attr)"
-                    filled
-                    clearable
-                    :dense="false"
-                    stack-label
-                    :readonly="isReadonly(attr)"
-                    :input-class="inputClass(attr)"
-                    @blur="validarCampoDinamico(attr)"
-                  >
-                    <template v-slot:prepend>
-                      <q-btn
-                        icon="search"
-                        flat
-                        round
-                        dense
-                        :disable="isReadonly(attr)"
-                        @click="abrirPesquisa(attr)"
-                        :title="`Pesquisar ${
-                          attr.nm_edit_label || attr.nm_atributo
-                        }`"
-                      />
-                    </template>
-                    <template v-if="isDateField(attr)" v-slot:append>
-                      <q-icon name="event" />
-                    </template>
-                  </q-input>
+<div v-if="temPesquisaDinamica(attr)">
+  <div class="row q-col-gutter-md items-center no-wrap">
 
-                   <!-- abaixo = código -->
-                  <q-input
-                     v-if="1==2"
-                     class="q-mt-xs"
-                     :value="formData[attr.nm_atributo]"
-                     label="Código"
-                     filled
-                     readonly
-                     :input-class="'leitura-azul'"
-                  />
+    <!-- DESCRIÇÃO (grande) + lupa -->
+    <div class="col-grow lookup-desc">
+      <q-input
+        :value="descricaoLookup(attr)"
+        :label="labelCampo(attr)"
+        filled
+        stack-label
+        readonly
+        class="campo-azul"
+      >
+        <template v-slot:append>
+          <q-btn
+            icon="search"
+            flat
+            round
+            dense
+            color="deep-purple-7"
+            :disable="isReadonly(attr)"
+            @click="abrirPesquisa(attr)"
+            :title="`Pesquisar ${attr.nm_edit_label || attr.nm_atributo}`"
+          />
+        </template>
+      </q-input>
+    </div>
 
-                  <!-- descrição do lookup (somente leitura) -->
-                  <q-input 
-                    v-if="descricaoLookup(attr)"
-                    class="q-mt-xs"
-                    :value="descricaoLookup(attr)"
-                    label="Descrição"
-                    filled
-                    readonly
-                    :input-class="'leitura-azul'"
-                  />
-                </div>
+    <!-- CÓDIGO (pequeno) -->
+    <div class="col-auto lookup-cod">
+      <q-input
+        v-model="formData[attr.cd_chave_retorno || attr.nm_atributo]"
+        :label="`Código ${labelCampo(attr)}`"
+        filled
+        clearable
+        stack-label
+        :readonly="isReadonly(attr)"
+        :input-class="inputClass(attr)"
+        @blur="validarCampoDinamico(attr)"
+        class="campo-azul"
+      />
+    </div>
 
-                <!-- 3B.2 — LOOKUP direto (nm_lookup_tabela) -->
+  </div>
+</div>
+                  
+                <!-- fim -->
 
-                <q-select
-                  v-else-if="temLookupDireto(attr)"
-                  v-model="formData[attr.nm_atributo]"
-                  :label="labelCampo(attr)"
-                  :options="lookupOptions[attr.nm_atributo] || []"
-                  option-label="__label"
-                  option-value="__value"
-                  emit-value
-                  map-options
-                  filled
-                  clearable
-                  :dense="false"
-                  stack-label
-                  :readonly="isReadonly(attr)"
-                  :input-class="inputClass(attr)"
-                />
+                   <!-- 3B.2 — LOOKUP direto (nm_lookup_tabela) -->
+<div v-else-if="temLookupDireto(attr)">
+  <div class="row q-col-gutter-md items-center no-wrap">
 
-                <!-- Descrição (readonly) para QUALQUER lookup 1==2 && temLookupDireto(attr) || temPesquisaDinamica(attr) -->
+    <!-- DESCRIÇÃO (grande) -->
+    <div class="col-grow lookup-desc">
+      <q-select
+        v-model="formData[attr.nm_atributo]"
+        :label="labelCampo(attr)"
+        :options="lookupOptions[attr.nm_atributo] || []"
+        option-label="__label"
+        option-value="__value"
+        emit-value
+        map-options
+        filled
+        clearable
+        stack-label
+        :readonly="isReadonly(attr)"
+        :input-class="inputClass(attr)"
+        :class="isReadonly(attr) ? 'leitura-azul' : 'campo-azul'"
+      />
+    </div>
 
-                <q-input
-                  v-if="false"
-                  class="q-mt-xs leitura-azul"
-                  :value="descricaoLookup(attr)"
-                  :label="`Descrição`"
-                  readonly
-                  filled
-                />
+    <!-- CÓDIGO (pequeno) -->
+    <div class="col-auto lookup-cod">
+      <q-input
+        :value="formData[attr.nm_atributo]"
+        :label="`Código ${labelCampo(attr)}`"
+        filled
+        stack-label
+        readonly
+        :class="isReadonly(attr) ? 'leitura-azul' : 'campo-azul'"
+      />
+    </div>
+
+  </div>
+</div>
+
+                
+                <!-- fim -->
+
+
+
 
                 <!-- 2.2 — Lista de valores (Lista_Valor) -->
 
@@ -400,6 +514,7 @@
       />
 
       <!-- Botão para abrir/download do arquivo existente -->
+ 
       <q-btn
         v-if="formData[attr.nm_atributo]"
         round
@@ -423,8 +538,10 @@
 </div>
 
 <!-- 1.2 — INPUT padrão com regra azul/readonly e '*' em numeração automática -->
+
 <q-input
-  v-else 
+  v-else-if="!temPesquisaDinamica(attr) && !temLookupDireto(attr) && 
+             !temListaValor(attr) &&  !isCampoArquivo(attr)" 
   v-model="formData[attr.nm_atributo]"
   :type="inputType(attr)"
   :label="labelCampo(attr)"
@@ -439,7 +556,18 @@
     <q-icon name="event" />
   </template>
 
-  </q-input>
+<template v-if="temRelatorioAtributo(attr)" v-slot:append>
+  <q-btn
+    icon="description"
+    flat
+    round
+    dense
+    color="deep-purple-7"
+    :disable="isReadonly(attr)"
+    @click="onRelatorioDoCampo(attr)"
+    :title="`Relatório de ${labelCampo(attr)}`"
+  /></template>
+ </q-input>
 
 
               </div>
@@ -474,7 +602,8 @@
     </q-dialog>
 
     <!-- Diálogo do Relatório PDF -->
-    <q-dialog v-model="showRelatorio" maximized>
+
+    <q-dialog v-model="showRelatorio" maximized content-class="dlg-form-branco">
       <q-card style="min-height: 90vh">
         <q-card-section class="row items-center q-pb-none">
           <div class="text-h6">Relatório</div>
@@ -489,7 +618,7 @@
           <Relatorio
             v-if="showRelatorio"
             :columns="gridColumns"
-            :rows="rows"
+            :rows="this.rows"
             :summary="totalColumns"
             :titulo="this.tituloMenu"
             :menu-codigo="this.cd_menu"
@@ -508,7 +637,7 @@
 
 <!-- Modal Diálogo – Processos do Menu -->
 
-<q-dialog v-model="dlgMenuProcessos" persistent>
+<q-dialog v-model="dlgMenuProcessos" persistent maximized content-class="dlg-form-branco">
  <q-card class="dlg-form-card">
     <q-card-section class="row items-center q-pb-none">
       <div class="text-h6">
@@ -569,7 +698,7 @@
 
     <!-- DIALOG DO MAPA DE ATRIBUTOS -->
     
-<q-dialog v-model="dlgMapaAtributos">
+<q-dialog v-model="dlgMapaAtributos" maximized content-class="dlg-form-branco">
   <q-card style="min-width: 760px; max-width: 96vw">
     <q-card-section class="row items-center q-pb-none">
       <div class="text-h6">
@@ -719,47 +848,367 @@
 
   <q-separator color="deep-orange-9" />
 </div>
+
 <!-- FIM DAS TABSHEETS DO FORMULARIO -->
 
 
       <!-- GRID DevExtreme (SEU BLOCO ORIGINAL) -->
 
-      <div class="grid-scroll-shell" ref="scrollShell">
+      <div
+        v-if="false" 
+        class="row justify-center q-gutter-xs q-mb-sm q-mt-sm">
+        <q-btn
+          flat
+          round
+          dense
+          icon="chevron_left"
+          color="deep-orange-7"
+          aria-label="Rolar grid para a esquerda"
+          @click="scrollGridHorizontal(-240)"
+        />
+        <q-btn
+          flat
+          round
+          dense
+          icon="chevron_right"
+          color="deep-orange-7"
+          aria-label="Rolar grid para a direita"
+          @click="scrollGridHorizontal(240)"
+        />
+        <q-btn
+          v-if="true"
+          flat
+          round
+          dense
+          icon="settings"
+          color="deep-purple-7"
+          aria-label="Configurar altura da grid"
+        >
+          <q-menu anchor="bottom right" self="top right">
+            <div class="q-pa-sm" style="min-width: 240px">
+              <div style="margin-bottom: 15px" 
+                   class="text-subtitle2 q-mb-xs">Altura da grid</div>
+
+              <q-slider
+                style="margin-top: 20px"
+                v-model="gridAlturaAtual"
+                :min="gridAlturaMin"
+                :max="gridAlturaMax"
+                :step="20"
+                color="deep-purple-7"
+                label
+                label-always
+              />
+              <div class="row justify-between q-mt-sm q-gutter-xs">
+                <q-btn
+                  flat
+                  dense
+                  icon="refresh"
+                  label="Padrão"
+                  color="grey-8"
+                  @click="resetarAlturaGrid"
+                />
+                <q-btn
+                  flat
+                  dense
+                  icon="aspect_ratio"
+                  label="Ajustar à tela"
+                  color="deep-purple-7"
+                  @click="ajustarAlturaTela"
+                />
+              </div>
+            </div>
+          </q-menu>
+        </q-btn>
+      </div>
+
+      <div class="grid-shell-outer">
+        <div class="grid-top-outer">
 
         <!-- Legenda de Status (acima da grid) -->
+ 
+       <div
+      v-if="legendaAcoesGrid && legendaAcoesGrid.length"
+      class="acoes-grid-legenda"
+    >
+      <span class="acoes-grid-legenda-titulo">Status:</span>
 
-<div
-  v-if="legendaAcoesGrid && legendaAcoesGrid.length"
-  class="acoes-grid-legenda"
->
-  <span class="acoes-grid-legenda-titulo">Status:</span>
+      <span
+        v-for="(item, idx) in legendaAcoesGrid"
+        :key="idx"
+        class="acoes-grid-legenda-item"
+      >
+        <span
+          class="acoes-grid-color-dot"
+          :class="'bg-' + item.nm_cor"
+        ></span>
+        <span class="acoes-grid-legenda-text">
+          {{ item.nm_fase_pedido  }}
+        </span>
+      </span>
+    </div>
 
-  <span
-    v-for="(item, idx) in legendaAcoesGrid"
-    :key="idx"
-    class="acoes-grid-legenda-item"
-  >
-    <span
-      class="acoes-grid-color-dot"
-      :class="'bg-' + item.nm_cor"
-    ></span>
-    <span class="acoes-grid-legenda-text">
-      {{ item.nm_fase_pedido  }}
-    </span>
-  </span>
-</div>
-        <div class="grid-scroll-track" ref="scrollTrack">
-          <transition name="slide-fade">
-            <dx-data-grid
-              class="dx-card wide-card"
+
+            <!-- Tabs de composição vindas do menu -->
+    <div v-if="menuTabs.length" class="q-mt-md">
+
+      <q-tabs
+        v-model="activeMenuTab"
+        dense
+        align="left"
+        class="text-deep-orange-9"
+        active-color="deep-purple-7"
+      >
+        <q-tab name="principal" label="Dados" />
+
+        <q-tab
+          v-for="t in menuTabs"
+          :key="t.key"
+          :name="t.key"
+          :label="t.label"
+          @click="onClickMenuTab(t)"
+        />
+      </q-tabs>
+
+      <q-separator class="q-mb-md" />
+
+
+      <q-tab-panels v-model="activeMenuTab" animated>
+
+        <!-- Painel principal: não precisa renderizar nada,
+            porque o grid já está em cima -->
+    
+        <!-- Painéis dinâmicos -->
+        <q-tab-panel
+          v-for="t in menuTabs"
+          :key="`panel_${t.key}`"
+          :name="t.key"
+          class="q-pa-none tab_principal"
+          style="margin-left: 50px"
+        >
+
+    <div class="area-filhas" :class="{ 'area-filhas-full': takeoverFilhoGrid }">
+    <UnicoFormEspecial
+      :embedMode="true"
+      v-if="t.cd_menu_composicao > 0"
+      :cd_menu_entrada="t.cd_menu_composicao"
+      :titulo_menu_entrada="t.label"
+      :ic_modal_pesquisa="'N'"
+      :ref="`child_${t.key}`"
+      :modo_inicial="(t.ic_grid_menu || 'S') === 'N' ? 'EDIT' : 'GRID'"
+      @fechar="onFecharTabFilha(t)"
+      @voltar="onFecharTabFilha(t)"
+      :cd_acesso_entrada="cd_chave_registro_local"
+      :cd_chave_registro="cd_chave_registro_local"
+      :registro_pai="registroSelecionado"
+    />
+    </div>
+        </q-tab-panel>
+
+      </q-tab-panels>
+      </div>
+    </div>
+            <!-- CONTROLE PRINCIPAL -->
+
+            <!-- ======= MODO TREEVIEW ======= -->
+
+            <div
+              v-if="String(ic_treeview_menu || 'N').toUpperCase() === 'S' && exibirComoTree"
+              class="q-mt-md"
+            >
+              <div class="row items-center q-col-gutter-md q-mb-md">
+                <div class="col-12 col-md-5" style="margin-left: 25px">
+                  <q-input
+                    dense
+                    outlined
+                    v-model="filtroTreeTexto"
+                    placeholder="Buscar no tree..."
+                    clearable
+                    style="margin-left: "
+                  />
+                </div>
+
+                <div class="col text-grey-6">
+                  {{ treeNodes.length }} raiz(es)
+                </div>
+              </div>
+
+              <div class="row items-center q-gutter-sm q-mb-sm" >
+                <q-btn
+                  rounded dense unelevated
+                  color="deep-purple-7"
+                  icon="unfold_more"
+                  label="Expandir"
+                  @click="expandirTudoTree"
+                  style="margin-left: 20px"
+                />
+                <q-btn
+                  rounded dense flat
+                  color="deep-orange-6"
+                  icon="unfold_less"
+                  label="Recolher"
+                  @click="recolherTudoTree"
+                />
+              </div>
+
+              <div class="dx-card tree-card" style="margin-top: 10px; margin-left: 20px">
+                <q-tree
+                  :nodes="treeNodesFiltrados"
+                  node-key="id"
+                  label-key="label"
+                  children-key="children"
+                  :expanded.sync="treeExpanded"
+                  :selected.sync="treeSelected"
+                  :filter="filtroTreeTexto"
+                  default-expand-all
+                  dense
+                  @update:selected="onTreeSelected"
+
+                >
+                  <template v-slot:default-header="prop">
+                    <div class="row items-center no-wrap full-width">
+                      <div class="col">
+                        <div class="tree-title">
+                          {{ prop.node.label }}
+                        </div>
+
+                        <div v-if="prop.node.subtitle" class="tree-subtitle">
+                          {{ prop.node.subtitle }}
+                        </div>
+                      </div>
+
+                      <div class="col-auto q-gutter-xs">
+                        <!-- botão Selecionar no modo pesquisa -->
+                        <q-btn
+                          v-if="prop.node.isLeaf && String(ic_modal_pesquisa || 'N').toUpperCase() === 'S'"
+                          rounded
+                          dense
+                          unelevated
+                          color="deep-purple-7"
+                          icon="check"
+                          label="Selecionar"
+                          @click.stop="selecionarERetornar(prop.node._raw || prop.node)"
+                        />
+
+                        <!-- botão Abrir em modo normal -->
+                        <q-btn
+                          v-else-if="prop.node.isLeaf"
+                          rounded
+                          dense
+                          flat
+                          color="deep-orange-6"
+                          icon="open_in_new"
+                          label="Abrir"
+                          @click.stop="abrirFormEspecial({ modo: 'A', registro: prop.node._raw || prop.node })"
+                        />
+                      </div>
+                    </div>
+                  </template>
+                </q-tree>
+              </div>
+            </div>
+
+
+        <!-- ======= MODO CARDS ======= -->
+        <div
+          v-if="String(ic_card_menu || 'N').toUpperCase() === 'S' && exibirComoCards"
+          class="q-mt-md"
+        >
+          <div class="row items-center q-col-gutter-md q-mb-md">
+            <div class="col-12 col-md-5" style="margin-left: 20px">
+              <q-input
+                dense
+                outlined
+                v-model="filtroCardsTexto"
+                placeholder="Buscar..."
+                clearable
+              />
+            </div>
+
+            <div class="col text-grey-6">
+              {{ cardsFiltrados.length }} registro(s)
+            </div>
+          </div>
+
+          <div class="cards-wrapper" style="margin-top: 10px">
+            <div
+              v-for="(r, idx) in cardsFiltrados"
+              :key="r[id] || r[keyName] || idx"
+              class="card-unico dx-card cursor-pointer"
+              @dblclick="abrirFormEspecial({ modo: 'A', registro: r })"
+            >
+              <div class="card-unico-body">
+                <div class="logo-unico">
+                  <span class="logo-letter">
+                    {{ (tituloMenu || title || 'X').charAt(0) }}
+                  </span>
+                </div>
+
+                <div class="text-subtitle1 q-mt-sm">
+                  {{ cardTitulo(r) }}
+                </div>
+
+                <div class="q-mt-sm card-campos">
+                  <div
+                    v-for="(c, i) in cardCampos(r)"
+                    :key="i"
+                    class="text-caption text-grey-8"
+                  >
+                    <strong class="text-grey-9">{{ c.label }}:</strong>
+                    <span class="q-ml-xs">{{ c.value }}</span>
+                  </div>
+                </div>
+
+                <div class="q-mt-md row justify-center q-gutter-sm">
+                  <q-btn
+                    v-if="String(ic_modal_pesquisa || 'N').toUpperCase() === 'S'"
+                    rounded
+                    color="deep-purple-7"
+                    unelevated
+                    icon="check"
+                    label="Selecionar"
+                    @click.stop="selecionarERetornar(r)"
+                  />
+                  <q-btn
+                    v-else
+                    rounded
+                    dense
+                    color="deep-orange-6"
+                    flat
+                    icon="edit"
+                    label="Abrir"
+                    @click.stop="abrirFormEspecial({ modo: 'A', registro: r })"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        
+
+        <!-- GRID PRINCIPAL -->
+
+        <div
+          v-else
+          v-show="!(String(ic_treeview_menu || 'N').toUpperCase() === 'S' && exibirComoTree)"
+          class="grid-scroll-shell">
+         <div class="grid-scroll-track">
+            <transition name="slide-fade">
+            <div class="grid-body">
+           
+              <dx-data-grid   
+              class="dx-card wide-card"              
+              height="100%"
+              width="100%"              
               v-if="temSessao"
               id="grid-padrao"
               ref="grid"
               :data-source="rows || dataSourceConfig"
               :columns="columns"
               :key-expr="keyName || id"
-              :summary="total || undefined"
-              :show-borders="true"
+              :summary="gridSummaryConfig"
+              :show-borders="false"
               :focused-row-enabled="false"
               :focused-row-key="null"
               :focused-row-index="null"
@@ -769,6 +1218,21 @@
               :remote-operations="false"
               :row-alternation-enabled="false"
               :repaint-changes-only="true"
+              :paging="{ enabled: true, pageSize: gridPageSize }"
+              :pager="{
+                visible: true,
+                showInfo: true,
+                showNavigationButtons: true,
+                showPageSizeSelector: true,
+                allowedPageSizes: [10, 20, 50, 100]
+              }"              
+              :scrolling="{
+                mode: 'standard',
+                useNative: true,
+                preloadEnabled: true,
+                useNative: true,               
+                
+              }"
               :selection="gridSelectionConfig"              
               @selection-changed="onSelectionChangedGrid"
               @toolbar-preparing="onToolbarPreparing"
@@ -809,10 +1273,16 @@
               <DxColumnChooser :enabled="true" />
 
             </dx-data-grid>
+            </div>
+
+           
+
           </transition>
+           </div>
         </div>
 
         <!-- seta para descer -->
+
         <q-btn 
           v-if="mostrarSetasGrid"
           round
@@ -848,6 +1318,7 @@
     />
   </DxDataGrid>
 </section>
+
     <!-- FIM DA PRINCIPAL -->
 
     <!-- 3) PAINÉIS DAS ABAS DE DETALHE: só existem quando tabsDetalhe.length > 0 -->
@@ -906,6 +1377,7 @@
         </div>
 
         <!-- Grid do detalhe -->
+
         <div class="grid-scroll-shell" :ref="'scrollShellDet_' + t.cd_menu">
           <dx-data-grid
             class="dx-card wide-card"
@@ -966,8 +1438,8 @@
       <q-btn round color="orange" icon="chevron_right" />
     </div>
 
-    <q-dialog v-model="showLookup" persistent>
-  <q-card style="min-width: 95vw; min-height: 90vh;">
+    <q-dialog v-model="showLookup" persistent maximized content-class="dlg-form-branco">
+    <q-card style="min-width: 95vw; min-height: 90vh;">
     <UnicoFormEspecial
       :cd_menu_entrada="campoLookupAtivo && campoLookupAtivo.cd_menu_pesquisa ? Number(campoLookupAtivo.cd_menu_pesquisa) : 0"
       :cd_menu_modal_entrada="cdMenuAnteriorLookup ? Number(cdMenuAnteriorLookup) : 0"
@@ -980,6 +1452,37 @@
   </q-card>
 </q-dialog>
 
+   <filtro-componente
+  v-model="dialogFiltroSelecao"
+  :cd-menu="Number(cd_menu || cdMenu || 0)"
+  :cd-tabela="Number(this.cd_tabela || 0)"
+  :cd-usuario="Number(cd_usuario || 0)"
+  @aplicou="onAplicouFiltroSelecao"
+/>
+
+
+<!-- Modal de aviso de configuração (tabela/procedure) -->
+<q-dialog v-model="showAvisoConfig" persistent content-class="dlg-form-branco">
+  <q-card style="min-width: 520px; max-width: 90vw;">
+    <q-card-section class="row items-center q-gutter-md">
+      <q-icon name="warning" size="48px" color="orange-8" />
+      <div class="col">
+        <div class="text-h6">Atenção</div>
+        <div class="text-body1 q-mt-xs">
+          Atenção para este Menu ({{ cd_menu || cd_menu_entrada || '?' }}) - {{ tituloMenu || titulo_menu_entrada || '' }},
+          falta a configuração da <b>Tabela</b> ou do <b>procedimento de consulta</b>.
+        </div>
+      </div>
+    </q-card-section>
+
+    <q-separator />
+
+    <q-card-actions align="right">
+      <q-btn flat label="Fechar" color="primary" v-close-popup @click="showAvisoConfig = false" />
+    </q-card-actions>
+  </q-card>
+</q-dialog>
+
   </div>
   
 </template>
@@ -989,6 +1492,8 @@
 import axios from "axios";
 import DashboardDinamico from '@/components/dashboardDinamico.vue' // ajuste o caminho
 import ModalComposicao from '@/components/ModalComposicao.vue';
+import ModalGridComposicao from '@/components/ModalGridComposicao.vue';
+import filtroComponente from '@/components/filtroComponente.vue';
 
 //import { locale } from 'devextreme/localization';
 
@@ -1015,10 +1520,15 @@ import { payloadTabela,
 //import axios from "boot/axios";
 
 import Relatorio from "@/components/Relatorio.vue";
+import Localbase from "localbase";
 
 //import api from '@/boot/axios'
 const banco = localStorage.nm_banco_empresa;
 //
+
+const offlineDb = new Localbase("egis-offline-cache");
+const GRID_CACHE_COLLECTION = "gridSnapshots";
+const GRID_CACHE_PREFIX = "unicoFormEspecial";
 
 const api = axios.create({
   baseURL: "https://egiserp.com.br/api",
@@ -1169,11 +1679,19 @@ function normalizeValue(key, val) {
 
   // números por heurística do nome
   if (shouldBeNumberByKey(key)) {
-    const n = Number(val);
+    const s = String(val).trim();
+    const isNumeric = /^-?\d+([.,]\d+)?$/.test(s);
+    if (!isNumeric) return val;
+
+    const n = Number(s.replace(",", "."));
     return Number.isFinite(n) ? n : null;
   }
 
   return val; // mantém o resto como está
+}
+
+function normalizeKey(s) {
+  return String(s || '').replace(/\u00A0/g, ' ').trim(); // remove NBSP
 }
 
 function normalizePayload(obj) {
@@ -1201,6 +1719,7 @@ function normalizarTipos(dados, camposMeta) {
     //
 
   });
+  
   return dados.map((reg) => {
     const out = { ...reg };
     for (const [key, tipo] of Object.entries(mapa)) {
@@ -1300,13 +1819,134 @@ function buildOptionsFromRows(rows) {
   }));
 }
 
+function makeSafeFieldName(label, fallback, idx) {
+  const base = normalizeKey(label || fallback || `col_${idx}`);
+  // troca tudo que não é letra/numero/_ por _
+  let safe = base.normalize('NFD').replace(/[\u0300-\u036f]/g, ''); // remove acentos
+  safe = safe.replace(/[^A-Za-z0-9_]/g, '_');
+  safe = safe.replace(/_+/g, '_').replace(/^_+|_+$/g, '');
+  if (!safe) safe = `col_${idx}`;
+  // garante que não começa com número
+  if (/^\d/.test(safe)) safe = `c_${safe}`;
+  // garante unicidade básica
+  return `${safe}__${idx}`;
+}
+
+function buildColumnsFromMeta(camposMeta = []) {
+  return (camposMeta || []).map((c, idx) => {
+    const keyOriginal = normalizeKey(c.nm_atributo_consulta || c.nm_atributo); // ✅ chave real na row
+    const caption = normalizeKey(c.nm_atributo_consulta || c.nm_edit_label || keyOriginal);
+
+    // dataField seguro (alias) para não quebrar com ponto/espaço
+    const dataField = makeSafeFieldName(caption, c.nm_atributo, idx);
+
+    const tipoFmt = (c.nm_datatype || c.formato_coluna || "").toLowerCase();
+
+    const align = ["currency","percent","fixedpoint","number","decimal","float"].includes(tipoFmt)
+      ? "right"
+      : "left";
+
+    const col = {
+      dataField,
+      caption,
+      visible: c.ic_visivel !== "N",
+      width: c.largura || undefined,
+      alignment: align,
+      allowFiltering: true,
+      allowSorting: true,
+
+      // ✅ aqui está o pulo do gato:
+      calculateCellValue: (rowData) => rowData?.[keyOriginal]
+    };
+
+    // seus campos especiais (mas agora pelo ORIGINAL também)
+    if (keyOriginal === "linhaGridColor" || keyOriginal === "acoesGridColor" || keyOriginal === "fasePedido") {
+      col.visible = false;
+    }
+
+    // Datas
+    const tecnico = String(c.nm_atributo || "");
+    if (['date','shortdate','datetime'].includes(tipoFmt) || tecnico.startsWith('dt_')) {
+      col.dataType = 'date';
+
+      col.calculateCellValue = (rowData) => {
+        const v = rowData?.[keyOriginal];
+        return parseToUtcDate(v);
+      };
+
+      col.customizeText = (e) => {
+        if (!e.value) return '';
+        return new Intl.DateTimeFormat('pt-BR', { timeZone: 'UTC' }).format(e.value);
+      };
+
+      col.calculateSortValue = (rowData) => {
+        const d = parseToUtcDate(rowData?.[keyOriginal]);
+        return d ? d.getTime() : -Infinity;
+      };
+
+      col.filterOperations = ['=', '>', '<', '<=', '>=', 'between'];
+    }
+
+    // Moeda
+    if (tipoFmt === "currency" || tecnico.startsWith("vl_") || keyOriginal.startsWith("vl_")) {
+      col.customizeText = (e) =>
+        e.value == null || e.value === ""
+          ? ""
+          : Number(e.value).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+
+      col.cellTemplate = (container, options) => {
+        const val = options.value;
+        const span = document.createElement("span");
+        if (typeof val === "number" && val < 0) span.style.color = "#c62828";
+        span.textContent =
+          val == null || val === ""
+            ? ""
+            : Number(val).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+        container.append(span);
+      };
+    }
+
+    // Percentual
+    if (tipoFmt === "percent") {
+      col.customizeText = (e) =>
+        e.value == null || e.value === ""
+          ? ""
+          : `${(Number(e.value) * 100).toFixed(2)}%`;
+    }
+
+    // Números simples
+    if (["fixedpoint", "decimal", "float"].includes(tipoFmt)) {
+      col.format = { type: "fixedPoint", precision: 2 };
+    }
+
+
+    if (tipoFmt === "number") {
+  col.customizeText = (e) => {
+    if (e.value == null || e.value === "") return "";
+    const n = Number(e.value);
+    if (Number.isNaN(n)) return String(e.value);
+    return n.toLocaleString("pt-BR", { maximumFractionDigits: 0, minimumFractionDigits: 0 });
+  };
+
+  // opcional: garante ordenação numérica
+  col.calculateSortValue = (rowData) => {
+    const v = rowData?.[keyOriginal];
+    const n = Number(v);
+    return Number.isNaN(n) ? -Infinity : n;
+  };
+}
+
+    return col;
+  });
+}
 
 //Colunas de grid a partir do meta
 
-function buildColumnsFromMeta(camposMeta = []) {
+function buildColumnsFromMetaold(camposMeta = []) {
   return (camposMeta || []).map((c) => {
-    const dataField = c.nm_atributo_consulta || c.nm_atributo;
-    const caption = c.nm_edit_label || dataField;
+    //const dataField = c.nm_atributo_consulta || c.nm_atributo;
+    const dataField = normalizeKey(c.nm_atributo_consulta); // ✅ SEMPRE técnico
+    const caption = c.nm_atributo_consulta || c.nm_edit_label || dataField;
     const tipoFmt = (c.nm_datatype || c.formato_coluna || "").toLowerCase();
     const align = [
       "currency",
@@ -1365,10 +2005,12 @@ function buildColumnsFromMeta(camposMeta = []) {
 
   // 4) (Opcional) formato no filtro de linha/header filter
   col.filterOperations = ['=', '>', '<', '<=', '>=', 'between'];
+
 }
     
 
     // Moeda
+
     if (tipoFmt === "currency" || dataField.startsWith("vl_")) {
       col.customizeText = (e) =>
         e.value == null || e.value === ""
@@ -1377,6 +2019,7 @@ function buildColumnsFromMeta(camposMeta = []) {
               style: "currency",
               currency: "BRL",
             });
+            
       col.cellTemplate = (container, options) => {
         const val = options.value;
         const span = document.createElement("span");
@@ -1393,6 +2036,7 @@ function buildColumnsFromMeta(camposMeta = []) {
     }
 
     // Percentual
+
     if (tipoFmt === "percent") {
       col.customizeText = (e) =>
         e.value == null || e.value === ""
@@ -1401,14 +2045,60 @@ function buildColumnsFromMeta(camposMeta = []) {
     }
 
     // Números simples
-    if (["number", "fixedpoint", "decimal", "float"].includes(tipoFmt)) {
+
+    if (["fixedpoint", "decimal", "float"].includes(tipoFmt)) {
       col.format = { type: "fixedPoint", precision: 2 };
     }
+
+    if (["number"].includes(tipoFmt)) {
+      col.format = {
+    formatter: function (value) {
+      if (value > 1000) {
+        // Força 3 casas decimais no padrão brasileiro
+        return value.toLocaleString("pt-BR", { minimumFractionDigits: 3, maximumFractionDigits: 3 });
+      }
+      // Sem casas decimais
+      return value.toLocaleString("pt-BR", { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+    }
+  };
+}
 
     return col;
 
   });
 
+}
+
+function mapRowsByGridMeta(rows = [], meta = []) {
+  const metaList = meta || [];
+
+  return (rows || []).map((row) => {
+    const out = { ...row };
+
+    metaList.forEach((c) => {
+      const tech = c?.nm_atributo;              // ex: CodCliente
+      const label = c?.nm_atributo_consulta;    // ex: Cód. Cliente
+      if (!tech) return;
+
+      // se já existe a chave técnica, beleza
+      if (out[tech] !== undefined) return;
+
+      // 1) match direto pelo label
+      if (label && out[label] !== undefined) {
+        out[tech] = out[label];
+        return;
+      }
+
+      // 2) match "trimado" (às vezes vem com espaços)
+      if (label) {
+        const k = Object.keys(out).find((kk) => kk.trim() === String(label).trim());
+        if (k) out[tech] = out[k];
+      }
+    });
+
+    return out;
+
+  });
 }
 
 function buildSummaryFromMeta(camposMeta = []) {
@@ -1505,6 +2195,7 @@ import { DxTabPanel, DxItem as DxTabItem } from 'devextreme-vue/tab-panel'
 
 import { act } from "react";
 import { DxButton, DxToolbar } from "devextreme-vue";
+import { is } from "core-js/core/object";
 
 //
 
@@ -1522,6 +2213,35 @@ function buscarValor(row, nomes) {
 }
 
 
+const splitClass = (s) => norm(s).split('.').filter(Boolean)
+const joinClass = (arr) => arr.join('.')
+
+const groupClassFromChildren = (childrenRows) => {
+  if (!kClass) return ''
+  const partsList = childrenRows
+    .map(r => splitClass(getVal(r, kClass)))
+    .filter(a => a.length > 0)
+
+  if (!partsList.length) return ''
+
+  // prefixo comum
+  let pref = partsList[0]
+  for (let i = 1; i < partsList.length; i++) {
+    const cur = partsList[i]
+    let j = 0
+    while (j < pref.length && j < cur.length && pref[j] === cur[j]) j++
+    pref = pref.slice(0, j)
+    if (!pref.length) break
+  }
+
+  // no seu cenário, o grupo é o nível acima do filho.
+  // Se o prefixo comum já vier no nível do grupo, ótimo.
+  // Se vier mais fundo, corta.
+  if (pref.length >= 2) return joinClass(pref.slice(0, 2)) // 02.02
+  return joinClass(pref)
+}
+
+
 
 // ---------------------------------------------------------------
 
@@ -1535,7 +2255,12 @@ export default {
     ic_modal_pesquisa: {       // << NOVO
       type: String,
       default: 'N'
-    }
+    },
+    modo_inicial: { type: String, default: 'GRID' }, // 'GRID' ou 'EDIT'
+    embedMode: { type: Boolean, default: false },
+    registro_pai: { type: Object, default: null },
+    cd_chave_registro: { type: Number, default: 0 }
+
   },
   components: {
     Relatorio,
@@ -1556,7 +2281,9 @@ export default {
     DxTabItem,
     DxButton,
     DashboardDinamico,
-    ModalComposicao, 
+    ModalComposicao,
+    ModalGridComposicao, 
+    filtroComponente,
     UnicoFormEspecial: () => import('@/views/unicoFormEspecial.vue'),
   },
 
@@ -1564,10 +2291,43 @@ export default {
 
   data() {
     return {
+      _gridDimTimer: null,
+      gridAutoFit: true,
+      gridPageSize: 200, // ajuste: 100 / 200 / 500 conforme performance
+      gridBodyHeight: 0,
+      ic_treeview_menu: 'N',
+      exibirComoTree: false,
+      treeSelected: null,
+      treeExpanded: [],
+      treeNodes: [],
+          // cache do meta do tree (pra não recalcular em todo lugar)
+      treeCampoPai: null,         // nm_atributo do pai (ic_atributo_pai='S')
+      treeCampoFilho: null,       // nm_atributo do filho (ic_atributo_filho='S')
+      treeCampoLabel: null,       // campo texto (heurística)
+      treeCampoSub: null,          // opcional
+      filtroTreeTexto: '',
+      ic_card_menu: 'N',      
+      exibirComoCards: false,
+      filtroCardsTexto: '', 
+      showAvisoConfig: false,
+      bloquearCarregamentoPorConfig: false,
+      takeoverFilhoGrid: false,
+      cd_relatorio: 0,
+      carregandoContexto: false,
+      cd_chave_pesquisa: 0,
+      cd_chave_registro_local: Number(this.cd_chave_registro || 0),
+      menuTabs: [],               // tabs vindas do sqlTabs
+      activeMenuTab: 'principal', // 'principal' = grid principal
+      returnTo: null,
+      showClearButton: false,     // controla se o botão aparece
       showDashDinamico: false,
       ncd_acesso_entrada: this.cd_acesso_entrada || localStorage.cd_chave_pesquisa || 0,
       ncd_menu_entrada: this.cd_menu_entrada || 0,
-      mostrarSetasGrid: false, // por padrão NÃO mostra
+      mostrarSetasGrid: false, // exibe setas de scroll vertical
+      gridAlturaMin: 420,
+      gridAlturaMax: 10000,
+      gridAlturaPadrao: 720,
+      gridAlturaAtual: 720,
       infoDialog: false,
       infoTitulo: '',
       infoTexto: '',
@@ -1621,6 +2381,7 @@ export default {
       Empresa: localStorage.fantasia || localStorage.empresa || "",
       // logoEmpresa: localStorage.imageUrl || '/img/logo.png',
       tituloMenu: localStorage.nm_menu_titulo || "Relatório de Dados",
+      modulo: localStorage.nm_modulo || '',
       pageTitle: localStorage.nm_menu_titulo || this.pageTitle || "",
       cd_tabela: 0,
       dlgForm: false,
@@ -1684,41 +2445,59 @@ export default {
     cd_form: 0,
     cd_menu_modal : 0,
     cd_form_modal : 0,
+    ic_grid_modal : 'N',
     ic_selecao_registro: 'N',
     selectionMode: 'multiple',   // 'single' ou 'multiple'
     registrosSelecionados: [],   // registros selecionados na grid
     mostrarBotaoModalComposicao: false,
     dialogModalComposicao: false,
+    dialogModalGridComposicao: false,
     showLookup: false,
     campoLookupAtivo: null,
     cdMenuAnteriorLookup: Number(localStorage.cd_menu || 0),
     tituloLookup: '',
     ultimoSelecionadoLookup: null,   
     cd_menu_principal: 0, 
-     formStack: [],  
+    formStack: [],
+    dialogFiltroSelecao: false,
+    filtroSelecao: { keyField: '', keys: [] }
+  
     };
   },
 
   created() {
 
+    ///
     this.bootstrap();
+    ///
 
     config({ defaultCurrency: "BRL" });
     loadMessages(ptMessages);
     locale(navigator.language);
 
-    localStorage.cd_filtro = 0;
-    localStorage.cd_parametro = 0;
-    localStorage.cd_tipo_consulta = 0;
-    localStorage.cd_tipo_filtro = 0;
-    localStorage.cd_documento = 0;
+    if (!this.embedMode) {
+       localStorage.cd_filtro = 0;
+       localStorage.cd_parametro = 0;
+       localStorage.cd_tipo_consulta = 0;
+       localStorage.cd_tipo_filtro = 0;
+       localStorage.cd_documento = 0;
+    }
 
     this.dt_inicial = localStorage.dt_inicial;
     this.dt_final = localStorage.dt_final;
     this.dt_base = localStorage.dt_base;
     this.periodoVisible = false;
     this.tituloMenu = localStorage.nm_menu_titulo;
+    
+    //
     this.cd_menu = localStorage.cd_menu;
+    //
+
+    if (Number(this.cd_menu_entrada || 0) !=0 ) {
+     this.cd_menu = Number(this.cd_menu_entrada || 0)
+    }
+
+    //
     this.nm_usuario = localStorage.usuario;
     this.cd_menu_principal = localStorage.cd_menu;
     this.hoje = "";
@@ -1744,11 +2523,19 @@ export default {
       //localStorage.nm_menu_titulo = this.titulo_menu_entrada // opcional, mas ajuda seu topo atual
      }
 
+     //this.dialogFiltroSelecao = true;
+
   },
 
   async mounted() {
 
     this.restoreGridConfig();
+    this.definirAlturaInicialGrid();
+
+    // Mantém a grid sempre ocupando o resto da tela (vertical)
+    window.addEventListener('resize', this.ajustarAlturaTela, { passive: true });
+    // garante o cálculo correto após o primeiro render
+    this.$nextTick(() => this.ajustarAlturaTela());
 
     locale('pt'); // ou 'pt-BR'
     
@@ -1769,7 +2556,128 @@ export default {
     //this.carregaDados();
   },
 
+  beforeDestroy () {
+    window.removeEventListener('resize', this.ajustarAlturaTela);
+  },
+
   computed: {
+ 
+   treeNodesFiltrados () {
+    // q-tree já filtra via prop :filter, mas aqui você pode manter “como está”
+    return this.treeNodes || []
+   }, 
+ 
+      treeMetaPai () {
+        return (this.gridMeta || []).find(m => String(m.ic_atributo_pai || '').toUpperCase() === 'S') || null
+      },
+
+      treeMetaFilho () {
+        return (this.gridMeta || []).find(m => String(m.ic_atributo_filho || '').toUpperCase() === 'S') || null
+      },
+
+      // tenta achar o “melhor campo de descrição” para mostrar no leaf
+      treeMetaLabelLeaf () {
+        const meta = (this.gridMeta || []).filter(m => String(m.ic_mostra_grid || 'S').toUpperCase() === 'S')
+
+        // descarta campos “id-like”
+        const candidatos = meta.filter(m => {
+          const nm = (m.nm_atributo || m.nm_atributo_consulta || '').toLowerCase()
+          if (!nm) return false
+          if (nm.includes('cd_')) return false
+          if (nm.includes('id')) return false
+          return true
+        })
+
+        // prioriza por “título/descrição” no nome
+        const preferidos = candidatos.find(m => {
+          const nm = (m.nm_atributo || m.nm_atributo_consulta || '').toLowerCase()
+          return nm.includes('descricao') || nm.includes('descrição') || nm.includes('nome') || nm.includes('nm_')
+        })
+
+        return preferidos || candidatos[0] || null
+      },          
+    
+    cardsFiltrados () {
+      const lista = Array.isArray(this.rows) ? this.rows : []
+      const f = String(this.filtroCardsTexto || '').trim().toLowerCase()
+      if (!f) return lista
+
+      return lista.filter(r => {
+        try {
+          return JSON.stringify(r).toLowerCase().includes(f)
+        } catch (_) {
+          return false
+        }
+      })
+    },
+
+  gridSummaryConfig () {
+  const t = this.total
+  if (!t) return undefined
+
+  // se vier array direto, embrulha
+  if (Array.isArray(t)) return t.length ? { totalItems: t } : undefined
+
+  // se vier no formato correto
+  if (t && Array.isArray(t.totalItems)) return t.totalItems.length ? t : undefined
+
+  return undefined
+},
+
+    gridScrollStyles() {
+      const alturaBruta = Number(this.gridAlturaAtual || 0);
+      if (!alturaBruta) return {};
+
+      const altura = Math.max(
+        this.gridAlturaMin,
+        Math.min(this.gridAlturaMax, alturaBruta)
+      );
+
+      return {
+        height: `${altura}px`,
+        maxHeight: `${altura}px`,
+        minHeight: `${Math.min(altura, this.gridAlturaMax)}px`,
+      };
+    },
+
+
+    menuIdEfetivo() {
+
+      // prioridade: o que vem da tab (cd_menu_composicao)
+      const v = Number(this.cd_menu_entrada || 0)
+
+      if (v > 0) return v
+
+      // fallback: o menu normal (rota / prop antiga)
+      return Number(this.cd_menu || this.cdMenu || 0)
+
+    },
+
+     // DataSource já filtrado pelo FiltroComponente (se houver seleção)
+
+    gridDataSource () {
+      const base = (this.rows || this.dataSourceConfig) || []
+      
+      if (!Array.isArray(base)) return base
+
+      const keys = (this.filtroSelecao && Array.isArray(this.filtroSelecao.keys))
+        ? this.filtroSelecao.keys
+        : []
+      const keyField = this.filtroSelecao ? String(this.filtroSelecao.keyField || '') : ''
+
+      if (!keys.length || !keyField) return base
+
+      // aceita diferença de caixa (cd_x vs CD_X)
+      return base.filter(r => {
+        if (!r || typeof r !== 'object') return false
+        let val = r[keyField]
+        if (val === undefined) {
+          const alt = Object.keys(r).find(k => k.toLowerCase() === keyField.toLowerCase())
+          if (alt) val = r[alt]
+        }
+        return keys.includes(val)
+      })
+    },
 
     gridSelectionConfig () {
     if (this.ic_selecao_registro !== 'S') {
@@ -1840,7 +2748,8 @@ export default {
       return cols
     }
 
-    console.log('[columnsDashboard] sem colunas, retornando []')
+    //console.log('[columnsDashboard] sem colunas, retornando []')
+    
     return []
   },
 
@@ -1948,7 +2857,28 @@ export default {
       return [...base, ...cols, acoes];
     },
   },
+
   watch: {
+
+  gridAlturaAtual () {
+    // se usuário mexeu no slider, sai do auto-fit
+    if (this.gridAutoFit) return; // auto-fit controla
+    this.$nextTick(() => this.aplicarAlturaGrid());
+  },
+ 
+  cd_chave_registro: {
+    immediate: true,
+    handler (v) {
+      this.cd_chave_registro_local = Number(v || 0)
+    }
+  },
+
+  dlgForm (val) {
+    if (val === false && this.embedMode) {
+      this.$emit('fechar')
+    }
+  },
+
     abaAtiva() {
       if (this.abaAtiva === "principal") return;
       const t = this.tabsDetalhe.find((x) => x.key === this.abaAtiva);
@@ -1959,6 +2889,11 @@ export default {
     },
     rows(v) {
       this.qt_registro = Array.isArray(v) ? v.length : 0;
+
+      if (String(this.ic_treeview_menu || 'N').toUpperCase() === 'S' && this.exibirComoTree) {
+             this.$nextTick(() => this.montarTreeview())
+       }
+
     },
     // quando filtros chegarem/alterarem, tenta preencher datas
     filtros: {
@@ -1990,12 +2925,1213 @@ export default {
   },
 
   methods: {
+
+agendarUpdateGrid () {
+  clearTimeout(this._gridDimTimer)
+  this._gridDimTimer = setTimeout(() => {
+    const grid = this.$refs?.grid?.instance
+    if (grid) grid.updateDimensions()
+  }, 80)
+},
+
+    ajustarGridATela () {
+  this.gridAutoFit = true;
+  this.$nextTick(() => this.recalcularAlturasGrid());
+},
+
+    aplicarAlturaGrid () {
+  // aqui a grid deve acompanhar o slider
+  const topEl = this.$refs?.gridTop;
+  const topH = topEl ? topEl.offsetHeight : 0;
+
+  // altura útil do grid = altura total escolhida - topo
+  const body = Math.max(180, Math.floor(this.gridAlturaAtual - topH));
+  this.gridBodyHeight = body;
+
+  // força o DevExtreme recalcular viewport (senão ele “não pinta” direito)
+  const grid = this.$refs?.grid?.instance;
+  if (grid) setTimeout(() => grid.updateDimensions(), 0);
+},
+
+    async ensureConsultaCacheLoaded () {
+      const cdMenu =
+        Number(this.cd_menu_entrada || this.ncd_menu_entrada || this.cd_menu || this.cdMenu || 0) || null
+
+      // Colunas
+      if (!Array.isArray(this.columns) || this.columns.length === 0) {
+        const cols =
+          (cdMenu && await this.lerCacheSeguro(this.ssKey("colunas_grid", cdMenu))) ||
+          (cdMenu && await this.lerCacheSeguro(this.ssKey("colunas_grid_full", cdMenu))) ||
+          await this.lerCacheSeguro("colunas_grid") ||
+          []
+        if (Array.isArray(cols) && cols.length) this.columns = cols
+      }
+
+      // Linhas
+      if (!Array.isArray(this.rows) || this.rows.length === 0) {
+        const rows =
+          (cdMenu && await this.lerCacheSeguro(this.ssKey("dados_resultado_consulta", cdMenu))) ||
+          await this.lerCacheSeguro("dados_resultado_consulta") ||
+          []
+        if (Array.isArray(rows) && rows.length) this.rows = rows
+      }
+    },
+
+    sortRowsForTreeAndGrid () {
+  const meta = this.gridMeta || this.metaCampos || []
+
+  const mPai = meta.find(m => String(m.ic_atributo_pai || 'N').toUpperCase() === 'S')
+  const mFilho = meta.find(m => String(m.ic_atributo_filho || 'N').toUpperCase() === 'S')
+
+  const kPai = mPai && (mPai.nm_atributo_consulta || mPai.nm_atributo)
+  const kId  = mFilho && (mFilho.nm_atributo_consulta || mFilho.nm_atributo)
+
+  const norm = v => (v === null || v === undefined) ? '' : String(v).trim()
+
+  const cmpSmart = (a, b) => {
+    const na = Number(a), nb = Number(b)
+    const aNum = !Number.isNaN(na) && String(a).trim() !== ''
+    const bNum = !Number.isNaN(nb) && String(b).trim() !== ''
+    if (aNum && bNum) return na - nb
+    return String(a).localeCompare(String(b), 'pt-BR', { numeric: true, sensitivity: 'base' })
+  }
+
+  this.rows = (this.rows || []).slice().sort((ra, rb) => {
+    const ap = norm(kPai ? ra[kPai] : '')
+    const bp = norm(kPai ? rb[kPai] : '')
+    const ai = norm(kId  ? ra[kId]  : (ra.id ?? ''))
+    const bi = norm(kId  ? rb[kId]  : (rb.id ?? ''))
+
+    const c1 = cmpSmart(ap, bp)
+    if (c1 !== 0) return c1
+    return cmpSmart(ai, bi)
+  })
+},
+
+montarTreeview () {
+  const rows = this.rows || []
+  const meta = this.gridMeta || this.metaCampos || []
+
+  // campos pai/filho
+  const mPai = meta.find(m => String(m.ic_atributo_pai || 'N').toUpperCase() === 'S')
+  const mFilho = meta.find(m => String(m.ic_atributo_filho || 'N').toUpperCase() === 'S')
+
+  const kPai = mPai && (mPai.nm_atributo_consulta || mPai.nm_atributo)
+  const kFilho = mFilho && (mFilho.nm_atributo_consulta || mFilho.nm_atributo)
+
+  // label base do item
+  const proibidosLabel = new Set([kPai, kFilho].filter(Boolean))
+  const candidatosLabel = meta
+    .filter(m => String(m.ic_mostra_grid || '').toUpperCase() === 'S')
+    .filter(m => {
+      const fmt = String(m.formato_coluna || '').toLowerCase()
+      return !['currency', 'number', 'percent', 'fixedpoint', 'date', 'datetime'].includes(fmt)
+    })
+    .map(m => (m.nm_atributo_consulta || m.nm_atributo))
+    .filter(k => k && !proibidosLabel.has(k))
+
+  const kLabel = candidatosLabel[0] || 'Descrição'
+
+  // atributos extras do tree (ordenados)
+  const toOrd = (m, idx) => Number(m.nu_ordem || m.qt_ordem_atributo || m.qt_ordem || (idx + 1) || 999999)
+
+  const metasTreeAttr = meta
+    .filter(m => String(m.ic_treeview_atributo || 'N').toUpperCase() === 'S')
+    .map((m, idx) => ({ m, ordem: toOrd(m, idx) }))
+    .sort((a, b) => (a.ordem || 999999) - (b.ordem || 999999))
+    .map(x => x.m)
+
+  const getVal = (r, k) => {
+    if (!r || !k) return null
+    return r[k] ?? r[String(k)] ?? null
+  }
+  const norm = (v) => (v === null || v === undefined) ? '' : String(v).trim()
+
+  // descobre campo de "Classificação"
+  const mClass = meta.find(m => {
+    const t = String(m.ds_atributo || m.nm_titulo_menu_atributo || m.nm_atributo_consulta || m.nm_atributo || '')
+      .toLowerCase()
+    return t.includes('classifica')
+  })
+  const kClass = mClass && (mClass.nm_atributo_consulta || mClass.nm_atributo)
+
+  // monta sufixo de atributos (SEM "titulo:", só o valor)
+  const buildAttrsSuffix = (r, ignoreKeys = new Set()) => {
+    const parts = []
+    for (const m of metasTreeAttr) {
+      const key = (m.nm_atributo_consulta || m.nm_atributo)
+      if (!key || ignoreKeys.has(key)) continue
+
+      const val = norm(getVal(r, key))
+      if (!val) continue
+
+      parts.push(val) // só o conteúdo
+    }
+    return parts.length ? ` · ${parts.join(' · ')}` : ''
+  }
+
+  // comparador
+  const cmpSmart = (a, b) => {
+    const na = Number(a), nb = Number(b)
+    const aNum = !Number.isNaN(na) && String(a).trim() !== ''
+    const bNum = !Number.isNaN(nb) && String(b).trim() !== ''
+    if (aNum && bNum) return na - nb
+    return String(a).localeCompare(String(b), 'pt-BR', { numeric: true, sensitivity: 'base' })
+  }
+
+  // fallback: se não existir row pai, calcula classe do grupo a partir dos filhos
+  const splitClass = (s) => norm(s).split('.').filter(Boolean)
+  const joinClass = (arr) => arr.join('.')
+  const groupClassFromChildren = (childrenRows) => {
+    if (!kClass) return ''
+    const partsList = (childrenRows || [])
+      .map(r => splitClass(getVal(r, kClass)))
+      .filter(a => a.length > 0)
+    if (!partsList.length) return ''
+
+    // prefixo comum
+    let pref = partsList[0]
+    for (let i = 1; i < partsList.length; i++) {
+      const cur = partsList[i]
+      let j = 0
+      while (j < pref.length && j < cur.length && pref[j] === cur[j]) j++
+      pref = pref.slice(0, j)
+      if (!pref.length) break
+    }
+
+    // se der só "02", tenta usar 2 níveis do primeiro filho
+    if (pref.length === 1 && partsList[0].length >= 2) return joinClass(partsList[0].slice(0, 2))
+    return joinClass(pref)
+  }
+
+  // ====== AGRUPAMENTO CERTO ======
+  // A ideia: identificar "row pai" (quando kPai está vazio) e usar ela para a classe do grupo (01/02).
+  // E os filhos são as rows que têm kPai preenchido.
+  const grupos = new Map() // nomeGrupo -> { rowPai, children[] }
+
+  rows.forEach(r => {
+    const paiKeyVal = norm(getVal(r, kPai)) // quando vazio -> é registro pai
+    const isRowPai = (paiKeyVal === '')
+
+    // define nome do grupo:
+    // - se é row pai: usa o label dela (Descrição)
+    // - se é filho: usa o valor do campo pai (kPai), que deve ser o nome do grupo
+    const nomeGrupo = isRowPai
+      ? (norm(getVal(r, kLabel)) || norm(getVal(r, kFilho)) || 'Sem grupo')
+      : (paiKeyVal || 'Sem grupo')
+
+    if (!grupos.has(nomeGrupo)) grupos.set(nomeGrupo, { rowPai: null, children: [] })
+    const g = grupos.get(nomeGrupo)
+
+    if (isRowPai) {
+      g.rowPai = r
+      return // não inclui pai como filho
+    }
+
+    const filhoVal = getVal(r, kFilho) ?? r.id ?? null
+    if (filhoVal == null) return
+
+    const baseLeaf = norm(getVal(r, kLabel)) || String(filhoVal)
+    const ignoreLeaf = new Set([kPai, kFilho, kLabel].filter(Boolean))
+    const leafLabel = `${baseLeaf}${buildAttrsSuffix(r, ignoreLeaf)}`
+
+    g.children.push({
+      id: `F_${filhoVal}`,
+      label: leafLabel,
+      isLeaf: true,
+      _raw: r,
+      _ord: filhoVal
+    })
+  })
+
+  // monta nodes
+  const nodes = Array.from(grupos.entries()).map(([nomeGrupo, g]) => {
+    const ignorePai = new Set([kPai].filter(Boolean))
+
+    // fonte dos atributos do pai:
+    // - se existe rowPai, usar ela (classe 01/02 igual grid)
+    // - senão: usar fallback por filhos
+    const rowBasePai = g.rowPai || (g.children[0] && g.children[0]._raw) || null
+
+    let classGrupo = ''
+    if (g.rowPai && kClass) {
+      classGrupo = norm(getVal(g.rowPai, kClass)) // 01 / 02
+    } else {
+      const rowsDoGrupo = g.children.map(c => c._raw).filter(Boolean)
+      classGrupo = groupClassFromChildren(rowsDoGrupo)
+    }
+
+    // attrs no pai: quando for classificação, usa classGrupo; demais vem do rowBasePai
+    const buildAttrsSuffixPai = () => {
+      const parts = []
+      for (const m of metasTreeAttr) {
+        const key = (m.nm_atributo_consulta || m.nm_atributo)
+        if (!key || ignorePai.has(key)) continue
+
+        let val = ''
+        if (kClass && key === kClass) {
+          val = norm(classGrupo)
+        } else {
+          val = rowBasePai ? norm(getVal(rowBasePai, key)) : ''
+        }
+
+        if (!val) continue
+        parts.push(val) // só conteúdo
+      }
+      return parts.length ? ` · ${parts.join(' · ')}` : ''
+    }
+
+    const paiLabel = `${nomeGrupo}${buildAttrsSuffixPai()}`
+
+    // ordena filhos por id
+    g.children.sort((a, b) => cmpSmart(a._ord, b._ord))
+
+    return {
+      id: `P_${nomeGrupo}`,
+      label: paiLabel,
+      children: g.children,
+      _ord: nomeGrupo,
+      _ordClass: classGrupo || nomeGrupo
+    }
+  })
+
+  // ordena grupos pelo nome (ou adapte se quiser por código)
+  //nodes.sort((a, b) => cmpSmart(a._ord, b._ord))
+  nodes.sort((a, b) => cmpSmart(a._ordClass, b._ordClass))
+
+  /*
+  nodes.sort((a, b) => {
+  const c = cmpSmart(a._ordClass, b._ordClass)
+  if (c !== 0) return c
+  return cmpSmart(a._ord, b._ord)
+})
+*/
+
+  this.treeNodes    = nodes
+  this.treeExpanded = nodes.map(n => n.id)
+
+},
+
+
+expandirTudoTree () {
+    // expande todos os ids (recursivo)
+    const ids = []
+    const walk = (ns) => (ns || []).forEach(n => {
+      ids.push(n.id)
+      if (n.children && n.children.length) walk(n.children)
+    })
+    walk(this.treeNodes)
+    this.treeExpanded = ids
+  },
+
+  recolherTudoTree () {
+    this.treeExpanded = []
+  },
+
+
+
+
+      getTreeFieldsFromMeta () {
+  const meta = this.metaCampos || this.gridMeta || []
+
+  // campo PAI (grupo)
+  const pai = meta.find(m => String(m.ic_atributo_pai || '').toUpperCase() === 'S')
+  // campo FILHO (id do leaf)
+  const filho = meta.find(m => String(m.ic_atributo_filho || '').toUpperCase() === 'S')
+
+  // campo LABEL (o que aparece no tree)
+  // regra: primeiro campo visível na grid e “textual” (não é pai/filho)
+  const proibidos = new Set([pai?.nm_atributo, filho?.nm_atributo].filter(Boolean))
+
+  const label = meta.find(m => {
+    const k = m?.nm_atributo
+    if (!k || proibidos.has(k)) return false
+    if (String(m.ic_mostra_grid || '').toUpperCase() !== 'S') return false
+
+    const fmt = String(m.formato_coluna || '').toLowerCase()
+    // evita num/currency/percent
+    if (['currency','number','percent','fixedpoint','date','datetime'].includes(fmt)) return false
+    return true
+  })
+
+  this.treeFieldPai = (pai && (pai.nm_atributo || pai.nm_atributo_consulta)) || ''
+  this.treeFieldFilho = (filho && (filho.nm_atributo || filho.nm_atributo_consulta)) || ''
+  this.treeFieldLabel = (label && (label.nm_atributo || label.nm_atributo_consulta)) || ''
+
+  // fallback extra: se não achou label, tenta um “consulta” típico
+  if (!this.treeFieldLabel) {
+    const alt = meta.find(m => String(m.nm_atributo_consulta || '').trim() !== '')
+    this.treeFieldLabel = alt?.nm_atributo_consulta || ''
+  }
+
+  // console pra você validar no browser
+  console.log('[TREE META]', {
+    treeFieldPai: this.treeFieldPai,
+    treeFieldFilho: this.treeFieldFilho,
+    treeFieldLabel: this.treeFieldLabel
+  })
+},
+
     
+  buildTreeNodesFromRows () {
+  const rows = this.rows || []
+  const kPai = this.treeFieldPai
+  const kFilho = this.treeFieldFilho
+  const kLabel = this.treeFieldLabel
+
+  const grupos = new Map()
+
+  const getVal = (obj, key) => {
+    if (!obj || !key) return null
+    return obj[key] ?? obj[String(key)] ?? null
+  }
+
+  const norm = (v) => (v === null || v === undefined) ? '' : String(v).trim()
+
+  rows.forEach(r => {
+    const paiVal = norm(getVal(r, kPai)) || 'Sem grupo'
+    const filhoVal = getVal(r, kFilho)
+
+    // label do leaf: tenta labelField, senão tenta descrição genérica, senão usa o id
+    let labelVal = norm(getVal(r, kLabel))
+
+    if (!labelVal) {
+      // tenta achar algum campo string decente no próprio objeto (sem hardcode)
+      const cand = Object.keys(r || {}).find(k => {
+        const v = r[k]
+        if (v === null || v === undefined) return false
+        const s = String(v).trim()
+        if (!s) return false
+        // evita pegar o próprio pai/filho
+        if (k === kPai || k === kFilho) return false
+        // evita “Codigo ...” puro se tiver algo melhor
+        return s.length >= 3
+      })
+      if (cand) labelVal = norm(r[cand])
+    }
+
+    if (!labelVal) labelVal = filhoVal != null ? String(filhoVal) : '—'
+
+    if (!grupos.has(paiVal)) {
+      grupos.set(paiVal, {
+        id: `G_${paiVal}`,
+        label: paiVal,
+        isLeaf: false,
+        children: []
+      })
+    }
+
+    grupos.get(paiVal).children.push({
+      id: (filhoVal != null ? String(filhoVal) : `leaf_${Math.random()}`),
+      label: labelVal,
+      isLeaf: true,
+      _raw: r
+    })
+  })
+
+  this.treeNodes = Array.from(grupos.values())
+
+  // raiz(es) expandido(s) por padrão (opcional)
+  this.treeExpanded = this.treeNodes.map(n => n.id)
+},
+
+  tree_collectAllIds (nodes) {
+    const out = []
+    const walk = (arr) => {
+      (arr || []).forEach(n => {
+        out.push(String(n.id))
+        if (n.children && n.children.length) walk(n.children)
+      })
+    }
+    walk(nodes)
+    return out
+  },
+
+  tree_expandAll () {
+    this.treeExpanded = this.tree_collectAllIds(this.treeNodes)
+  },
+
+  tree_collapseAll () {
+    this.treeExpanded = []
+  },
+
+    onTreeSelected (id) {
+  const node = this.findNodeById(this.treeNodes, id)
+  if (!node || !node.isLeaf) return
+
+  const row = node._raw || node
+  if (String(this.ic_modal_pesquisa || 'N').toUpperCase() === 'S') {
+    this.selecionarERetornar(row)
+  } else {
+    this.abrirFormEspecial({ modo: 'A', registro: row })
+  }
+},
+
+findNodeById (nodes, id) {
+  for (const n of (nodes || [])) {
+    if (n.id === id) return n
+    const f = this.findNodeById(n.children, id)
+    if (f) return f
+  }
+  return null
+},
+
+    metaPai () {
+      const meta = this.gridMeta || this.metaCampos || []
+      return meta.find(m => String(m.ic_atributo_pai || 'N').toUpperCase() === 'S') || null
+    },
+    metaFilho () {
+      const meta = this.gridMeta || this.metaCampos || []
+      return meta.find(m => String(m.ic_atributo_filho || 'N').toUpperCase() === 'S') || null
+    },
+
+    // pega valor do campo no row, tentando nm_atributo e nm_atributo_consulta
+    getRowValue (row, metaCampo) {
+      if (!row || !metaCampo) return null
+      const a = metaCampo.nm_atributo
+      const b = metaCampo.nm_atributo_consulta
+      return (a && row[a] != null ? row[a] : null) ?? (b && row[b] != null ? row[b] : null)
+    },
+
+  
+  slug (s) {
+    return String(s || '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-zA-Z0-9]+/g, '_')
+      .replace(/^_+|_+$/g, '')
+      .toLowerCase()
+      .slice(0, 60)
+  },
+
+    // ====== Monta árvore com parent_id ======
+    treeFromParent (rows) {
+      const getId = (r) => r.id ?? r.cd_id ?? r.cd_menu ?? r.cd ?? r.key
+      const getParent = (r) => r.parent_id ?? r.cd_pai ?? r.id_pai ?? null
+
+      const map = new Map()
+      const roots = []
+
+      // cria nós
+      rows.forEach(r => {
+        const id = getId(r)
+        if (id == null) return
+
+        map.set(id, {
+          id,
+          label: this.cardTitulo ? this.cardTitulo(r) : (r.label || String(id)),
+          subtitle: this.nodeSubtitle(r),
+          children: [],
+          isLeaf: true,
+          _raw: r
+        })
+      })
+
+      // linka pais/filhos
+      rows.forEach(r => {
+        const id = getId(r)
+        if (id == null) return
+
+        const parentId = getParent(r)
+        const node = map.get(id)
+        if (!node) return
+
+        if (parentId != null && map.has(parentId)) {
+          const parentNode = map.get(parentId)
+          parentNode.children.push(node)
+          parentNode.isLeaf = false
+        } else {
+          roots.push(node)
+        }
+      })
+
+      return roots
+    },
+
+    // ====== Fallback: árvore por grupo ======
+    treeFromGroupFallback (rows) {
+      const groupKey =
+        rows[0]?.nm_grupo ||
+        rows[0]?.nm_categoria ||
+        rows[0]?.grupo ||
+        null
+
+      if (!groupKey) {
+        // sem info pra tree, vira uma lista simples
+        return rows.map((r, idx) => ({
+          id: r.id ?? idx,
+          label: this.cardTitulo ? this.cardTitulo(r) : `#${idx}`,
+          subtitle: this.nodeSubtitle(r),
+          children: [],
+          isLeaf: true,
+          _raw: r
+        }))
+      }
+
+      const groups = {}
+      rows.forEach((r, idx) => {
+        const g = r.nm_grupo || r.nm_categoria || r.grupo || 'Outros'
+        if (!groups[g]) groups[g] = []
+        groups[g].push(r)
+      })
+
+      return Object.keys(groups).map((g, i) => ({
+        id: `grp_${i}_${g}`,
+        label: g,
+        subtitle: `${groups[g].length} item(s)`,
+        isLeaf: false,
+        children: groups[g].map((r, idx) => ({
+          id: r.id ?? `${g}_${idx}`,
+          label: this.cardTitulo ? this.cardTitulo(r) : String(r.id ?? idx),
+          subtitle: this.nodeSubtitle(r),
+          children: [],
+          isLeaf: true,
+          _raw: r
+        }))
+      }))
+    },
+
+    nodeSubtitle (r) {
+      if (!r) return ''
+      // coloca uma segunda linha leve no nó (não fixa campo)
+      // tenta usar a 2ª coluna visível
+      const cols = (this.columns || []).filter(c => c && c.dataField)
+      const k = cols?.[1]?.dataField
+      if (k && r[k] != null && String(r[k]).trim() !== '') return String(r[k])
+      return ''
+    },
+
+
+    cardTitulo (row) {
+      if (!row) return '—'
+      // tenta usar a 1ª coluna visível como "título"
+      const cols = (this.columns || []).filter(c => c && c.dataField)
+      const k = cols?.[0]?.dataField
+      return k && row[k] != null ? String(row[k]) : (row.id != null ? `#${row.id}` : '—')
+    },
+
+    cardCampos (row) {
+      const cols = (this.columns || [])
+        .filter(c => c && c.dataField)          // ignora coluna buttons
+        .slice(0, 4)                            // pega 4 campos pro card
+
+      return cols.map(c => {
+        const label = c.caption || c.dataField
+        const raw = row ? row[c.dataField] : null
+        const value = this.formatarValorCard(raw, c.format)
+        return { label, value }
+      })
+    },
+
+    formatarValorCard (v, fmt) {
+      if (v === null || v === undefined) return '—'
+
+      // moeda BR se a coluna estiver como currency
+      if (fmt === 'currency') {
+        const n = Number(v)
+        if (!Number.isFinite(n)) return String(v)
+        return n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+      }
+
+      // number / fixedPoint
+      if (fmt === 'number' || fmt === 'fixedPoint') {
+        const n = Number(v)
+        if (!Number.isFinite(n)) return String(v)
+        return n.toLocaleString('pt-BR')
+      }
+
+      return String(v)
+    },
+
+    temConfigConsultaInvalida () {
+      const cdTabela = Number(this.cd_tabela || 0)
+
+      // nome_procedure pode estar em lugares diferentes; tente os mais comuns
+      const procRaw =
+      this.nome_procedure ??
+      this.gridMeta?.nome_procedure ??
+      this.gridMeta?.nm_procedure ??
+      this.gridMeta?.Nome_Procedure ??
+      ''
+
+    const proc = String(procRaw || '').trim()
+
+    const procInvalida = (proc === '' || proc === '*')
+    return (cdTabela === 0 && procInvalida)
+  },
+
+  abrirAvisoConfigConsulta () {
+    this.bloquearCarregamentoPorConfig = true
+    this.showAvisoConfig = true
+  },
+
+    temRelatorioAtributo(attr) {
+      return !!attr?.cd_atributo_relatorio && Number(attr.cd_atributo_relatorio) > 0;
+    },
+
+    async onRelatorioDoCampo(attr) {
+      console.log('attr-->', attr);
+     const cd_relatorio = Number(attr?.cd_atributo_relatorio ?? this.cd_relatorio ?? 0);
+     const raw = this.formData?.[attr?.nm_atributo];
+
+     const cd_documento = (raw !== undefined && raw !== null && String(raw).trim() !== '')
+       ? (Number.isNaN(Number(raw)) ? String(raw) : Number(raw))
+       : null;
+
+      console.log('Reatório do Atributo: ', cd_relatorio);
+
+      await this.onRelatorioGrid({ ...(this.formData || {}) }, { cd_relatorio, cd_documento });
+
+  },
+
+    extrairIdRegistro(row) {
+  if (!row) return null;
+
+  // 1) id padrão
+  let id = row.id;
+
+  // 2) id pode vir composto [127, "40"]
+  if (Array.isArray(id)) {
+    const v = id.find(x => x != null && String(x).trim() !== "");
+    id = v != null ? v : null;
+  }
+
+  // 3) tenta normalizar número
+  if (id != null && String(id).trim() !== "") {
+    const n = Number(id);
+    if (!Number.isNaN(n)) return n;
+    return String(id);
+  }
+
+  // 4) fallback: tenta achar algum cd_* típico (sem travar em um só)
+  const candidatos = [
+    row.cd_chave, row.cd_codigo, row.cd_registro,
+    row.cd_produto, row.cd_cliente, row.cd_fornecedor,
+    row.cd_contrato, row.cd_contrato_pagar,
+  ];
+
+  for (const c of candidatos) {
+    if (c != null && String(c).trim() !== "") {
+      const n = Number(c);
+      return Number.isNaN(n) ? String(c) : n;
+    }
+  }
+
+  // 5) último recurso: procurar primeira chave que comece com cd_ e pareça id
+  const k = Object.keys(row).find(k => /^cd_/.test(k) && row[k] != null && String(row[k]).trim() !== "");
+  if (k) {
+    const n = Number(row[k]);
+    return Number.isNaN(n) ? String(row[k]) : n;
+  }
+
+  return null;
+},
+
+limparRegistroParaPayload(row) {
+  // remove reatividade / getters e evita circular
+  const plain = JSON.parse(JSON.stringify(row || {}));
+
+  // se tiver id composto, mantém (às vezes ajuda debug/back)
+  if (Array.isArray(plain.id)) plain.id_composto = [...plain.id];
+
+  // normaliza id também no registro limpo
+  const id = this.extrairIdRegistro(plain);
+  if (id != null) plain.id = id;
+
+  return plain;
+},
+
+    async onRelatorioGrid(row, opts = {}) {
+
+      console.log('linhas do relatório : ', row);
+
+      const cd_relatorio = Number(opts.cd_relatorio ?? this.cd_relatorio ?? 0);
+
+
+      const registroLimpo = this.limparRegistroParaPayload(row);
+      const idExtraido  = this.extrairIdRegistro(registroLimpo);
+      const cd_documento =
+    (opts.cd_documento !== undefined && opts.cd_documento !== null && String(opts.cd_documento).trim() !== '')
+      ? (Number.isNaN(Number(opts.cd_documento)) ? String(opts.cd_documento) : Number(opts.cd_documento))
+      : idExtraido;
+    
+      try {
+    
+      //const cd_relatorio = Number(this.cd_relatorio || 0);
+    
+      if (!cd_relatorio) {
+        this.$q?.notify?.({
+          type: "warning",
+          position: "center",
+          message: "Este menu não possui relatório configurado (cd_relatorio=0)."
+      });
+
+      return;
+
+    }
+
+    // payload do PR genérico
+
+
+
+    const payload = [{
+      ic_json_parametro: 'S',
+      cd_menu: Number(this.cd_menu || 0),
+      cd_usuario: String(this.cd_usuario || 0),
+      cd_relatorio: cd_relatorio,
+      cd_documento: cd_documento,
+      id: cd_documento
+
+      // opcional: se seu PR usa filtros e/ou registro selecionado
+      //cd_relatorio,
+      //id,                 // ✅ aqui vai o id
+      //filtros: Array.isArray(this.filtrosPesquisa) ? this.filtrosPesquisa : [], // ajuste se seu filtro tem outro nome
+      //registro: registroLimpo, // opcional, mas útil
+    
+    }];
+
+    console.log('payload de relatório ', payload)
+    
+  
+    //const resp = await gerarRelatorioPadrao(payload);
+
+    const resp = await api.post(
+      '/exec/pr_egis_relatorio_padrao',
+      payload
+    )
+
+    const data = resp?.data;
+
+console.log('Relatório --> ', data);
+
+// ✅ normaliza retorno (pode vir array ou objeto)
+const row = Array.isArray(data) ? data[0] : data;
+
+if (!row || !row.RelatorioHTML) {
+  throw new Error('RelatorioHTML não retornado');
+}
+
+const html = String(row.RelatorioHTML || '');
+
+// abre o HTML
+const win = window.open('about:blank', '_blank');
+if (!win) throw new Error('Popup bloqueado pelo navegador');
+
+win.document.open();
+win.document.write(html);
+win.document.close();
+
+this.$q?.notify?.({
+  type: 'positive',
+  position: 'center',
+  message: 'Relatório gerado com sucesso',
+});
+
+  } catch (e) {
+    console.error("Erro ao gerar relatório do grid:", e);
+    this.$q?.notify?.({
+      type: "negative",
+      position: "center",
+      message: "Erro ao gerar relatório."
+    });
+  }
+  
+  //
+
+},
+
+montarHtmlRelatorio(retorno, payload) {
+  const safe = (v) =>
+    String(v ?? "")
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;")
+      .replaceAll("'", "&#039;");
+
+  // tenta descobrir onde está a lista de linhas
+  const rows =
+    Array.isArray(retorno) ? retorno :
+    Array.isArray(retorno?.dados) ? retorno.dados :
+    Array.isArray(retorno?.rows) ? retorno.rows :
+    Array.isArray(retorno?.resultado) ? retorno.resultado :
+    [];
+
+  const cols = rows.length ? Object.keys(rows[0]) : [];
+
+  const table = rows.length
+    ? `
+      <table>
+        <thead>
+          <tr>${cols.map(c => `<th>${safe(c)}</th>`).join("")}</tr>
+        </thead>
+        <tbody>
+          ${rows.map(r => `
+            <tr>${cols.map(c => `<td>${safe(r[c])}</td>`).join("")}</tr>
+          `).join("")}
+        </tbody>
+      </table>
+    `
+    : `<pre style="white-space:pre-wrap">${safe(JSON.stringify(retorno, null, 2))}</pre>`;
+
+  const titulo = `Relatório ${safe(payload?.cd_relatorio)} - Menu ${safe(payload?.cd_menu)}`;
+
+  return `
+  <!doctype html>
+  <html lang="pt-br">
+  <head>
+    <meta charset="utf-8" />
+    <title>${titulo}</title>
+    <style>
+      body { font-family: Arial, sans-serif; padding: 16px; color: #222; }
+      h1 { font-size: 18px; margin: 0 0 10px; }
+      .meta { font-size: 12px; color: #666; margin-bottom: 14px; }
+      table { border-collapse: collapse; width: 100%; }
+      th, td { border: 1px solid #ddd; padding: 8px; font-size: 12px; }
+      th { background: #f5f5f5; text-align: left; position: sticky; top: 0; }
+      tr:nth-child(even) td { background: #fafafa; }
+      .actions { margin: 10px 0 14px; }
+      button { padding: 8px 10px; cursor: pointer; }
+    </style>
+  </head>
+  <body>
+    <h1>${titulo}</h1>
+    <div class="meta">
+      Usuário: ${safe(payload?.cd_usuario)} |
+      Gerado em: ${safe(new Date().toLocaleString())}
+    </div>
+
+    <div class="actions">
+      <button onclick="window.print()">Imprimir</button>
+    </div>
+
+    ${table}
+  </body>
+  </html>
+  `;
+},
+
+    //
+    async abrirPorChaveDoPai({ cd_menu_composicao, chave }) {
+
+    if (!cd_menu_composicao || cd_menu_composicao <= 0) return
+    if (!chave || chave <= 0) return
+
+    if (this.carregandoContexto) return
+       this.carregandoContexto = true
+
+    try {
+      // 1) troca contexto para o menu composição
+      this.ncd_menu_entrada = Number(cd_menu_composicao)
+      //sessionStorage.setItem("cd_menu", String(this.ncd_menu_entrada))
+
+
+      // 2) carrega payload do menu (filtros, colunas, tabs do menu etc)
+      await this.loadPayload(this.ncd_menu_entrada)
+      await this.loadFiltros(this.ncd_menu_entrada);
+    
+      //
+      await this.$nextTick()
+      //
+
+      // 3) seta chave e consulta dados do grid do menu composição
+      this.cd_chave_pesquisa = Number(chave)
+      //
+      //console.log('pesquisa de chave do form de Entrada ->', this.cd_chave_pesquisa);
+      //
+
+      await this.consultarComChave(this.cd_chave_pesquisa)
+
+    // 4) tenta localizar registro e abrir modal em Alteração/ Inclusão
+    const achou = this.localizarRegistroPorChave(this.cd_chave_pesquisa)
+    //
+
+    // ✅ se o menu for GRID, não abre modal: posiciona na grid e pronto
+    if (String(this.modo_inicial || 'GRID').toUpperCase() === 'GRID') {
+       if (achou) {
+          this.registroSelecionado = achou
+          await this.$nextTick()
+          this.posicionarNaGridPorChave(this.cd_chave_pesquisa)
+    } else {
+    this.$q.notify({
+      type: 'warning',
+      position: 'center',
+      message: 'Registro não encontrado na grid da composição.'
+    })
+  }
+  return
+}
+
+
+
+    //console.log('tratamento de tipo de entrada->', achou);
+
+    if (achou) {
+      this.abrirFormEspecial({ modo: 'A', registro: achou })
+    } else {
+      // abre inclusão (opcional: pode pré-preencher a chave)
+      this.abrirFormEspecial({ modo: 'I', registro: {} })
+    }
+
+  } finally {
+    this.carregandoContexto = false
+  }
+},
+
+async consultarComChave(chave) {
+  // Se o seu back já filtra por "cd_chave_pesquisa", coloque isso no payload da consulta.
+  // Pelo seu log, você já imprime "chave de pesquisa".
+  // Então aqui só garantimos que a consulta use "this.cd_chave_pesquisa".
+
+  // Evite chamar recarregarMenuDoContexto aqui dentro (causa loop / stack overflow)
+  await this.consultar()
+  //
+
+},
+
+localizarRegistroPorChave(chave) {
+  if (!Array.isArray(this.rows) || !this.rows.length) return null
+
+  const keyField = this.keyName || 'id'
+  const alvo = Number(chave || 0)
+  if (!keyField || !alvo) return null
+
+  return this.rows.find(r => Number(r?.[keyField] || 0) === alvo) || null
+},
+
+posicionarNaGridPorChave(chave) {
+  const grid = this.$refs.grid?.instance
+  if (!grid) return
+
+  const keyField = this.keyName || 'id'
+  const alvo = Number(chave || 0)
+  if (!alvo) return
+
+  // tenta achar a row (para pegar a key real, caso seja diferente)
+  const row = this.localizarRegistroPorChave(alvo)
+  const rowKey = row ? (row[keyField] ?? alvo) : alvo
+
+  try {
+    // foca e navega
+    if (grid.option) {
+      grid.option('focusedRowEnabled', true)
+      grid.option('focusedRowKey', rowKey)
+    }
+    if (grid.navigateToRow) grid.navigateToRow(rowKey)
+    if (grid.selectRows) grid.selectRows([rowKey], false)
+  } catch (e) {
+    console.warn('posicionarNaGridPorChave falhou', e)
+  }
+},
+
+
+async onClickMenuTab (t) {
+
+  this.registroSelecionadoPrincipal = this.registroSelecionadoPrincipal || this.registroSelecionado || null
+
+  const chave = Number(this.cd_chave_registro_local || this.cd_acesso_entrada || 0)
+
+  if (!chave || chave <= 0) {
+    this.$q.notify({
+      type: 'warning',
+      position: 'center',
+      message: 'Selecione um registro na grid principal.'
+
+    })
+
+    return
+
+    // MUITO IMPORTANTE:
+    // se a aba for de edição (ic_grid_menu = 'N'), não faz mais nada
+    //if ((t.ic_grid_menu || 'S') !== 'S') return
+  }
+
+  this.activeMenuTab = t.key
+
+  if (!t || Number(t.cd_menu_composicao || 0) <= 0) return
+
+  // ✅ takeover quando a aba filha for GRID (ic_grid_menu = 'S')
+  this.takeoverFilhoGrid = String(t.ic_grid_menu || 'S') === 'S'
+  //
+
+  // pega instância do filho renderizado
+  await this.$nextTick()
+  //
+  const refName = `child_${t.key}`
+  const child = this.$refs[refName]
+  const inst = Array.isArray(child) ? child[0] : child
+  if (!inst || typeof inst.abrirPorChaveDoPai !== 'function') return
+
+  await inst.abrirPorChaveDoPai({
+    cd_menu_composicao: Number(t.cd_menu_composicao || 0),
+    chave: Number(this.cd_chave_registro_local || 0)
+  })
+  
+},
+
+
+parseSqlTabs(raw) {
+  if (!raw) return []
+
+  let arr = raw
+  try {
+    // se vier string JSON
+    if (typeof raw === 'string') arr = JSON.parse(raw)
+  } catch (e) {
+    console.warn('sqlTabs inválido:', raw)
+    return []
+  }
+
+  if (!Array.isArray(arr)) arr = [arr]
+
+  return arr.map((t, i) => ({
+    key: `ts_${t.cd_tabsheet || i}`,
+    label: t.nm_tabsheet || `Aba ${i + 1}`,
+    cd_menu_composicao: Number(t.cd_menu_composicao || 0),
+    ic_grid_menu: (t.ic_grid_menu || 'S'),    
+    raw: t
+  }))
+},
+
     // ...
 
     ssKey(base) {
-      const m = Number(this.cd_menu || 0)
+      const m = Number(this.cd_menu_entrada || this.cd_menu || 0)
       return m ? `${base}_${m}` : base
+    },
+
+    ssGet(k, fallback = null) {
+      try {
+        return sessionStorage.getItem(this.ssKey(k)) ?? fallback;
+      } catch (e) {
+        return fallback;
+      }
+    },
+
+    ssSet(k, v) {
+      try {
+        sessionStorage.setItem(this.ssKey(k), v);
+      } catch (e) {}
+    },
+
+    isQuotaError(err) {
+      return (
+        err &&
+        (err.name === "QuotaExceededError" ||
+          err.code === 22 ||
+          err.code === 1014 ||
+          (err.message || "").toLowerCase().includes("quota"))
+      );
+    },
+
+    serializeForStorage(value) {
+      return typeof value === "string" ? value : JSON.stringify(value);
+    },
+
+    async salvarCacheSeguro(key, value, { parseJson = true } = {}) {
+      const payload = parseJson ? this.serializeForStorage(value) : value;
+
+      // tenta salvar no sessionStorage; se falhar por quota, cai para IndexedDB
+      try {
+
+        sessionStorage.setItem(key, payload);
+
+        //
+
+        // se salvou no localStorage, remove do IndexedDB para não ficar lixo/stale
+        //try {
+        // await offlineDb.collection(GRID_CACHE_COLLECTION).doc({ key }).delete();
+        //..} catch (_) {}
+
+        
+        // IMPORTANTE: manter cópia no IndexedDB para outras abas/janelas
+        //await offlineDb.collection(GRID_CACHE_COLLECTION).doc({ key }).set({
+        //  key,
+        //  value: payload,
+        //  updatedAt: Date.now()
+        //});
+        
+        return;
+
+
+      } catch (err) {
+        if (!this.isQuotaError(err)) {
+          console.warn("[unicoFormEspecial] Falha ao salvar no sessionStorage:", err);
+        }
+      }
+
+      // fallback: IndexedDB via Localbase
+      try {
+        
+        const docId = key; // chave vira o id do documento
+
+        await offlineDb.collection(GRID_CACHE_COLLECTION).doc(docId).set({
+        key,
+        value: payload,
+        updatedAt: Date.now()
+      });
+
+
+        //await offlineDb.collection(GRID_CACHE_COLLECTION).doc({ key }).set({
+        //  key,
+        //  value,
+         // scope: GRID_CACHE_PREFIX,
+        //  updatedAt: new Date().toISOString(),
+        //});
+
+      } catch (dbErr) {
+        console.error("[unicoFormEspecial] Falha ao salvar no IndexedDB:", dbErr);
+      }
+
+    },
+
+    async lerCacheSeguro(key, { parseJson = true } = {}) {
+      try {
+        const raw = sessionStorage.getItem(key);
+        if (raw !== null && raw !== undefined) {
+          return parseJson ? JSON.parse(raw) : raw;
+        }
+      } catch (err) {
+        if (!this.isQuotaError(err)) {
+          console.warn("[unicoFormEspecial] Falha ao ler do sessionStorage:", err);
+        }
+      }
+
+      try {
+        const doc = await offlineDb.collection(GRID_CACHE_COLLECTION).doc({ key }).get();
+      
+        if (doc && Object.prototype.hasOwnProperty.call(doc, "value")) {
+          //return doc.value;
+          const raw = doc.value;
+          if (raw == null) return null;
+
+          return parseJson ? this.deserializeFromStorage(raw) : raw;
+
+        }
+      } catch (dbErr) {
+        // ausência de doc não é erro crítico; log apenas se for outra falha
+        if (dbErr && !/No Documents found/i.test(dbErr.message || "")) {
+          console.warn("[unicoFormEspecial] Falha ao ler do IndexedDB:", dbErr);
+        }
+      }
+
+      return null;
+
+    },
+
+    async removerCacheSeguro(key) {
+      try {
+        sessionStorage.removeItem(key);
+      } catch (err) {}
+
+      try {
+        await offlineDb.collection(GRID_CACHE_COLLECTION).doc({ key }).delete();
+      } catch (dbErr) {
+        // ignora ausência de documento
+        if (dbErr && !/No Documents found/i.test(dbErr.message || "")) {
+          console.warn("[unicoFormEspecial] Falha ao limpar IndexedDB:", dbErr);
+        }
+      }
     },
 
      async onInfoClick() {
@@ -2019,6 +4155,83 @@ export default {
   })
 },
 
+  abrirFiltroSelecao () { this.dialogFiltroSelecao = true },
+
+
+  async limparFiltroSelecao () {
+  const full = await this.getRowsFullFromSession()
+  this.rows = Array.isArray(full) ? full : []
+
+  // opcional: também limpa filtros internos do devextreme (se houver)
+  const grid = this.$refs.grid?.instance
+  if (grid) {
+    grid.clearFilter()
+    grid.clearSelection?.()
+    grid.refresh()
+  }
+},
+
+traduzCampoFiltroParaGrid (fieldTecnico) {
+  if (!fieldTecnico) return fieldTecnico
+
+  const menu = this.cdMenu || this.cd_menu || 0
+  const key = `campos_grid_meta_${menu}`
+
+  let meta = []
+  try {
+    meta = JSON.parse(sessionStorage.getItem(key) || '[]')
+  } catch (e) {
+    return fieldTecnico
+  }
+
+  // procura nm_atributo -> nm_atributo_consulta
+  const found = meta.find(m =>
+    String(m.nm_atributo || '').toLowerCase() ===
+    String(fieldTecnico).toLowerCase()
+  )
+
+  return found?.nm_atributo_consulta || fieldTecnico
+},
+
+    async onAplicouFiltroSelecao ({ keyField, keys }) {
+  const fieldTecnico = String(keyField || '').trim()
+  const values = Array.isArray(keys) ? keys : []
+
+  // 🔁 traduz campo técnico -> campo da grid
+  const fieldGrid = this.traduzCampoFiltroParaGrid(fieldTecnico)
+
+  //console.log('[Filtro] técnico:', fieldTecnico, '-> grid:', fieldGrid, 'values:', values)
+
+  // pega FULL do sessionStorage
+  const full = await this.getRowsFullFromSession()
+
+  // sem filtro → volta tudo
+  if (!fieldGrid || values.length === 0) {
+    this.rows = Array.isArray(full) ? full : []
+    return
+  }
+
+  // detecta tipo pelo dado real da grid
+  const sample = full?.[0]?.[fieldGrid]
+
+  let normalized = values
+  if (typeof sample === 'number') {
+    normalized = values
+      .map(v => Number(v))
+      .filter(v => !Number.isNaN(v))
+  } else {
+    normalized = values.map(v => String(v))
+  }
+
+  const set = new Set(normalized)
+
+  this.rows = (Array.isArray(full) ? full : []).filter(r => {
+    const v = r?.[fieldGrid]
+    if (typeof sample === 'number') return set.has(Number(v))
+    return set.has(String(v))
+  })
+},
+
     //
     abrirPesquisaCampo (campo) {
     if (!campo || Number(campo.cd_menu_pesquisa || 0) <= 0) return
@@ -2037,6 +4250,7 @@ export default {
     localStorage.cd_menu = Number(campo.cd_menu_pesquisa)
 
     this.showLookup = true
+
   },
 
   abrirPesquisa (attr) {
@@ -2059,11 +4273,75 @@ export default {
     try { localStorage.cd_menu = Number(attr.cd_menu_pesquisa) } catch (e) {}
 
     this.showLookup = true
+
   },
 
   onSelecionouLookup (plain) {
+
+    console.log('PAI - plain - retorno', plain);
+     
+    this.$emit('selecionou', plain)
+    this.showLookup = false;
+
+    // aqui você injeta no form de inclusão/edição
+    //this.registroSelecionado = plain
+    //
+
     this.ultimoSelecionadoLookup = plain
+
+    //
+    // ✅ chama a rotina que aplica e fecha
+    this.fecharLookup()
+    //
+
   },
+
+
+  aplicarRetornoLookup(dados) {
+  if (!dados || typeof dados !== 'object') return
+
+  const meta = this.metaCampos || []
+  if (!Array.isArray(meta) || meta.length === 0) return
+
+  // mapa normalizado do retorno (caption ou nome técnico)
+  const mapaDados = {}
+  Object.keys(dados).forEach(k => {
+    mapaDados[this.normaliza(k)] = dados[k]
+  })
+
+  meta.forEach(m => {
+    if (!m || !m.nm_atributo) return
+    if (String(m.ic_retorno_atributo || '').toUpperCase() !== 'S') return
+
+    const candidatos = [
+      m.nm_atributo,
+      m.nm_atributo_consulta,
+      m.nm_atributo_lookup,
+      m.nm_titulo_menu_atributo,
+      m.ds_atributo
+    ].filter(Boolean)
+
+    let valorEncontrado
+
+    for (const c of candidatos) {
+      const key = this.normaliza(c)
+      if (mapaDados[key] !== undefined) {
+        valorEncontrado = mapaDados[key]
+        break
+      }
+    }
+
+    //console.log('Valor Encontrado: ', valorEncontrado);
+
+    if (valorEncontrado !== undefined) {
+      this.$set(this.formData, m.nm_atributo, valorEncontrado)
+    }
+  })
+
+  // se você tiver essas rotinas no UnicoFormEspecial, ótimo:
+  if (typeof this.calcularCampos === 'function') this.calcularCampos()
+  if (typeof this.persistirDraft === 'function') this.persistirDraft()
+},
 
   popFormContext () {
   const ctx = this.formStack.pop()
@@ -2076,36 +4354,234 @@ export default {
   this.modoCRUD = ctx.modoCRUD
 },
 
+descricaoLookup(attr) {
+      if (!attr) return ''
+
+      const fd = this.formData || {}
+      const record = this.record || {}
+
+      const campoChave = attr.cd_chave_retorno || attr.nm_atributo
+      const descKeyInterna = `__lookup_desc__${attr.nm_atributo || campoChave || 'x'}`
+
+      // 1) prioridade: descrição interna (vem do retorno do lookup)
+      if (fd[descKeyInterna] !== undefined && fd[descKeyInterna] !== null && String(fd[descKeyInterna]).trim() !== '') {
+        return fd[descKeyInterna]
+      }
+
+      // 2) fallback: tenta pelos campos do meta
+      const candidatos = [
+        attr.nm_campo_mostra_combo_box,
+        attr.nm_atributo_lookup,
+        attr.nm_atributo_consulta,
+        attr.nm_atributo
+      ].filter(Boolean)
+
+      for (const k of candidatos) {
+        if (fd[k] !== undefined && fd[k] !== null && String(fd[k]).trim() !== '') return fd[k]
+      }
+
+      for (const k of candidatos) {
+        if (record[k] !== undefined && record[k] !== null && String(record[k]).trim() !== '') return record[k]
+      }
+
+      // 3) fallback pelo META (retorno 'S' e nm_/ds_)
+      const meta = Array.isArray(this.metaCampos) ? this.metaCampos : []
+      const candidatosMeta = meta
+        .filter(m => String(m?.ic_retorno_atributo || '').toUpperCase() === 'S')
+        .map(m => m?.nm_atributo)
+        .filter(nm => nm && nm !== campoChave && (nm.startsWith('nm_') || nm.startsWith('ds_')))
+
+      for (const nm of candidatosMeta) {
+        if (fd[nm] != null && String(fd[nm]).trim() !== '') return String(fd[nm])
+      }
+
+      return ''
+
+    },
+
 fecharLookup () {
+
+  
   this.showLookup = false
+  this.$emit('fechar')
 
   try {
     localStorage.cd_menu = Number(this.cdMenuAnteriorLookup || 0)
   } catch (_) {}
 
-  const attr = this.campoLookupAtivo
-  if (!attr) return
+    const attr = this.campoLookupAtivo
+  
+    console.log('Fechar Lookup - 1', attr)
+  
+
+  //if (!attr) return
+
+  const cdMenuPesquisa = Number(attr.cd_menu_pesquisa || 0);
+
+  //console.log('cdMenuPesquisa => ', cdMenuPesquisa, ' attr => ', attr);
 
   let sel = this.ultimoSelecionadoLookup
-  if (!sel) return
+
+  //if (!sel) return
 
   // ✅ primeiro restaura o contexto do pai
   this.popFormContext()
   //
 
+  console.log( 'Registro Traduzido ', sel, this.traduzRegistroSelecionado)
+  
   // normaliza
   const selTec = this.traduzRegistroSelecionado
-    ? this.traduzRegistroSelecionado(sel)
+    ? this.traduzRegistroSelecionado(sel, cdMenuPesquisa)
     : sel
+
+   this.aplicarRetornoLookup(selTec)
+
+   // ----- descrição genérica (sem depender do meta) -----
+   const campoChaveTec = attr.cd_chave_retorno || attr.nm_atributo
+   const descKeyInterna = `__lookup_desc__${attr.nm_atributo || campoChaveTec || 'x'}`
+
+   // 1) Preferências explícitas do próprio attr (se existirem e tiverem valor)
+    const preferidos = [
+      attr.nm_campo_mostra_combo_box,
+      attr.nm_atributo_lookup,
+      attr.nm_atributo_consulta
+    ].filter(Boolean)
+
+
+    const campoChamador =
+      attr.nm_campo_mostra_combo_box ||
+      attr.nm_atributo_consulta ||
+      attr.nm_atributo_lookup ||
+      attr.nm_atributo
+      
+
+    if (preferidos.length === 0) {
+      // ✅ fallback: usa o campo que chamou a pesquisa
+      const v = this.formData?.[campoChamador] ?? selTec?.[campoChamador]
+      const desc = v != null ? String(v).trim() : ''
+      if (desc) this.$set(this.formData, descKeyInterna, desc)  
+      //return
+    }
+
+    let desc = ''
+
+   for (const k of preferidos) {
+   const v =
+    (selTec && selTec[k] != null ? selTec[k] : null) ??
+    (this.formData && this.formData[k] != null ? this.formData[k] : null)
+
+    if (v != null && String(v).trim() !== '') {
+       desc = String(v).trim()
+       break
+     } 
+   }
+
+    // 2) Se não achou, pega o PRIMEIRO campo do meta marcado como retorno 'S' que seja nm_/ds_ (e não a chave)
+   
+    if (!desc) {
+      const meta = Array.isArray(this.metaCampos) ? this.metaCampos : []
+      const candidatosMeta = meta
+        .filter(m => String(m?.ic_retorno_atributo || '').toUpperCase() === 'S')
+        //.map(m => m?.nm_atributo_consulta)
+        .map(m => m?.nm_atributo)
+        .filter(nm => nm && nm !== campoChaveTec && (nm.startsWith('nm_') || nm.startsWith('ds_')))
+
+         for (const nm of candidatosMeta) {
+  const v =
+    (selTec && selTec[nm] != null ? selTec[nm] : null) ??
+    (this.formData && this.formData[nm] != null ? this.formData[nm] : null)
+
+  if (v != null && String(v).trim() !== '') {
+    desc = String(v).trim()
+    break
+  }
+}
+
+    }
+
+
+    if (!desc && selTec && typeof selTec === 'object') {
+  const blacklist = new Set([
+    campoChaveTec,
+    attr.nm_atributo,
+    attr.cd_chave_retorno,
+    'id'
+  ].filter(Boolean))
+
+  for (const k of Object.keys(selTec)) {
+    if (blacklist.has(k)) continue
+    const v = selTec[k]
+    if (typeof v === 'string' && v.trim() !== '') {
+      desc = v.trim()
+      break
+    }
+  }
+}
+
+    // 3) grava a descrição interna (é isso que o q-input vai mostrar)
+    if (desc) {
+      this.$set(this.formData, descKeyInterna, desc)
+      if (this.record) this.$set(this.record, descKeyInterna, desc)
+
+      // ✅ faz o input "da tela chamadora" ter o nm_/ds_ preenchido
+      //if (attr.nm_atributo_consulta) {
+      //  this.$set(this.formData, attr.nm_atributo_consulta, desc)
+      //  if (this.record) this.$set(this.record, attr.nm_atributo_consulta, desc)
+     // }
+
+      const campoTextoTec =
+  attr.nm_atributo_lookup ||            // geralmente nm_/ds_ técnico
+  attr.nm_campo_mostra_combo_box ||     // se existir e for técnico
+  null
+
+       if (campoTextoTec) {
+    this.$set(this.formData, campoTextoTec, desc)
+    if (this.record) this.$set(this.record, campoTextoTec, desc)
+  }
+
+    }
+
+// tenta achar um texto "bom" no retorno: primeiro string não vazia e que não seja a chave
+/*
+let descGenerica = ''
+
+if (selTec && typeof selTec === 'object') {
+  for (const k of Object.keys(selTec)) {
+    if (!k) continue
+    if (k === campoChaveTec) continue
+    const v = selTec[k]
+    if (typeof v === 'string' && v.trim() !== '') {
+      descGenerica = v.trim()
+      break
+    }
+  }
+}
+
+// grava a descrição genérica no formData (para o input usar sempre)
+if (descGenerica) {
+  this.$set(this.formData, descKeyInterna, descGenerica)
+}
+*/
+
+    //console.log('selecionado lookup traduzido => ', selTec);
+
+    // código (nm_atributo)
+    //this.$set(this.formData, attr.nm_atributo, selTec[attr.nm_atributo] ?? this.formData[attr.nm_atributo]);
+
 
   /* ================================
      1️⃣ CHAVE (ID)
      ================================ */
+
   const campoChave = attr.cd_chave_retorno || attr.nm_atributo
   const valorChave =
     selTec[campoChave] ??
     selTec.id ??
     null
+
+    //console.log('campoChave => ', campoChave);
+    //console.log('valorChave => ', valorChave);
 
   if (campoChave && valorChave != null) {
     this.$set(this.formData, campoChave, valorChave)
@@ -2114,14 +4590,18 @@ fecharLookup () {
   /* ================================
      2️⃣ TEXTO / DESCRIÇÃO
      ================================ */
-  const campoDescricao =
-    attr.nm_campo_mostra_combo_box ||
-    attr.nm_atributo_lookup ||
-    ''
+const campoDescricao =
+  attr.nm_campo_mostra_combo_box ||
+  attr.nm_atributo_consulta ||   // ✅ MUITO importante na pesquisa dinâmica
+  attr.nm_atributo_lookup ||
+  ''
 
   const valorDescricao =
     selTec[campoDescricao] ??
     ''
+
+    //console.log('campoDescricao => ', campoDescricao);
+    //console.log('valorDescricao => ', valorDescricao);
 
   if (campoDescricao && valorDescricao) {
     this.$set(this.formData, campoDescricao, valorDescricao)
@@ -2130,17 +4610,34 @@ fecharLookup () {
   /* ================================
      3️⃣ LIMPEZA
      ================================ */
+
   this.campoLookupAtivo = null
   this.ultimoSelecionadoLookup = null
 
+
+  console.log('DESCKEY:', descKeyInterna)
+console.log('FD DESCKEY VAL:', this.formData?.[descKeyInterna])
+console.log('REC DESCKEY VAL:', this.record?.[descKeyInterna])
+console.log('nm_atributo_consulta:', attr.nm_atributo_consulta, 'VAL:', this.formData?.[attr.nm_atributo_consulta])
+
+
 },
 
+  //
+
   onSelectionChangedGrid(e) {
+
     // e.selectedRowsData é um array com os registros completos
     this.registrosSelecionados = e.selectedRowsData || []
+
+     // pega a chave pelo seu keyName/id
+     const keyField = this.keyName || this.id || 'id'
+     this.cd_chave_registro_local = e.selectedRowsData ? Number(e.selectedRowsData[keyField] || 0) : 0
+
     // se você quiser só as chaves, pode usar e.selectedRowKeys
     // this.registrosSelecionados = e.selectedRowKeys || []
     // console.log('selecionados => ', this.registrosSelecionados)
+
   },
 
   onSelectionChangedPrincipal (e) {
@@ -2172,36 +4669,122 @@ fecharLookup () {
   
   },
 
-  selecionarERetornar (cell) {
-    // no dx: cell.data é a row; dependendo do template pode vir direto
-    const row = cell && cell.data ? cell.data : cell
-    if (!row) return
 
-    this.gravarRegistroSelecionado(row)
+selecionarERetornarOld(rows) {
+  console.log("Selecionar e Retornar ->", rows);
 
-    this.$emit('selecionou', row)
-    // fecha e volta pro mod
-    // al
-    this.$emit('fechar')
+  const row = rows
+  if (!row) {
+    console.warn("Sem e.row.data no evento", rows);
+    return;
+  }
 
-  },
+  console.log("ROW SELECIONADA ->", row);
 
-      onOptionChanged(e) {
+  this.gravarRegistroSelecionado(row);
+
+  console.log("EMIT selecionou");
+  this.$emit("selecionou", row);
+
+  console.log("EMIT fechar");
+  this.$emit("fechar");
+},
+
+
+  onSelecionarRegistroPesquisa(t, registro) {
+  try {
+    // exemplo: qual campo está sendo pesquisado agora
+    const ctx = this.campoPesquisaAtual || {};
+    const nmCodigo = ctx.nmCampoCodigo; // ex: 'cd_produto'
+    const nmDesc = ctx.nmCampoDesc;     // ex: 'nm_produto'
+
+    if (!nmCodigo) {
+      console.warn("Sem campoPesquisaAtual definido");
+      return;
+    }
+
+    // tenta achar o código e a descrição no registro retornado
+    // (você pode ajustar heurísticas conforme seu backend)
+    const code =
+      registro[nmCodigo] ??
+      registro.id ??
+      (Array.isArray(registro.id) ? registro.id[0] : undefined);
+
+    // descrição: tenta nm_* / ds_* / Descrição / Nome
+    const desc =
+      registro[nmDesc] ??
+      registro[`ds_${nmCodigo.replace(/^cd_/, "")}`] ??
+      registro["Descrição"] ??
+      registro["Descricao"] ??
+      registro["Nome"] ??
+      "";
+
+    // aplica no form do pai
+    this.formData = this.formData || {};
+    this.$set(this.formData, nmCodigo, code != null ? String(code) : "");
+    if (nmDesc) this.$set(this.formData, nmDesc, desc ? String(desc) : "");
+
+    // fecha a tab/modal filha
+    this.onFecharTabFilha(t);
+
+  } catch (e) {
+    console.error("onSelecionarRegistroPesquisa erro:", e);
+  }
+},
+
+  onOptionChanged(e) {
+
+      if (!e || !e.fullName) return
+
+
+       // captura mudanças de sort
+      if (e.fullName.includes('sortOrder') || e.fullName.includes('sortIndex')) {
+        this.$nextTick(() => {
+          const grid = this.$refs.grid && this.$refs.grid.instance
+          if (!grid) return
+
+          // vai para o topo
+          grid.navigateToRow(0)        // às vezes não funciona dependendo do keyExpr
+          grid.getScrollable()?.scrollTo({ top: 0 })
+
+          // se preferir ir ao 1º registro real (mais confiável):
+          const first = grid.getVisibleRows?.()[0]
+          if (first && first.key != null) {
+            grid.navigateToRow(first.key)
+            grid.scrollToRow(first.key)
+          }
+        })
+      }
+      
       if (e.name === "columns") {
         this.saveGridConfig();
       }
+
+       if (e.name === "filterValue" || e.name === "columns") {
+      const dataGrid = e.component;
+      const hasFilter = dataGrid.getCombinedFilter() !== null;
+      this.showClearButton = !!hasFilter;
+
+      // força atualização da toolbar
+      dataGrid.repaint();
+    }
+  
+
     },
 
     abrirModalComposicao () {
 
-         // 👇 se não tiver nada no array, mas existir um "registroSelecionadoPrincipal"
-  // (última linha clicada), usa ele como selecionado
-  if (
-    (!this.registrosSelecionados || this.registrosSelecionados.length === 0) &&
-    this.registroSelecionadoPrincipal
-  ) {
-    this.registrosSelecionados = [this.registroSelecionadoPrincipal];
-  }
+       // fecha ambos por segurança
+       this.dialogModalComposicao = false
+       this.dialogModalGridComposicao = false
+
+    
+     if (
+       (!this.registrosSelecionados || this.registrosSelecionados.length === 0) &&
+        this.registroSelecionadoPrincipal
+     ) {
+       this.registrosSelecionados = [this.registroSelecionadoPrincipal];
+     }
 
        // se o menu exigir seleção e não houver nenhum selecionado, avisa
        if (
@@ -2217,9 +4800,19 @@ fecharLookup () {
   }
 
        if (this.cd_form_modal > 0) {
-           this.dialogModalComposicao = true;
-       }
 
+
+         localStorage.cd_chave_modal = this.registrosSelecionados
+           .map(r => r[this.keyName || 'id'])
+           .join(',');
+
+         if (String(this.ic_grid_modal || 'N').toUpperCase() === 'S') {
+            this.dialogModalGridComposicao = true
+         } else {
+            this.dialogModalComposicao = true
+         }        
+
+       }   
 
     },
 
@@ -2256,12 +4849,17 @@ fecharLookup () {
   
    },
 
-    abrirDashboardDinamico () {
+    async abrirDashboardDinamico () {
       
-      //console.log('[unicoFormEspecial] abrirDashboardDinamico clicado, rows:',
+       await this.ensureConsultaCacheLoaded()
+
+       this.returnTo = this.$route.fullPath
+      
+       //console.log('[unicoFormEspecial] abrirDashboardDinamico clicado, rows:',
       //(this.rowsParaDashboard || []).length)
 
     this.showDashDinamico = true
+
    },
 
    saveGridConfig() {
@@ -2487,7 +5085,7 @@ async executarProcesso (row) {
     }
   ]
 
-  console.log('[processo] payloadExec =>', payloadExec)
+  //console.log('[processo] payloadExec =>', payloadExec)
 
   try {
     // chama diretamente a procedure de geração de processos
@@ -2496,7 +5094,7 @@ async executarProcesso (row) {
       payloadExec
     )
 
-    console.log('[processo] retorno =>', data)
+    //console.log('[processo] retorno =>', data)
 
     if (this.$q) {
       this.$q.notify({
@@ -2553,7 +5151,7 @@ async abrirMenuProcessos () {
       payloadExec
     )
 
-    console.log('[menu_processo] dados recebidos:', data );
+    //console.log('[menu_processo] dados recebidos:', data );
 
     // Mapeia para Processo / Descritivo
 
@@ -2656,6 +5254,7 @@ async copiarRegistro (registro) {
     }
 
     //5)
+
     this.abrirFormEspecial({
       modo: 'A',        // força o caminho de edição para mapear o registro
       registro: modelo  // já sem PK e com campos ajustados
@@ -2830,7 +5429,9 @@ _buildMapaRowsFromMeta(meta) {
   const arr = Array.isArray(meta) ? meta : []
 
   const rows = arr.map((r, idx) => {
+
     // ordem: tenta nu_ordem / qt_ordem_atributo, senão índice
+    
     const ordem = Number(
       r.nu_ordem ||
       r.qt_ordem_atributo ||
@@ -2849,6 +5450,7 @@ _buildMapaRowsFromMeta(meta) {
     ).trim()
 
     return { ordem, codigo, atributo, descricao }
+
   })
 
   // ordena pela ordem (se vier 0, joga lá pro fim)
@@ -2876,6 +5478,7 @@ getGridRows () {
   if (this.gridData && Array.isArray(this.gridData)) return this.gridData
   return []
 },
+
 async refreshGrid () {
   // tenta as rotinas mais comuns para recarregar
   if (typeof this.carregarGrid === 'function') return this.carregarGrid()
@@ -2888,6 +5491,7 @@ async refreshGrid () {
 },
 
   async onGerarRelatorio() {
+
     try {
       const payload = {
         cd_menu: this.cd_menu,
@@ -2895,9 +5499,12 @@ async refreshGrid () {
         cd_relatorio: this.relatorioSelecionado, // se você selecionar em um combo
         filtros: this.filtros || {}              // opcional
       }
+
       const dados = await gerarRelatorioPadrao(payload)
+
       // você pode reaproveitar os dados pra exportar/mostrar/abrir PDF
       // Ex.: gerar PDF com os dados retornados:
+
       await gerarPdfRelatorio({
         cd_menu: this.cd_menu,
         cd_usuario: this.cd_usuario,
@@ -2922,6 +5529,7 @@ async refreshGrid () {
     registro.dt_cadastro = new Date().toISOString().slice(0,10)
 
     return registro
+
   },
 
   async onNovoRegistro() {
@@ -2957,7 +5565,7 @@ async refreshGrid () {
       // decide o container de scroll
       let refEl = null;
       if (qual === "principal") {
-        refEl = this.$refs.scrollShellPrincipal;
+        refEl = this.$refs.scrollShell;
       } else if (qual === "det" && this.$refs["scrollShellDet_" + cdMenu]) {
         // quando v-for com ref, o Vue devolve um array
         const arr = this.$refs["scrollShellDet_" + cdMenu];
@@ -2972,6 +5580,90 @@ async refreshGrid () {
         // fallback para browsers sem scrollBy options
         refEl.scrollTop = (refEl.scrollTop || 0) + 400;
       }
+    },
+
+   recalcularAlturasGrid () {
+
+   
+      const viewport = window.innerHeight || 0;
+      const shell = this.$refs && this.$refs.scrollShell;
+      
+      if (!viewport || !shell) return;
+
+      const shellTop = shell.getBoundingClientRect().top || 0;
+      const bottomGap = 12; // respiro inferior
+
+      // altura total disponível para o "bloco" da grid (container)
+      const total = Math.floor(viewport - shellTop - bottomGap);
+
+      const maxDinamico = Math.max(this.gridAlturaMax || 0, total);
+      this.gridAlturaMax = maxDinamico;
+
+      const totalClamped = Math.max(
+        this.gridAlturaMin,
+        //Math.min(this.gridAlturaMax, total)
+        Math.min(maxDinamico, total)
+      );
+
+       if (this.gridAutoFit) {
+        this.gridAlturaAtual = totalClamped;      // só no auto-fit
+        this.gridAlturaPadrao = totalClamped;
+      }
+      //this.gridAlturaAtual = totalClamped;
+      //this.gridAlturaPadrao = totalClamped;
+
+      this.$nextTick(() => this.aplicarAlturaGrid());
+
+      /*
+      // Agora desconta o que existe acima da tabela (legenda/tabs/etc)
+      const topEl = this.$refs && this.$refs.gridTop;
+      const topH = topEl ? topEl.offsetHeight : 0;
+
+      // altura útil real do DataGrid
+      const body = Math.max(180, totalClamped - topH);
+
+      this.gridBodyHeight = body;
+
+  // 🔥 IMPORTANTE: quando usa virtual/infinite e altura dinâmica,
+  // o DevExtreme precisa recalcular dimensões para renderizar as linhas
+  this.$nextTick(() => {
+    const gridCmp = this.$refs && this.$refs.grid;
+    const grid = gridCmp && gridCmp.instance;
+    if (!grid) return;
+    // 2 ticks pra garantir que o DOM já aplicou a altura
+    setTimeout(() => {
+      try {
+        grid.updateDimensions();
+        // opcional: se ainda tiver falha em alguns casos
+        // grid.repaint();
+      } catch (e) {}
+    }, 0);
+  });
+  */
+
+  this.agendarUpdateGrid()
+
+ },
+
+
+    definirAlturaInicialGrid() {
+
+      this.$nextTick(() => this.recalcularAlturasGrid());
+     
+
+    },
+
+   ajustarAlturaTela () {
+     if (!this.gridAutoFit) return;   // se está manual, não mexe!
+     this.$nextTick(() => this.recalcularAlturasGrid());
+   },
+
+
+    resetarAlturaGrid() {
+      const alvo = this.gridAlturaPadrao || this.gridAlturaMin;
+      this.gridAutoFit = false;
+      this.gridAlturaAtual = alvo;
+      this.$nextTick(() => this.aplicarAlturaGrid());
     },
 
     setFiltroFilho(cdMenu, val) {
@@ -3109,6 +5801,7 @@ async refreshGrid () {
         );
 */
       // descobre a PK do pai usando sua meta atual (mesma lógica que você já usa)
+      
       let pkPai =
         this.keyName && row[this.keyName] !== undefined
           ? this.keyName
@@ -3118,10 +5811,11 @@ async refreshGrid () {
       const idPorKeyDoDx = e && e.key !== undefined ? e.key : undefined;
 
       // tenta vários caminhos para achar o ID
-      // tenta vários caminhos para achar o ID (sem usar ??)
+      
       let id = e && typeof e.key !== "undefined" ? e.key : null;
 
       // 1) pk da grid
+
       if (id === null || id === undefined) {
         if (pkPai && Object.prototype.hasOwnProperty.call(data, pkPai)) {
           const v = data[pkPai];
@@ -3144,10 +5838,15 @@ async refreshGrid () {
       }
 
       // guarda o ID do pai
+
+      this.cd_chave_registro_local = id;
+      //
+
       this.paiSelecionadoId = id;
       this.idPaiDetalhe = id;
 
       // 4) guardar para a consulta do detalhe
+
       let descKey = null;
       try {
         const meta = Array.isArray(this.gridMeta)
@@ -3700,7 +6399,9 @@ async refreshGrid () {
         JSON.stringify(payloadDetalhe)
       );
       try {
+
         this.abrirFormEspecial({ modo: modo === "I" ? "I" : "A", registro }); // reusa seu modal
+      
       } finally {
         if (backup !== null) {
           sessionStorage.setItem("payload_padrao_formulario", backup);
@@ -3718,6 +6419,7 @@ async refreshGrid () {
       // chama o mesmo modal que você já usa
       //this.abrirFormEspecial({ modo: (modo === 'I' ? 'I' : 'A'), registro: modelo, cd_menu_detalhe: tab.cd_menu });
       //
+
     },
 
     scrollGrid(dir) {
@@ -3727,6 +6429,15 @@ async refreshGrid () {
       const width = shell.clientWidth;
       shell.scrollBy({
         left: dir * width * 0.8, // move 80% da largura visível
+        behavior: "smooth",
+      });
+    },
+    scrollGridHorizontal(delta) {
+      const shell = this.$refs.scrollShell;
+      if (!shell) return;
+
+      shell.scrollBy({
+        left: delta,
         behavior: "smooth",
       });
     },
@@ -3777,6 +6488,9 @@ async refreshGrid () {
     
     //
     async abrirFormEspecial({ modo = "I", registro = {} } = {}) {
+
+     // console.log('registros do form ->', registro);
+
       try {
         // log pra garantir que veio algo
         //console.log('[Form] abrirFormEspecial.modo=', modo, 'registro=', registro);
@@ -3787,7 +6501,8 @@ async refreshGrid () {
 
         // 2) pegue os metadados primeiro (lookups dependem disso)
         this.atributosForm = this.obterAtributosParaForm();
-
+        //
+        
         //console.log('[Form] atributosForm=', this.atributosForm);
 
         // Monta tabsheets do formulário a partir dos atributos (nm_tabsheet / cd_tabsheet)
@@ -3812,13 +6527,16 @@ async refreshGrid () {
         }
 
         // 3) base
+
         this.record = this.record || {};
         this.formData = this.formData || registro || {};
 
         if (this.formMode === "I") {
           // inclusão
           this.formData = this.montarRegistroVazio();
-
+          //
+          this.aplicarDataPadraoNosCampos(this.formData, this.atributosForm);
+          //
           Object.keys(sessionStorage)
             .filter((k) => k.startsWith("fixo_"))
             .forEach((k) => {
@@ -3830,7 +6548,9 @@ async refreshGrid () {
           // carrega opções dos selects
           await this.carregarLookupsDiretos();
           //
+
         } else {
+
           // ALTERAÇÃO
           // mapeia a linha da grid pro conjunto de atributos
           this.formData = this.mapearConsultaParaAtributoRobusto(
@@ -3838,7 +6558,32 @@ async refreshGrid () {
             this.atributosForm
           );
 
-         // console.log("[Form] formData após mapear=", this.formData);
+
+          // ✅ aplica data padrão (ic_data_padrao = 'S') apenas no NOVO e se estiver vazio
+if (this.modoCRUD === 1 && Array.isArray(this.atributosForm)) {
+  const hoje = toIsoDate(new Date(), true); // YYYY-MM-DD
+
+  this.atributosForm.forEach((a) => {
+    if (String(a.ic_data_padrao || "N").toUpperCase() !== "S") return;
+
+    const nm = a.nm_atributo;
+    if (!nm) return;
+
+    const atual = this.formData[nm];
+    if (atual == null || String(atual).trim() === "") {
+      this.$set(this.formData, nm, hoje);
+    }
+  });
+}
+
+          //console.log("[Form] formData após mapear=", this.formData);
+
+          await this.$nextTick();
+          await this.syncLookupsFromFormData();
+
+          //
+
+          //await this.resolverDescricoesLookupsNoForm(this.formData, this.atributos);
 
           // normaliza para string onde necessário (selects)
 
@@ -3918,75 +6663,478 @@ async refreshGrid () {
       }
     },
 
-    mapearConsultaParaAtributoRobusto(registro, atributos) {
+
+    ensureLookupOption(attr, code, label) {
+  try {
+    if (!attr || !attr.nm_atributo) return;
+    if (code == null || String(code).trim() === "") return;
+    if (label == null || String(label).trim() === "") return;
+
+    if (!this.lookupOptions) this.lookupOptions = {};
+
+    const key = attr.nm_atributo; // ex: "cd_produto"
+    const opts = Array.isArray(this.lookupOptions[key]) ? this.lookupOptions[key].slice() : [];
+
+    const valueStr = String(code);
+    const labelStr = String(label);
+
+    const idx = opts.findIndex(o => String(o.__value) === valueStr);
+
+    if (idx >= 0) {
+      // atualiza label se mudou
+      opts[idx] = { ...opts[idx], __label: labelStr };
+    } else {
+      // insere no topo para o select já enxergar
+      opts.unshift({ __value: valueStr, __label: labelStr });
+    }
+
+    this.$set(this.lookupOptions, key, opts);
+  } catch (e) {
+    console.warn("[ensureLookupOption] erro:", e);
+  }
+},
+
+
+      //
+    deveAbrirPesquisaAutomatica(a, val) {
+  // não abre automaticamente em embed, a menos que usuário clique
+  if (this.embedMode) return false;
+
+  // se está em alteração e já tem código, não abre
+  if (this.modoCRUD === 2 && val != null && String(val).trim() !== "") return false;
+
+  return true;
+},
+
+async resolverDescricoesLookupsNoForm(formData, atributos) {
+  try {
+    if (!formData || !atributos || !atributos.length) return;
+
+    // Evita tempestade de requests: processa 1 por vez (simples e seguro)
+    for (const a of atributos) {
+      const nm = a.nm_atributo || "";
+      if (!nm.startsWith("cd_")) continue;
+
+      // só para campos que são lookup/pesquisa/lista
+      const ehLookup =
+        this.temLookupDireto(a) || this.temPesquisaDinamica(a) || this.temListaValor(a);
+      if (!ehLookup) continue;
+
+      const cd = formData[nm];
+      if (cd == null || String(cd).trim() === "") continue;
+
+      const base = nm.replace(/^cd_/, "");   // cliente, produto, veiculo...
+      const nmDesc = `nm_${base}`;
+      const dsDesc = `ds_${base}`;
+
+      // se já tem descrição, pula
+      if (formData[nmDesc] && String(formData[nmDesc]).trim() !== "") continue;
+      if (formData[dsDesc] && String(formData[dsDesc]).trim() !== "") continue;
+
+      // ✅ aqui chamamos lookup genérico usando o próprio atributo "a"
+      // você provavelmente já tem um método que monta payload e chama /api/lookup
+      // Vou criar um wrapper: tentar usar um método existente, senão fallback axios
+      const desc = await this.buscarDescricaoLookupGenerico(a, cd);
+
+      if (desc && String(desc).trim() !== "") {
+        // Prioriza nm_*
+        this.$set(formData, nmDesc, String(desc));
+        // Mantém record também, se você usa em algum lugar
+        this.record = this.record || {};
+        this.$set(this.record, nmDesc, String(desc));
+      }
+    }
+  } catch (e) {
+    console.warn("[resolverDescricoesLookupsNoForm] erro:", e);
+  }
+},
+
+async buscarDescricaoLookupGenerico(a, valorCd) {
+  try {
+    // 1) Se você já tem um método pronto, use aqui:
+    // if (this.executarLookupDireto) return await this.executarLookupDireto(a, valorCd);
+
+    // 2) Fallback: chamada padrão /api/lookup (AJUSTE o payload conforme seu backend)
+    const cd_usuario = String(this.cd_usuario || sessionStorage.getItem("cd_usuario") || 0);
+    const cd_menu = String(
+      (this.getCdMenuAtivoParaCrud && this.getCdMenuAtivoParaCrud()) ||
+      this.ncd_menu_entrada ||
+      this.cd_menu ||
+      sessionStorage.getItem("cd_menu") ||
+      0
+    );
+
+    // 🔧 ajuste os campos conforme seu backend de lookup:
+    const payload = [{
+      cd_usuario,
+      cd_menu,
+      nm_atributo: a.nm_atributo,  // ajuda o back a saber qual lookup
+      valor: String(valorCd)
+    }];
+
+    const resp = await this.$axios.post("https://egiserp.com.br/api/lookup", payload);
+    const data = resp?.data;
+
+    // Tenta extrair um texto em formatos comuns
+    if (Array.isArray(data) && data.length) {
+      return data[0]?.nm || data[0]?.descricao || data[0]?.label || data[0]?.text || null;
+    }
+    if (data?.resultado && Array.isArray(data.resultado) && data.resultado.length) {
+      const r = data.resultado[0];
+      return r?.nm || r?.descricao || r?.label || r?.text || null;
+    }
+
+    return null;
+  } catch (e) {
+    console.warn("[buscarDescricaoLookupGenerico] falha:", a?.nm_atributo, valorCd, e);
+    return null;
+  }
+},
+
+
+    //
+
+mapearConsultaParaAtributoRobusto(registro, atributos) {
+  console.log("Mapa de Registros e Atributos ->", registro, atributos);
+
+  const out = {};
+
+  // ✅ 1) Se veio array (resultado com 1 item), pega o primeiro
+  const rowRaw = Array.isArray(registro) ? (registro[0] || {}) : (registro || {});
+
+  // ✅ 2) Copia para não mexer no objeto reativo do Vue
+  const row = { ...rowRaw };
+
+  // ✅ 3) Normaliza id quando vier como chave composta (array)
+  if (Array.isArray(row.id)) {
+    row.id_composto = row.id.slice();
+    const candidato = row.id[0] != null ? row.id[0] : row.id.find(v => v != null && String(v).trim() !== "");
+    row.id = candidato != null ? (Number(candidato) || String(candidato)) : null;
+  }
+
+  // mapa case-insensitive das chaves do retorno
+  const keysLower = Object.keys(row).reduce((acc, k) => {
+    acc[String(k).toLowerCase()] = k;
+    return acc;
+  }, {});
+
+  const get = (nome) => {
+    if (!nome) return undefined;
+    const k = keysLower[String(nome).toLowerCase()];
+    return k ? row[k] : undefined;
+  };
+
+  // helper: vazio?
+  const isEmpty = (v) => v == null || String(v).trim() === "";
+
+  for (const a of (atributos || [])) {
+    const nm = a.nm_atributo; // ex.: cd_produto / dt_emissao
+    if (!nm) continue;
+
+    // label mais provável que pode vir no retorno da grid
+    const lbl =
+      a.nm_titulo_menu_atributo ||
+      a.nm_edit_label ||
+      a.ds_atributo ||
+      a.caption ||
+      a.label ||
+      a.nm_atributo;
+
+    const tituloCodigo = `Código ${lbl}`;
+
+    // ✅ valor principal (o que alimenta o v-model do campo)
+    let val =
+      get(nm) ??
+      get(tituloCodigo) ??
+      get(lbl) ??
+      undefined;
+
+    // === Detecta DATA e normaliza ===
+    const rawTipo = String(a.tp_atributo || a.tipo || "").toUpperCase();
+    const pareceNomeDeData = /(^dt(_|$))|(^data(_|$))|(_data$)|(_dt$)/i.test(nm);
+    const isDate = rawTipo.includes("DATE") || rawTipo === "D" || rawTipo === "DATA" || pareceNomeDeData;
+
+    if (isDate && val != null && !isEmpty(val)) {
+      val = toIsoDate(val, true); // 'YYYY-MM-DD'
+    }
+
+    // se for select/lookup/lista, garanta string pro componente
+    if (
+      val != null &&
+      (this.temLookupDireto(a) || this.temPesquisaDinamica(a) || this.temListaValor(a))
+    ) {
+      val = String(val);
+    }
+
+    out[nm] = val != null ? val : "";
+
+    // ✅ DESCRIÇÃO DO LOOKUP (DINÂMICO!)
+    // o seu renderer usa attr.nm_atributo_consulta dentro de descricaoLookup()
+    const kDesc = a.nm_atributo_consulta; // ex.: nm_produto / nm_cliente / ds_veiculo ...
+    if (kDesc) {
+      // 1) tenta pegar exatamente pela coluna nm_*/ds_* se existir no retorno
+      let desc = get(kDesc);
+
+      // 2) fallback: tenta pelo label do atributo (às vezes o retorno vem com "Produto", "Cliente", etc)
+      if (isEmpty(desc)) desc = get(lbl);
+
+      // 3) fallback: tenta por "Descrição"/"Descricao"/"Nome"
+      if (isEmpty(desc)) desc = get("Descrição") ?? get("Descricao") ?? get("Nome");
+
+      if (!isEmpty(desc)) {
+        // ✅ MUITO IMPORTANTE: isso faz o campo mostrar a descrição no form
+        out[kDesc] = String(desc);
+
+        // opcional: mantém record pra outras partes do componente
+        this.record = this.record || {};
+        this.record[kDesc] = String(desc);
+      }
+    }
+  }
+
+  return out;
+
+},
+
+
+    mapearConsultaParaAtributoRobustoOld2(registro, atributos) {
+      console.log("Mapa de Registros e Atributos ->", registro, atributos);
+
       const out = {};
-      const row = registro || {};
-      const keysLower = Object.keys(row).reduce((acc, k) => {
-        acc[k.toLowerCase()] = k;
-        return acc;
-      }, {});
 
-      const get = (nome) => {
-        if (!nome) return undefined;
-        const k = keysLower[nome.toLowerCase()];
-        return k ? row[k] : undefined;
-      };
+      // ✅ 1) Se veio array (ex.: resultado com 1 item), pega o primeiro objeto
+      const rowRaw = Array.isArray(registro) ? (registro[0] || {}) : (registro || {});
 
-      for (const a of atributos || []) {
-        const nm = a.nm_atributo; // ex.: cd_roteiro
-        const lbl =
-          a.nm_titulo_menu_atributo ||
-          a.nm_edit_label ||
-          a.ds_atributo ||
-          a.nm_atributo;
-        const nmDesc = a.nm_atributo_consulta; // ex.: nm_roteiro
-        const tituloCodigo = `Código ${lbl}`; // ex.: "Código Roteiro de Visita Padrão"
+      // ✅ 2) Copia para não mexer no objeto reativo do Vue
+      const row = { ...rowRaw };
 
-        // tenta pegar valor em múltiplas formas
-        let val =
-          get(nm) ??
-          get(tituloCodigo) ?? // coluna da grid com prefixo "Código ..."
-          get(lbl) ?? // às vezes o código está na coluna com o mesmo label
-          undefined;
-  
-          // === Detecta se é campo de DATA ===
-          const rawTipo = String(a.tp_atributo || a.tipo || "").toUpperCase();
-          const pareceNomeDeData = /(^dt(_|$))|(^data(_|$))|(_data$)|(_dt$)/i.test(nm);
-          const isDate =
-            rawTipo.includes("DATE") || rawTipo === "D" || rawTipo === "DATA" || pareceNomeDeData;
+      // ✅ 3) Normaliza id quando vier como chave composta (array)
+      if (Array.isArray(row.id)) {
+        row.id_composto = row.id.slice();
 
-          if (isDate && val != null) {
-              val = toIsoDate(val, true); // normaliza para 'yyyy-MM-dd'
-           }
+    // regra padrão: primeira posição costuma ser a chave do registro
+    const candidato =
+      row.id[0] != null ? row.id[0] : row.id.find(v => v != null && String(v).trim() !== "");
+
+    row.id = candidato != null ? (Number(candidato) || String(candidato)) : null;
+  }
+
+  const keysLower = Object.keys(row).reduce((acc, k) => {
+    acc[k.toLowerCase()] = k;
+    return acc;
+  }, {});
+
+  const get = (nome) => {
+    if (!nome) return undefined;
+    const k = keysLower[String(nome).toLowerCase()];
+    return k ? row[k] : undefined;
+  };
 
 
-        // se for select (lookup/lista), garanta string
-        if (
-          val != null &&
-          (this.temLookupDireto(a) ||
-            this.temPesquisaDinamica(a) ||
-            this.temListaValor(a))
-        ) {
-          val = String(val);
-        }
+    const hojeISO = () => {
+    const d = new Date();
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${y}-${m}-${day}`;
+  };
 
-        out[nm] = val != null ? val : "";
+    const isCampoData = (a, nm) => {
+    const rawTipo = String(a.tp_atributo || a.tipo || "").toUpperCase();
+    const pareceNomeDeData = /(^dt(_|$))|(^data(_|$))|(_data$)|(_dt$)/i.test(nm || "");
+    return rawTipo.includes("DATE") || rawTipo === "D" || rawTipo === "DATA" || pareceNomeDeData;
+  };
 
-        // para fins de exibir a descrição logo (se existir na grid)
-        if (nmDesc) {
-          const desc =
-            get(nmDesc) ?? get("Descrição") ?? get(`Descricao`) ?? "";
-          if (desc) {
-            this.record = this.record || {};
-            this.record[nmDesc] = String(desc);
-          }
+  // --- Mapeia valores principais (cd_*, campos etc) ---
+  for (const a of atributos || []) {
+    const nm = a.nm_atributo; // ex.: cd_produto
+
+    const lbl =
+      a.nm_atributo_consulta ||
+      a.nm_titulo_menu_atributo ||
+      a.nm_edit_label ||
+      a.ds_atributo ||
+      a.nm_atributo;
+
+    const nmDesc = a.nm_atributo_consulta; // às vezes vem como nome de coluna descritiva
+    const tituloCodigo = `Código ${lbl}`;
+
+    // tenta pegar valor em múltiplas formas
+    let val =
+      get(nm) ??
+      get(tituloCodigo) ?? // coluna da grid com prefixo "Código ..."
+      get(lbl) ??          // às vezes o código está na coluna com o mesmo label
+      undefined;
+
+     // normaliza data para yyyy-MM-dd
+     if (isCampoData(a, nm) && val != null && String(val).trim() !== "") {
+       // usa sua função existente
+       val = toIsoDate(val, true);
+    }
+
+    
+    // === Detecta se é campo de DATA ===
+    const rawTipo = String(a.tp_atributo || a.tipo || "").toUpperCase();
+    const pareceNomeDeData = /(^dt(_|$))|(^data(_|$))|(_data$)|(_dt$)/i.test(nm);
+    const isDate =
+      rawTipo.includes("DATE") || rawTipo === "D" || rawTipo === "DATA" || pareceNomeDeData;
+
+    if (isDate && val != null) {
+      val = toIsoDate(val, true); // normaliza para 'yyyy-MM-dd'
+    }
+
+    // se for select (lookup/lista), garanta string
+    if (
+      val != null &&
+      (this.temLookupDireto(a) ||
+        this.temPesquisaDinamica(a) ||
+        this.temListaValor(a))
+    ) {
+      val = String(val);
+    }
+
+    out[nm] = val != null ? val : "";
+
+    // ✅ descrição (quando existir no retorno)
+    // Sem usar "base" inexistente, e gravando nm_* no out quando nm for cd_*
+    if (nmDesc) {
+      const desc =
+        get(nmDesc) ??
+        get("Descrição") ??
+        get("Descricao") ??
+        "";
+
+      if (desc != null && String(desc).trim() !== "") {
+        this.record = this.record || {};
+        this.record[nmDesc] = String(desc);
+
+        // se o atributo for cd_*, grava nm_* correspondente
+        if (nm && nm.startsWith("cd_")) {
+          const baseLocal = nm.replace(/^cd_/, "");
+          out[`nm_${baseLocal}`] = String(desc);
+          this.record[`nm_${baseLocal}`] = String(desc);
         }
       }
+    }
+  }
 
-      return out;
+  // ✅ auto-popula nm_* (descrição) para campos cd_*
+  // padrão: se atributo é cd_xxx e existir coluna "xxx" (texto), salva nm_xxx
+  for (const a2 of atributos || []) {
+    const nm2 = a2.nm_atributo || "";
+    if (!nm2.startsWith("cd_")) continue;
 
-    },
+    const base2 = nm2.replace(/^cd_/, ""); // produto, tributacao, etc
 
+    const possiveis2 = [
+      `nm_${base2}`,
+      `ds_${base2}`,
+      base2,
+      base2.replace(/_/g, " "),
+    ];
+
+    let desc2 = null;
+
+    for (const p of possiveis2) {
+      const v = get(p);
+      if (v != null && String(v).trim() !== "") {
+        desc2 = String(v);
+        break;
+      }
+    }
+
+    // fallback: tenta pelo label do atributo (quando retorno veio com label)
+    if (!desc2) {
+      const lbl2 =
+        a2.nm_atributo_consulta ||
+        a2.nm_titulo_menu_atributo ||
+        a2.nm_edit_label ||
+        a2.ds_atributo ||
+        a2.nm_atributo;
+
+      const v2 = get(lbl2);
+      if (v2 != null && String(v2).trim() !== "") desc2 = String(v2);
+    }
+
+    // fallback específico (grid costuma vir "Produto")
+    if (!desc2 && base2 === "produto") {
+      const v3 = get("Produto") || get("Descrição") || get("Nome");
+      if (v3 != null && String(v3).trim() !== "") desc2 = String(v3);
+    }
+
+    if (desc2) {
+      // ✅ o mais importante: colocar no out (formData)
+      out[`nm_${base2}`] = desc2;
+
+      // ✅ opcional: também em record, se alguma parte do componente usa
+      this.record = this.record || {};
+      this.record[`nm_${base2}`] = desc2;
+    }
+  }
+
+   if (
+      String(a.ic_data_padrao || "").toUpperCase() === "S" &&
+      isCampoData(a, nm)
+    ) {
+      const atual = out[nm];
+      if (atual == null || String(atual).trim() === "") {
+        out[nm] = hojeISO();
+      }
+    }
+
+  //
+  return out;
+  //
+
+},
+
+selecionarERetornar(e) {
+
+  console.log('Estamos aqui ', e)
+
+  // aceita clique em botão da linha OU seleção do grid
+  const data =
+    (e && e.row && e.row.data) ||
+    (e && e.data) ||
+    (e && e.selectedRowsData && e.selectedRowsData.length
+      ? e.selectedRowsData[e.selectedRowsData.length - 1]
+      : null);
+
+  if (!data) {
+    if (this.$q && this.$q.notify) {
+      this.$q.notify({ type: "warning", position:"center", message: "Selecione um registro." });
+    }
+    return;
+  }
+
+  // transforma em objeto simples (evita Observer do Vue quebrar)
+  let plain = {};
+  try {
+    plain = JSON.parse(JSON.stringify(data));
+  } catch (err) {
+    Object.keys(data || {}).forEach((k) => (plain[k] = data[k]));
+  }
+
+  // guarda também no sessionStorage (mantém compat com o que você já tem)
+  try {
+    sessionStorage.setItem("registro_selecionado", JSON.stringify(plain));
+    const cdMenu = Number(this.cd_menu || this.cd_menu_entrada || this.cd_menu_principal || 0);
+    if (cdMenu) sessionStorage.setItem(`registro_selecionado_${cdMenu}`, JSON.stringify(plain));
+  } catch (err) {}
+
+  // ✅ o principal: avisa o pai que selecionou
+  // e o pai decide fechar tab/modal/embed e aplicar no campo
+  this.$emit("selecionar", plain);
+  this.$emit("selecionou", plain);
+
+  // opcional: se você já usa voltar/fechar em embedMode, dispare também
+  // (não quebra, o pai pode ignorar)
+  this.$emit("voltar");
+  //
+  setTimeout(() => this.$emit("fechar"), 0);
+
+},
+    
     // Dado um SELECT de lookup (nm_lookup_tabela) e o attr.nm_atributo = "cd_empresa",
     // montamos um SELECT filtrado que retorna a "Descricao".
 
@@ -4010,7 +7158,84 @@ async refreshGrid () {
       return `SELECT TOP 1 * FROM (${base}) T WHERE T.${codigoCampo} = ${codeExpr}`;
     },
 
+
     async syncLookupDescription(attr, code) {
+  try {
+    if (!attr || !attr.nm_atributo) return;
+    if (code == null || String(code).trim() === "") return;
+
+    // 1) tenta nas opções já carregadas
+    const opts = this.lookupOptions?.[attr.nm_atributo] || [];
+    const got = opts.find(o => String(o.__value) === String(code));
+
+    if (got) {
+      // garante que o select tenha esse item (e label)
+      this.ensureLookupOption(attr, code, got.__label || "");
+
+      // se você usa record pra alguma coisa extra, mantém:
+      if (attr.nm_atributo_consulta) {
+        this.record = this.record || {};
+        this.$set(this.record, attr.nm_atributo_consulta, got.__label || "");
+      }
+      return;
+    }
+
+    // 2) busca direto no banco pelo código (top 1)
+    const sql = this.buildLookupByCodeSQL(attr, code);
+    if (!sql) return;
+
+    const rows = await this.postLookup(sql);
+    const row = rows?.[0] || {};
+
+    // tenta pegar descrição em chaves comuns
+    const desc =
+      row.Descricao ??
+      row.DESCRICAO ??
+      row.descricao ??
+      row.Nome ??
+      row.NM ??
+      row.nm ??
+      "";
+
+    if (desc && String(desc).trim() !== "") {
+      // ✅ aqui é o pulo do gato: alimentar options para o q-select mostrar
+      this.ensureLookupOption(attr, code, String(desc));
+
+      // opcional: manter record
+      if (attr.nm_atributo_consulta) {
+        this.record = this.record || {};
+        this.$set(this.record, attr.nm_atributo_consulta, String(desc));
+      }
+    }
+  } catch (e) {
+    console.warn("[syncLookupDescription] erro:", e);
+  }
+},
+
+async syncLookupsFromFormData() {
+  try {
+    const attrs = Array.isArray(this.atributosForm) ? this.atributosForm : [];
+    const data = this.formData || {};
+
+    const alvo = attrs.filter(a =>
+      (this.temLookupDireto(a) || this.temPesquisaDinamica(a) || this.temListaValor(a)) &&
+      (a.nm_atributo || "").startsWith("cd_")
+    );
+
+    // 1 por vez (mais estável no seu cenário)
+    for (const a of alvo) {
+      const code = data[a.nm_atributo];
+      if (code != null && String(code).trim() !== "") {
+        await this.syncLookupDescription(a, code);
+      }
+    }
+  } catch (e) {
+    console.warn("[syncLookupsFromFormData] erro:", e);
+  }
+},
+
+
+    async syncLookupDescriptionOld(attr, code) {
       // 1) tenta nas opções já carregadas
       const opts = this.lookupOptions?.[attr.nm_atributo] || [];
       const got = opts.find((o) => String(o.__value) === String(code));
@@ -4030,6 +7255,8 @@ async refreshGrid () {
       }
     },
 
+  
+    
     //
     async carregarLookupsDiretos() {
       const attrs = (this.atributosForm || []).filter((a) =>
@@ -4075,6 +7302,7 @@ async refreshGrid () {
     isChave(attr) {
       return attr.ic_atributo_chave === "S";
     },
+
     isAutoNum(attr) {
       // cobre as duas grafias que vi no projeto
       return attr.ic_numeracao_automatica === "S";
@@ -4170,12 +7398,6 @@ async refreshGrid () {
       return !!attr.cd_menu_pesquisa && Number(attr.cd_menu_pesquisa) > 0;
     },
 
-    abrirPesquisaold(attr) {
-      if (!this.temPesquisaDinamica(attr)) return;
-      window.abrirPesquisaDinamica &&
-        window.abrirPesquisaDinamica(attr.nm_atributo, attr.cd_menu_pesquisa);
-    },
-
     validarCampoDinamico(attr) {
       if (!this.temPesquisaDinamica(attr)) return;
       window.validarCampoDinamico &&
@@ -4186,15 +7408,9 @@ async refreshGrid () {
         );
     },
 
-    descricaoLookup(attr) {
-    const campo =
-      attr.nm_campo_mostra_combo_box ||
-      attr.nm_atributo_lookup ||
-      'nm_fantasia_cliente'
+    //
 
-       return this.formData[campo] || ''
-   },
-
+   
     // 2.6 lookup direto (select vindo do backend)
     /* garanta que você já popula this.lookupOptions[attr.nm_atributo] = [{__value, __label}] */
     temLookupDireto(attr) {
@@ -4349,6 +7565,23 @@ async refreshGrid () {
 
     },
 
+
+    getCdMenuAtivoParaCrud () {
+  // ✅ se estou em composição/embed, o menu ativo é o menu entrada atual
+  const fromEntrada = Number(this.ncd_menu_entrada || this.cd_menu_entrada || 0);
+  if (fromEntrada > 0) return String(fromEntrada);
+
+  // ✅ fallback para o form normal
+  const fromPrincipal = Number(this.cd_menu_principal || 0);
+  if (fromPrincipal > 0) return String(fromPrincipal);
+
+  const fromState = Number(this.cd_menu || 0);
+  if (fromState > 0) return String(fromState);
+
+  const fromSession = Number(sessionStorage.getItem("cd_menu") || 0);
+  return String(fromSession || 0);
+},
+
     // salvar o CRUD (inclusão/alteração)
 
     async salvarCRUD(opts) {
@@ -4370,7 +7603,7 @@ async refreshGrid () {
 
       try {
 
-        console.log("Salvando CRUD com formData:", this.formData);
+        //console.log("Salvando CRUD com formData:", this.formData);
 
         // validação de obrigatórios
 
@@ -4405,12 +7638,14 @@ async refreshGrid () {
             //meta = JSON.parse(sessionStorage.getItem("campos_grid_meta") || "[]");
              const metaKey = `campos_grid_meta_${localStorage.cd_menu || sessionStorage.getItem('cd_menu')}`; 
              // tenta pegar meta específica do menu atual
-             meta = JSON.parse(sessionStorage.getItem(metaKey) || "[]"); 
+             meta = JSON.parse(sessionStorage.getItem(metaKey)) ||
+                    JSON.parse(sessionStorage.getItem("campos_grid_meta")) || "[]";
 
           } catch (_) {
                 meta = [];
             }  
         }
+
         // 2) Registro que você está salvando (use o que você já tem)
         //    Deixe essas opções na ordem que seu form usa.
         let row = this.formData || {};
@@ -4573,9 +7808,12 @@ async refreshGrid () {
 
         const unico = Object.assign(
           {
-            cd_menu: String(
-              this.cd_menu_principal || this.cd_menu || sessionStorage.getItem("cd_menu") || 0
-            ),
+            //cd_menu: String(
+            //  this.cd_menu_principal || this.cd_menu || sessionStorage.getItem("cd_menu") || 0
+            //),
+            //Menuj
+            cd_menu: this.getCdMenuAtivoParaCrud(),
+            //
             cd_form: "0",
             cd_parametro_form, // Number(this.modoCRUD), // 1/2/3 conforme sua ação
             cd_usuario: String(
@@ -4611,6 +7849,8 @@ async refreshGrid () {
 
         //
         ////
+        ///pr_egis_api_crud_dados_especial
+        ///
         await api.post("/api-dados-form", payload, {
           headers: { "Content-Type": "application/json" },
         });
@@ -4623,6 +7863,11 @@ async refreshGrid () {
         );
 
         this.dlgForm = false;
+
+        if (this.embedMode) {
+           this.$emit("voltar"); // ou "fechar" conforme seu fluxo
+        }
+
 
         // === RECARREGAR A GRID (coloque logo após o POST OK) ===
         try {
@@ -4668,17 +7913,34 @@ async refreshGrid () {
     fecharForm() {
       this.dlgForm = false;
       this.formSomenteLeitura = false;  
+
+      if (this.embedMode) {
+         this.$emit('voltar')
+         this.$emit('fechar')
+        return
+      }
+
       // se quiser limpar lixo de builder:
       const mountEl = this.$refs.formEspecialMount;
+      
       if (mountEl) mountEl.innerHTML = "";
+      
       this.formRenderizou = false;
 
       //
 
       if (this.$emit) {
         this.$emit('fechar');
-      //  
-  }
+      //
+
+      }
+
+    },
+
+    onFecharTabFilha (t) {
+      // volta pra tab principal sempre que o filho fechar
+      this.activeMenuTab = 'principal'
+      this.takeoverFilhoGrid = false
 
     },
 
@@ -4760,39 +8022,49 @@ async refreshGrid () {
       return { cols, rows };
     },
 
-    abrirRelatorio() {
+    async abrirRelatorio() {
       // garanta que gridRows e camposMetaGrid estão prontos aqui
       if (!Array.isArray(this.columns) || this.columns.length === 0) {
         //this.$q.notify({ type:'warning', position:'top-right', message:'Sem dados para o relatório.' })
         this.notifyWarn("Sem dados para o relatório.");
         return;
       }
+
+      await this.ensureConsultaCacheLoaded()
+  
       // Se já tiver grid pronta no form, passe os dados e meta por props:
       // this.$refs.relComp (opcional) poderá acessar depois
       this.showRelatorio = true;
+
     },
 
     async bootstrap() {
       // pega da URL (ex.: ?cd_menu=236&cd_usuario=842) e do localStorage
       const q = new URLSearchParams(window.location.search);
-      const cd_menu_q = q.get("cd_menu");
+      const cd_menu_q    = q.get("cd_menu");
       const cd_usuario_q = q.get("cd_usuario");
 
       // compat: projetos antigos gravam como propriedades (localStorage.cd_menu),
       // então leio dos DOIS jeitos
-      const cd_menu_ls_dot = window.localStorage.cd_menu;
+      const cd_menu_ls_dot    = window.localStorage.cd_menu;
       const cd_usuario_ls_dot = window.localStorage.cd_usuario;
-      const cd_menu_ls_get = window.localStorage.getItem("cd_menu");
+      const cd_menu_ls_get    = window.localStorage.getItem("cd_menu");
       const cd_usuario_ls_get = window.localStorage.getItem("cd_usuario");
 
-      const cd_menu = cd_menu_q || cd_menu_ls_dot || cd_menu_ls_get;
+      // ✅ PRIORIDADE: se veio via props (ex.: embed/composição), usa isso
+      const cd_menu_from_props = Number(this.cd_menu_entrada || this.ncd_menu_entrada || 0) || null;
+
+      const cd_menu    = cd_menu_from_props || cd_menu_q || cd_menu_ls_dot || cd_menu_ls_get;
       const cd_usuario = cd_usuario_q || cd_usuario_ls_dot || cd_usuario_ls_get;
 
-      this.cd_menu = cd_menu ? String(cd_menu) : null;
-      this.cdMenu = this.cd_menu;
-      this.temSessao = !!(this.cd_menu && cd_usuario);
+      // ✅ AQUI É O LUGAR CERTO:
+      this.ncd_menu_entrada = Number(cd_menu || 0);
+      this.cd_menu          = cd_menu ? String(cd_menu) : null;
+      this.cdMenu           = this.cd_menu;
+      this.temSessao        = !!(this.cd_menu && cd_usuario);
 
        // chave dinâmica que veio do pai (nota / documento / etc)
+
        this.ncd_acesso_entrada =
        this.ncd_acesso_entrada ||
          window.localStorage.cd_acesso_entrada ||
@@ -4816,6 +8088,7 @@ async refreshGrid () {
       // --> pr_egis_payload_tabela
       //
       await this.loadPayload(cd_menu, cd_usuario);
+      //
 
       //
       this.montarAbasDetalhe();
@@ -4832,8 +8105,17 @@ async refreshGrid () {
         (c) => c.ic_registro_tabela_menu === "S"
       );
 
-      if (registroMenu && !filtroObrig && !this.isPesquisa) {
-        this.consultar();
+      //antes
+      //if (registroMenu && !filtroObrig && !this.isPesquisa) {
+      //  this.consultar();
+      //}
+
+      // ✅ No embedMode, quem manda é o abrirPorChaveDoPai (não auto-consultar no bootstrap)
+
+      if (!this.embedMode) {
+         if (registroMenu && !filtroObrig && !this.isPesquisa) {
+            this.consultar();
+         }
       }
 
     },
@@ -4897,6 +8179,7 @@ async refreshGrid () {
       dados = await Menu.montarMenu(this.cd_empresa, this.cd_menu, this.cd_api); //'titulo';
 
       //dados = await Menu.montarMenu(this.cd_empresa, this.cd_menu, this.cd_api); //'titulo';
+
       this.menu_titulo = dados.nm_menu_titulo;
       this.menu_relatorio = dados.menu_relatorio;
       this.cd_parametro_menu = dados.cd_parametro_menu;
@@ -4970,7 +8253,7 @@ async refreshGrid () {
       this.tituloMenu = dados.nm_menu_titulo; //await Menu.montarMenu(cd_empresa, cd_menu); //'titulo';
       this.menu = dados.nm_menu;
 
-      filename = this.tituloMenu + ".xlsx";
+      filename    = this.tituloMenu + ".xlsx";
       filenametxt = this.tituloMenu + ".txt";
       filenamedoc = this.tituloMenu + ".docx";
       filenamexml = this.tituloMenu + ".xml";
@@ -5025,19 +8308,41 @@ async refreshGrid () {
           };
         }
       });
+      
       //dados do total
       //this.total = JSON.parse(JSON.parse(JSON.stringify(dados.coluna_total)));
       //
+
       this.total = (() => {
         try {
-          const raw =
-            dados && dados.coluna_total
+          const raw = dados && dados.coluna_total
               ? dados.coluna_total
               : '{"totalItems":[]}';
-          return JSON.parse(JSON.parse(JSON.stringify(raw)));
+
+          let parsed = raw
+          
+          // se vier string JSON
+          if (typeof parsed === 'string') parsed = JSON.parse(parsed)
+
+          // se vier no formato { totalItems: [...] }
+          if (parsed && Array.isArray(parsed.totalItems)) {
+            return { totalItems: parsed.totalItems }
+          }
+
+         // se vier array direto
+         if (Array.isArray(parsed)) {
+            return { totalItems: parsed }
+         }
+
+         return { totalItems: [] }
+
+          //Antes
+          //return JSON.parse(JSON.parse(JSON.stringify(raw)));
+
         } catch (e) {
           return { totalItems: [] };
         }
+
       })();
 
       //TabSheet
@@ -5089,14 +8394,21 @@ async refreshGrid () {
 
     onVoltar() {
 
+     if (this.embedMode) {
+      this.$emit('voltar')
+      return
+    }
+      
+      // senão segue navegação padrão      
+      
       if (this.ic_modal_pesquisa === 'S' || this.cd_chave_pesquisa>0 ) {
       
         if (this.$emit) {
-         this.$emit('fechar');
+          this.$emit('fechar');
 
       }
        return;
-  }
+    }
 
       if (this.$router) this.$router.back();
       else window.history.back();
@@ -5112,9 +8424,33 @@ async refreshGrid () {
     },
 
     // coloca ícones/botões na toolbar da grid
-
+ 
     onToolbarPreparing(e) {
         console.log("🔧 Preparando toolbar...");
+        const dataGrid = e.component;
+        // limpa os itens padrão
+         e.toolbarOptions.items.push({
+           location: "after",
+           widget: "dxButton",
+      //color: "primary",
+      options: {
+        icon: "clear",
+        text: "Limpar Filtros",
+        //color: "primary",
+        // estilo do botão
+        type: "normal",
+        // ação ao clicar
+        onClick: () => {
+          dataGrid.clearFilter();
+          // botão de limpar filtros
+          this.limparFiltroSelecao()
+          //
+        }
+      },
+      visible: this.showClearButton // visibilidade controlada
+    });
+   
+
 
         /*
         // limpa os itens padrão
@@ -5149,6 +8485,9 @@ async refreshGrid () {
     },
 
     async exportarPDF() {
+
+      await this.ensureConsultaCacheLoaded()
+
       try {
         const { default: jsPDF } = await import("jspdf");
         const { default: autoTable } = await import("jspdf-autotable");
@@ -5156,7 +8495,8 @@ async refreshGrid () {
         // 1) Pega suas colunas / linhas já mostradas na grid
         const metaCols =
           (this.columns?.length ? this.columns : this.gridColumns) || [];
-        const rowsSrc = (this.rows?.length ? this.rows : this.gridRows) || [];
+        
+          const rowsSrc = (this.rows?.length ? this.rows : this.gridRows) || [];
 
         if (!rowsSrc.length) {
           this.$q?.notify?.({
@@ -5825,6 +9165,9 @@ async refreshGrid () {
     try {
       // obtenha os dados atuais; ajuste a origem conforme seu componente
       const dados = Array.isArray(this.rows) ? this.rows : (this.dataSource || [])
+      
+      await this.ensureConsultaCacheLoaded()
+
       await gerarPdfRelatorio({
         cd_menu: this.cd_menu,
         cd_usuario: this.cd_usuario,
@@ -5905,6 +9248,7 @@ async refreshGrid () {
       const attrs = this.obterAtributosParaForm();
 
       const novo = {};
+
       attrs.forEach((a) => {
         const nome = a.nm_atributo || a.dataField || a.nome;
         if (!nome) return;
@@ -5936,6 +9280,156 @@ async refreshGrid () {
 
     
     obterAtributosParaForm() {
+  // 1) se já estiver pronto, reuse
+  if (Array.isArray(this.atributosForm) && this.atributosForm.length) {
+    return this.atributosForm;
+  }
+
+  // 2) tenta descobrir a “base” de atributos
+  let base =
+    (Array.isArray(this.gridMeta) && this.gridMeta.length && this.gridMeta) ||
+    (Array.isArray(this.gridMeta?.atributos) && this.gridMeta.atributos) ||
+    (Array.isArray(this.gridMeta?.colunas) && this.gridMeta.colunas) ||
+    (Array.isArray(this.colunasGrid) && this.colunasGrid) ||
+    [];
+
+  console.log("Base de Atributos.", base);
+
+  // 3) NORMALIZAÇÃO: mantém metadados e só ajeita o necessário
+  base = base.filter(Boolean).map((a) => {
+    const attr = { ...a };
+
+    // nm_atributo é obrigatório
+    attr.nm_atributo = attr.nm_atributo || attr.dataField || attr.nome;
+
+    // label padrão (fallback)
+    attr.nm_edit_label =
+      attr.nm_edit_label ||
+      attr.nm_titulo_menu_atributo ||
+      attr.caption ||
+      attr.label ||
+      attr.ds_atributo ||
+      attr.nm_atributo;
+
+    // Lista_Valor pode vir como string vazia/JSON
+    if (typeof attr.Lista_Valor === "string") {
+      const s = attr.Lista_Valor.trim();
+      if (s.startsWith("[") && s.endsWith("]")) {
+        try {
+          attr.Lista_Valor = JSON.parse(s);
+        } catch {
+          attr.Lista_Valor = [];
+        }
+      } else {
+        attr.Lista_Valor = [];
+      }
+    }
+    if (!Array.isArray(attr.Lista_Valor)) attr.Lista_Valor = [];
+
+    // flags podem vir null/undefined
+    const flags = [
+      "ic_atributo_chave",
+      "ic_edita_cadastro",
+      "ic_editavel",
+      "ic_numeracao_automatica",
+      "ic_numeracao_aumotatica",
+      "ic_data_padrao",
+    ];
+    flags.forEach((f) => {
+      if (attr[f] == null) attr[f] = "N";
+    });
+
+    return attr;
+  });
+
+  // Helpers
+  const isVazio = (v) =>
+    v == null || (typeof v === "string" && v.trim() === "");
+
+  // 3.1) Inicializa valores do formData (é isso que a tela usa)
+  if (!this.formData) this.formData = {};
+  if (!this.form) this.form = {}; // se você ainda usa em outras rotinas
+
+  console.log("formData antes ->", this.formData);
+
+  base.forEach((attr) => {
+    const k = attr.nm_atributo;
+    if (!k) return;
+
+    // valor atual preferindo o que já está no formData (não sobrescreve o que veio da consulta)
+    let valorAtual =
+      (!isVazio(this.formData[k]) ? this.formData[k] : null) ??
+      (!isVazio(this.form?.[k]) ? this.form[k] : null) ??
+      (!isVazio(this.rowEdit?.[k]) ? this.rowEdit[k] : null) ??
+      (attr.vl_atributo != null ? attr.vl_atributo : null);
+
+    const isDate = this.isDateField ? this.isDateField(attr) : /^dt_/.test(k);
+    const icPadrao = String(attr.ic_data_padrao || "N").toUpperCase() === "S";
+
+    // ✅ se for DATA e ic_data_padrao=S e estiver vazio -> coloca HOJE
+    if (isDate && isVazio(valorAtual) && icPadrao) {
+      valorAtual = toIsoDate(new Date(), true); // "YYYY-MM-DD"
+      console.log("Data padrão aplicada ->", k, valorAtual);
+    }
+
+    // ✅ normaliza datas SEMPRE para string "YYYY-MM-DD" (q-input type=date exige isso)
+    if (isDate && !isVazio(valorAtual)) {
+      valorAtual = toIsoDate(valorAtual, true) || "";
+    }
+
+    // seta nos dois (por compat), mas o que manda na tela é o formData
+    this.$set(this.formData, k, valorAtual);
+    this.$set(this.form, k, valorAtual);
+  });
+
+  // 4) cache
+  this.atributosForm = base;
+
+  // 5) devolve a lista COMPLETA
+  return base;
+},
+
+aplicarDataPadraoNosCampos(formData, atributos) {
+  try {
+    if (!formData || !Array.isArray(atributos)) return;
+
+    const isVazio = (v) =>
+      v == null || (typeof v === "string" && v.trim() === "");
+
+    for (const attr of atributos) {
+      const k = attr?.nm_atributo;
+      if (!k) continue;
+
+      const icPadrao = String(attr.ic_data_padrao || "N").toUpperCase() === "S";
+      if (!icPadrao) continue;
+
+      // detecta se é campo de data
+      const rawTipo = String(attr.tp_atributo || attr.tipo || "").toUpperCase();
+      const pareceNomeDeData = /(^dt(_|$))|(^data(_|$))|(_data$)|(_dt$)/i.test(k);
+      const isDate =
+        rawTipo.includes("DATE") || rawTipo === "D" || rawTipo === "DATA" || pareceNomeDeData;
+
+      if (!isDate) continue;
+
+      // só aplica se estiver vazio
+      if (isVazio(formData[k])) {
+        const hoje = toIsoDate(new Date(), true); // "YYYY-MM-DD"
+        this.$set(formData, k, hoje);
+        // debug opcional:
+        // console.log("✅ Data padrão aplicada:", k, hoje);
+      } else {
+        // se já tem valor, só normaliza pra "YYYY-MM-DD"
+        const norm = toIsoDate(formData[k], true);
+        if (norm && norm !== formData[k]) this.$set(formData, k, norm);
+      }
+    }
+  } catch (e) {
+    console.error("Erro ao aplicar data padrão:", e);
+  }
+},
+
+    obterAtributosParaFormOld() {
+
       // 1) se já estiver pronto, reuse
       if (Array.isArray(this.atributosForm) && this.atributosForm.length) {
         return this.atributosForm;
@@ -5943,6 +9437,7 @@ async refreshGrid () {
 
       // 2) tente descobrir a “base” de atributos
       //    (gridMeta já é um ARRAY de atributos no seu log)
+
       let base =
         (Array.isArray(this.gridMeta) &&
           this.gridMeta.length &&
@@ -5951,6 +9446,8 @@ async refreshGrid () {
         (Array.isArray(this.gridMeta?.colunas) && this.gridMeta.colunas) ||
         (Array.isArray(this.colunasGrid) && this.colunasGrid) ||
         [];
+
+      console.log('Base de Atributos.', base);
 
       // 3) NORMALIZAÇÃO: não “simplifique” os atributos aqui!
       //    Apenas garanta que Lista_Valor esteja em array
@@ -5994,12 +9491,15 @@ async refreshGrid () {
           "ic_editavel",
           "ic_numeracao_automatica",
           "ic_numeracao_aumotatica",
+          "ic_data_padrao"
         ];
+
         flags.forEach((f) => {
           if (attr[f] == null) attr[f] = "N";
         });
 
         // === ADIÇÃO: detectar se é campo de DATA ===
+
   const rawTipo = String(attr.tp_atributo || attr.tipo || "").toUpperCase();
   const nome = String(attr.nm_atributo || "");
   const pareceNomeDeData = /(^dt(_|$))|(^data(_|$))|(_data$)|(_dt$)/i.test(nome);
@@ -6007,6 +9507,7 @@ async refreshGrid () {
     rawTipo.includes("DATE") || rawTipo === "D" || rawTipo === "DATA" || pareceNomeDeData;
 
   if (isDate) {
+    attr.dataType = attr.dataType || "date"; 
     attr.__isDate = true;                        // marca para o renderer
     attr.display_format = attr.display_format || "dd/MM/yyyy";
     attr.date_serialization_format = "yyyy-MM-dd"; // date-only, sem fuso
@@ -6029,32 +9530,94 @@ async refreshGrid () {
 
       //
       // 3.1) Inicializa valores do form respeitando campos de DATA
+
 if (!this.form) this.form = {};
-base.forEach((attr) => {
+
+// helper: hoje em YYYY-MM-DD
+const hojeISO = () => {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+};
+
+// helper: vazio?
+const isVazio = (v) =>
+  v == null || (typeof v === "string" && v.trim() === "");
+
+
+//Antes de Preecher os valores
+console.log('form->', this.form);
+
+//
+      base.forEach((attr) => {
   const k = attr.nm_atributo;
-  // fonte do valor (ajuste conforme sua estrutura)
+
+  // garante que existe formData (é isso que a tela normalmente usa)
+  if (!this.formData) this.formData = {};
+  if (!this.form) this.form = {};
+
   const valorAtual =
-    (this.form && this.form[k] != null) ? this.form[k]
+    (this.formData && this.formData[k] != null) ? this.formData[k]
+    : (this.form && this.form[k] != null) ? this.form[k]
     : (this.rowEdit && this.rowEdit[k] != null) ? this.rowEdit[k]
     : (attr.vl_atributo != null ? attr.vl_atributo : null);
 
-   //console.log("Antes:", valorAtual);
-//console.log("Depois:", toIsoDate(valorAtual, true));
+  const isVazio = (v) => v == null || (typeof v === "string" && v.trim() === "");
 
+  // helper hoje
+  const hojeISO = () => {
+    const d = new Date();
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${y}-${m}-${day}`;
+  };
+
+  // helper: ISO -> Date (sem timezone drift)
+  const isoToDate = (iso) => {
+    if (!iso) return null;
+    const s = String(iso).slice(0, 10); // YYYY-MM-DD
+    // força meia-noite local sem dar shift
+    const [Y, M, D] = s.split("-").map(n => parseInt(n, 10));
+    if (!Y || !M || !D) return null;
+    return new Date(Y, M - 1, D);
+  };
 
   if (attr.__isDate) {
-    // normaliza para 'YYYY-MM-DD' (date-only) — o dxDateBox entende
-    //this.$set(this.form, k, this.dateToDx(valorAtual));
-    this.$set(this.form, k, toIsoDate(valorAtual, true) || null);
-    //
+    const usaPadrao = String(attr.ic_data_padrao || "N").toUpperCase() === "S";
+
+    let iso = null;
+
+    // se veio valor, normaliza para ISO
+    if (!isVazio(valorAtual)) {
+      iso = toIsoDate(valorAtual, true) || null;
+    }
+
+    // se está vazio e tem data padrão, aplica hoje
+    if (!iso && usaPadrao) {
+      iso = hojeISO();
+      console.log("Data padrao true mas na tela nao deu certo....no formData.....");
+    }
+
+    console.log("valores:", k, iso);
+
+    // ✅ pulo do gato: para o DevExtreme renderizar SEM BRIGAR, passa Date
+    const dateObj = iso ? isoToDate(iso) : null;
+
+    // seta nos dois (mantém compatibilidade com qualquer parte do componente)
+    this.$set(this.formData, k, dateObj);
+    this.$set(this.form, k, dateObj);
 
   } else {
+    this.$set(this.formData, k, valorAtual);
     this.$set(this.form, k, valorAtual);
   }
-
-
-
 });
+
+
+//
 
       // 4) cache local (opcional, se você usa como data)
       this.atributosForm = base;
@@ -6177,6 +9740,11 @@ base.forEach((attr) => {
 
     async loadPayload(cd_menu, cd_usuario) {
 
+
+      const isModal = String(this.ic_modal_pesquisa || 'N').toUpperCase() === 'S'
+      // se for modal de pesquisa, NÃO limpa o menu pai   
+
+
       //
       //console.log('menu do loadpayload -> ',cd_menu);
       
@@ -6197,37 +9765,33 @@ base.forEach((attr) => {
         "cd_relatorio_auto",
       ];
 
-      limparChaves.forEach((k) => sessionStorage.removeItem(k));
-
-
-      // Remove versões por menu (…_<cd>)
-      const cd_menu_atual = Number(cd_menu || 0);
+      if (!isModal) {
+        limparChaves.forEach((k) => sessionStorage.removeItem(k));
 
       Object.keys(sessionStorage).forEach((k) => {
 
-     const m = k.match(/^(payload_padrao_formulario|campos_grid_meta|dados_resultado_consulta|registro_selecionado|cd_menu_detalhe|payload_padrao_formulario_detalhe|campos_grid_meta_detalhe|id_pai_detalhe)_(\d+)$/);
+        if (!k.endsWith(`_${cd_menu}`)) return;
+        
+        //const m = k.match(/^(payload_padrao_formulario|campos_grid_meta|dados_resultado_consulta|registro_selecionado|cd_menu_detalhe|payload_padrao_formulario_detalhe|campos_grid_meta_detalhe|id_pai_detalhe)_(\d+)$/);
   
-     if (!m) return;
-          
-     const cdKey = Number(m[2] || 0);
-          
+        //if (!m) return;         
+         
         if (
           /(payload_padrao_formulario|campos_grid_meta|dados_resultado_consulta|registro_selecionado|cd_menu_detalhe|payload_padrao_formulario_detalhe|campos_grid_meta_detalhe|id_pai_detalhe)_(\d+)$/.test(
             k
           )
         ) 
         {
-
-            // se for modal de pesquisa, NÃO mexe no menu pai
-            if (this.ic_modal_pesquisa === 'S') {
-            if (cdKey === cd_menu_atual) sessionStorage.removeItem(k);
-               return;
-             }
           
              sessionStorage.removeItem(k);
 
              }
-      });
+          });
+       }
+
+      // 
+      //payload - Body para chamada dos dados inicias do atributos para o Form/Menu
+      //
 
       const payload = {
         cd_parametro: 1,
@@ -6252,14 +9816,16 @@ base.forEach((attr) => {
 
       //console.log('dados do retorno: ', data);
       //
-
+      //////
       this.gridMeta = Array.isArray(data) ? data : [];
+      //////
 
       this.cd_parametro_menu = this.gridMeta?.[0]?.cd_parametro_menu || 0;
 
       const metaProc = (this.gridMeta || []).find(
           r => Number(r.cd_menu_processo || 0) > 0
       )
+
       // cd_menu_processo (se houver)
       this.cd_menu_processo = metaProc ? Number(metaProc.cd_menu_processo) : 0
       //  
@@ -6267,6 +9833,7 @@ base.forEach((attr) => {
       // tabsheets (se houver)
       //Tabs Dinâmicas
       this.buildTabsheetsFromMeta(this.gridMeta)
+      //
 
       // mapa de atributos (consulta → atributo)
       this.mapaRows = this._buildMapaRowsFromMeta(this.gridMeta)
@@ -6287,15 +9854,16 @@ base.forEach((attr) => {
         sessionStorage.getItem("menu_titulo") ||
         "Formulário";
 
-      sessionStorage.setItem(
-        "payload_padrao_formulario",
-        JSON.stringify(this.gridMeta)
-      );
+      if (!isModal) {
+          sessionStorage.setItem("payload_padrao_formulario",JSON.stringify(this.gridMeta));
+          sessionStorage.setItem("campos_grid_meta", JSON.stringify(this.gridMeta));
+      }
+      
       sessionStorage.setItem(
         `payload_padrao_formulario_${cd_menu}`,
         JSON.stringify(this.gridMeta)
       );
-      sessionStorage.setItem("campos_grid_meta", JSON.stringify(this.gridMeta));
+ 
       sessionStorage.setItem(
         `campos_grid_meta_${cd_menu}`,
         JSON.stringify(this.gridMeta)
@@ -6303,20 +9871,60 @@ base.forEach((attr) => {
 
       sessionStorage.setItem("menu_titulo", this.title);
 
-      console.log('consulta dos dados menu ->', this.gridMeta[0]);
+      //console.log('consulta dos dados menu ->', this.gridMeta[0]);
 
       if (this.gridMeta?.length > 0) {
       this.nome_procedure      = this.gridMeta?.[0]?.nome_procedure || "*";
       this.ic_json_parametro   = this.gridMeta?.[0]?.ic_json_parametro || "N";
       this.cd_menu_modal       = this.gridMeta?.[0].cd_menu_modal || this.cd_menu_modal_entrada || 0;
       this.cd_form_modal       = this.gridMeta?.[0].cd_form_modal || 0;
+      this.ic_grid_modal       = this.gridMeta?.[0].ic_grid_modal || 'N';
       this.ic_selecao_registro = this.gridMeta?.[0].ic_selecao_registro || 'N';
+      this.ic_card_menu        = this.gridMeta?.[0].ic_card_menu || 'N';
+      this.ic_treeview_menu    = this.gridMeta?.[0].ic_treeview_menu || 'N';
       this.mostrarBotaoModalComposicao = this.cd_form_modal > 0;
-      this.selectionMode =  this.ic_selecao_registro === 'S' ? 'multiple' : 'single';
+      this.selectionMode       = this.ic_selecao_registro === 'S' ? 'multiple' : 'single';
+      this.menuTabs            = this.parseSqlTabs(this.gridMeta?.[0].sqlTabs);
+      this.activeMenuTab       = 'principal'
+
+      this.ic_card_menu        = (this.gridMeta?.[0]?.ic_card_menu || 'N')
+      this.ic_treeview_menu    = (this.gridMeta?.[0]?.ic_treeview_menu || 'N')
+
+      // se quiser já iniciar em cards quando o menu permitir:
+      if (String(this.ic_card_menu).toUpperCase() === 'S') {
+         // mantém o valor se o usuário já trocou, senão default = true
+         if (this.exibirComoCards === false) this.exibirComoCards = true
+         } else {
+           this.exibirComoCards = false
+         }
+
+        // default: se tree liberado, inicia em Tree (ou mantenha grid, você escolhe)
+        if (String(this.ic_treeview_menu).toUpperCase() === 'S') {
+          if (this.exibirComoTree === false) this.exibirComoTree = true
+
+             //this.montarTreeview()
+             
+
+        } else {
+          this.exibirComoTree = false
+        }
+
+        console.log('Treeview', this.ic_treeview_menu, this.exibirComoTree);
+
       }
       
+      //console.log('tabs menu ...', this.menuTabs);
+
       // tab_menu (se houver)
       sessionStorage.setItem("tab_menu", this.gridMeta?.[0]?.tab_menu || "");
+
+       //Validação//
+       //Se existe Tabela ou Procedimento
+        if (this.temConfigConsultaInvalida()) {
+           this.abrirAvisoConfigConsulta()
+        return
+        }
+       //
 
       
       // 1) MONTAR colunas e totalColumns (meta antigo)
@@ -6341,14 +9949,25 @@ base.forEach((attr) => {
 
       if (this.cd_tabela > 0 ) {
 
+      const vm = this;
+
       colAcoes = {
         type: "buttons",
         caption: "Ações",
-        width: 110,
+        width: 150,
         alignment: "center",
         allowSorting: false,
         allowFiltering: false,
         buttons: [
+          {
+            hint: "Selecionar",
+            icon: "check",
+            visible: () => String(this.ic_modal_pesquisa || "N") === "S",
+            onClick: (e) => {
+              console.log("CLIQUE SELECIONAR (DENTRO DO onClick)", e);
+              vm.selecionarERetornar(e); 
+            }
+           },
            {
              hint: "Consultar",
              icon: "search",
@@ -6367,6 +9986,16 @@ base.forEach((attr) => {
             onClick: (e) =>
               this.copiarRegistro(e.row.data),      },
           {
+              hint: "Relatório",
+              icon: "print",
+              visible: () => Number(this.cd_relatorio || 0) > 0,
+              onClick: (e) => {
+              // passa o registro atual
+              this.onRelatorioGrid(e.row.data || {});
+              },
+            },
+
+          {
             hint: "Excluir",
             icon: "trash",
             onClick: (e) => {
@@ -6378,21 +10007,33 @@ base.forEach((attr) => {
         ],
       } }
       else {
+
         colAcoes = {
           type: "buttons",
           caption: "Ações",
-          width: 80,
+          width: 90,
           alignment: "center",
           allowSorting: false,
           allowFiltering: false,
           buttons: [
              {
                hint: "Selecionar",
-               icon: "selectall",
+               icon: "check",
                cssClass: 'btn-selecionar-modal',
                onClick: (e) =>
-              this.selecionarERetornar( e.row.data ),
+              //vm.selecionarERetornar( e.row.data ),
+              {
+               console.log("CLIQUE SELECIONAR (DENTRO DO onClick) 2", e)
+               this.selecionarERetornar(e) 
+              },
             },
+              // ✅ NOVO BOTÃO (opcional aqui)
+    {
+      hint: "Relatório",
+      icon: "print",
+      visible: () => Number(this.cd_relatorio || 0) > 0,
+      onClick: (e) => this.onRelatorioGrid(e.row.data || {}),
+    },
           ],
         }
       }
@@ -6433,14 +10074,19 @@ base.forEach((attr) => {
 
       // 2) NORMALIZAR dados (datas → Date, números → Number, etc.)
       const normalizados = normalizarTipos(data, this.gridMeta);
+
       //console.log('normalizados:', normalizados);
 
       // 3) MONTAR colunas e summary
       this.gridColumns = buildColumnsFromMeta(this.gridMeta);
       this.gridSummary = buildSummaryFromMeta(this.gridMeta);
 
+      //
+      //
+
       // 4) ATUALIZAR estado
       this.gridRows = normalizados;
+      
       //this.columns = this.gridColumns;
       this.total = this.gridSummary;
       
@@ -6460,10 +10106,12 @@ base.forEach((attr) => {
       //
 
       // 5) NUNCA popular dados aqui; zera!
+      
       this.rows = [];
       this.gridRows = [];
       this.totalQuantidade = 0;
       this.totalValor = 0;
+      
 
     },
   
@@ -6529,7 +10177,9 @@ base.forEach((attr) => {
     },
     ...this.columns
   ];
-  console.log('columns com ações --> ', this.columns);
+
+  //console.log('columns com ações --> ', this.columns);
+
 }
 
 
@@ -6626,7 +10276,8 @@ base.forEach((attr) => {
   );
 
   this.filtros = Array.isArray(data) ? data : [];
-  console.log("Filtro Preenchimento --> ", this.filtros);
+
+  //console.log("Filtro Preenchimento --> ", this.filtros);
 
   for (const f of this.filtros) {
     // Chaves normalizadas
@@ -6645,7 +10296,9 @@ base.forEach((attr) => {
       const tipo = this.resolvType(f);
       const val = tipo === "date" ? this.toYMD(f.nm_valor_padrao) : String(f.nm_valor_padrao);
       this.$set(this.filtrosValores, destino, val);
-      console.log(`Definindo valor padrão do filtro ${destino} = ${val}`);
+
+      //console.log(`Definindo valor padrão do filtro ${destino} = ${val}`);
+
     }
 
     // 2) Filtros fixos: salvar com a chave correta
@@ -6713,7 +10366,9 @@ base.forEach((attr) => {
 
   // 6) Pós-carregamento
   this.$nextTick(() => this.preencherDatasDoMes());
-  console.log("filtros carregados:", this.filtrosValores);
+
+  //console.log("filtros carregados:", this.filtrosValores);
+
 },
 
 
@@ -6733,7 +10388,7 @@ base.forEach((attr) => {
 
       this.filtros = Array.isArray(data) ? data : [];
 
-      console.log('Filtro Preenchimento --> ', this.filtros);
+      //console.log('Filtro Preenchimento --> ', this.filtros);
 
       for (const f of this.filtros) {
 
@@ -6799,7 +10454,7 @@ if (
 
 }
 
-        console.log('lookup -> ', f.nm_lookup_tabela);
+        //console.log('lookup -> ', f.nm_lookup_tabela);
 
         // lookup de tabela
           if (f.nm_lookup_tabela && f.nm_lookup_tabela.trim()) {
@@ -6873,9 +10528,31 @@ if (
       // se tiver filtro de data no form, preencha datas do mês atual
       this.$nextTick(() => this.preencherDatasDoMes());
       //
-      console.log("filtros carregados:", this.filtrosValores);
+      //console.log("filtros carregados:", this.filtrosValores);
       //
+
     },
+
+
+    getCdParametroContexto () {
+  // 1) Prioridade: vem do registro pai (embed/composição)
+  const fromPai = Number(this.registro_pai?.cd_parametro || 0)
+  if (fromPai > 0) return fromPai
+
+  // 2) Se o filtro trouxe (string “200”), aproveita
+  const fromFiltro = Number(this.filtrosValores?.cd_parametro || 0)
+  if (fromFiltro > 0) return fromFiltro
+
+  // 3) Se o menu tem um parâmetro “fixo”
+  const fromMenu = Number(this.cd_parametro_menu || 0)
+  if (fromMenu > 0) return fromMenu
+
+  // 4) fallback geral (caso o app guarde em storage)
+  const fromLS = Number(localStorage.cd_parametro || 0)
+  if (fromLS > 0) return fromLS
+
+  return 0
+},
 
     // função principal: monta payload e chama a procedure
 
@@ -6900,10 +10577,11 @@ if (
       try {
 
         //const cd_menu = Number(sessionStorage.getItem("cd_menu"));
+        
         const cd_usuario = localStorage.cd_usuario || Number(sessionStorage.getItem("cd_usuario"));
         const dt_inicial = localStorage.dt_inicial || sessionStorage.getItem("dt_inicial_padrao");
-        const dt_final = localStorage.dt_final || sessionStorage.getItem("dt_final_padrao");
-        const banco = localStorage.nm_banco_empresa || sessionStorage.getItem('banco') || '';
+        const dt_final   = localStorage.dt_final || sessionStorage.getItem("dt_final_padrao");
+        const banco      = localStorage.nm_banco_empresa || sessionStorage.getItem('banco') || '';
         
         const campos = {};
 
@@ -6913,11 +10591,12 @@ if (
             (k) => (campos[k.replace("fixo_", "")] = sessionStorage.getItem(k))
           );
 
-        console.log('valores dos filtros -->', this.filtrosValores);
+        //console.log('valores dos filtros -->', this.filtrosValores);
 
         Object.assign(campos, this.filtrosValores);
 
         // 🔹 1) Achata objetos de lookup { value, label } => "value"
+
         Object.keys(campos).forEach((k) => {
         const v = campos[k];
          if (v && typeof v === "object" && "value" in v) {
@@ -6927,6 +10606,7 @@ if (
 
         // validação de filtros obrigatórios
 
+        this.cd_relatorio = this.gridMeta?.[0]?.cd_relatorio || 0;
         const ic_filtro_obrigatorio = this.gridMeta?.[0]?.ic_filtro_obrigatorio;
         const ic_cliente = this.gridMeta?.[0]?.ic_cliente || "N";
         const cd_cliente = localStorage.cd_cliente || Number(sessionStorage.getItem("cd_cliente")) || 0;
@@ -6935,17 +10615,32 @@ if (
           (v) => v != null && v !== "" && v !== 0
         );
         
-        console.log('filtro --> ', filtroPreenchido,campos);
+        //console.log('filtro --> ', filtroPreenchido,campos);
 
-        const cd_parametro = this.cd_parametro_menu || 0;
-        const cd_chave_pesquisa = localStorage.cd_acesso_entrada || this.ncd_acesso_entrada || this.cd_chave_pesquisa || 0;
+        //const cd_parametro      = this.cd_parametro_menu || 0;
+        const cd_parametro = this.getCdParametroContexto();
+        //
+
+        //const cd_chave_pesquisa = localStorage.cd_acesso_entrada || this.ncd_acesso_entrada || this.cd_chave_pesquisa || 0;
         
-        console.log('chave de pesquisa', cd_chave_pesquisa);
+        const cd_chave_pesquisa = this.embedMode
+          ? (this.cd_chave_pesquisa || this.ncd_acesso_entrada || this.cd_acesso_entrada || 0)
+          : (localStorage.cd_acesso_entrada || this.ncd_acesso_entrada || this.cd_chave_pesquisa || 0);
+
+        //console.log('chave de pesquisa', cd_chave_pesquisa);
         
+        //Menu
+        //20.12.2025 (ccf)
+        //const cd_menu =
+        //  this.gridMeta?.[0]?.cd_menu ||
+        //  Number(sessionStorage.getItem("cd_menu")) ||
+        //  0;
+
         const cd_menu =
+          Number(this.ncd_menu_entrada || this.cd_menu_entrada || 0) ||
           this.gridMeta?.[0]?.cd_menu ||
-          Number(sessionStorage.getItem("cd_menu")) ||
-          0;
+          Number(sessionStorage.getItem("cd_menu")) || 0;
+
 
         //console.log('parametro = ',payloadManual, cd_parametro);
 
@@ -6968,22 +10663,33 @@ if (
         //console.log('campos da consulta:', camposNormalizados);
         //console.log(campos);
         // se nome_procedure = "*", usa o endpoint /menu-pesquisa (payload padrão)
-        console.log('nome_procedure:', this.nome_procedure);
+        //console.log('nome_procedure:', this.nome_procedure);
         
         if (this.nome_procedure === "*" || this.nome_procedure === undefined) {
           //console.log('usando endpoint /menu-pesquisa');
+
+          // ✅ não deixa filtros sobrescreverem campos reservados do menu-pesquisa
+          const camposPayload = { ...campos };
+          //
+          delete camposPayload.cd_parametro;
+          delete camposPayload.cd_menu;
+          delete camposPayload.cd_usuario;
+          delete camposPayload.cd_chave_pesquisa;
+          delete camposPayload.ic_modal_pesquisa;
 
           const payload = [
             {
               cd_parametro,
               cd_menu,
               cd_usuario: localStorage.cd_usuario || this.cd_usuario || 0,
-              cd_chave_pesquisa: cd_chave_pesquisa || 0,
-              ic_modal_pesquisa: this.getIcModalPesquisa() | this.ic_modal_pesquisa || 'N', 
+              cd_chave_pesquisa: cd_chave_pesquisa || Number(this.cd_acesso_entrada || 0),
+              //ic_modal_pesquisa: this.getIcModalPesquisa() || this.ic_modal_pesquisa || 'N', 
+              ic_modal_pesquisa: (this.getIcModalPesquisa && this.getIcModalPesquisa()) || this.ic_modal_pesquisa || 'N',
+              ...camposPayload,
               //dt_inicial, dt_final,
               //dt_inicial: clean(sessionStorage.getItem("dt_inicial_padrao")),
               //dt_final:   clean(sessionStorage.getItem("dt_final_padrao")),
-              ...campos,
+              //...campos,
               //...camposNormalizados,
               ...(ic_cliente === "S" && cd_cliente > 0 ? { cd_cliente } : {}),
             },
@@ -6993,7 +10699,7 @@ if (
 
           //console.log('payload da consulta:', payloadNew);
           
-          console.log('payload da consulta:', payload);
+          //console.log('payload da consulta:', payload);
           
           //
           //pr_egis_pesquisa_dados
@@ -7039,13 +10745,10 @@ if (
           
           //
           // chama a procedure
-          console.log('Chamando procedure:', this.nome_procedure);
+          //onsole.log('Chamando procedure:', this.nome_procedure);
           //
 
-          const { data } = await api.post(
-            `/exec/${this.nome_procedure}`,
-            payloadExec
-          );
+          const { data } = await api.post(`/exec/${this.nome_procedure}`, payloadExec );
           
           //
 
@@ -7074,6 +10777,16 @@ if (
 
         this.rows = (dados || []).map((it, idx) => ({ id: it.id || idx + 1, ...it }));
 
+        //
+        this.sortRowsForTreeAndGrid()
+        //
+
+        if (String(this.ic_treeview_menu || 'N').toUpperCase() === 'S' && this.exibirComoTree) {
+          this.$nextTick(() => this.montarTreeview())
+        }
+
+
+
 // >>> NOVO: se veio do botão lápis (modal de pesquisa),
 // abre automaticamente o formulário de edição
 
@@ -7100,24 +10813,20 @@ if (this.ic_modal_pesquisa === 'S') {
 }
 
         //
-        sessionStorage.setItem(
-          "dados_resultado_consulta", JSON.stringify(this.rows)
-        );
+        await this.salvarCacheSeguro("dados_resultado_consulta", this.rows);
         
-        sessionStorage.setItem(this.ssKey("dados_resultado_consulta"), JSON.stringify(this.rows))
+        await this.salvarCacheSeguro(this.ssKey("dados_resultado_consulta"), this.rows);
 
-        sessionStorage.setItem(
-          "filtros_form_especial",
-          JSON.stringify(this.filtrosValores)
-        );
+        await this.salvarCacheSeguro("filtros_form_especial", this.filtrosValores); 
+        
+        await this.salvarCacheSeguro(this.ssKey("filtros_form_especial"), this.filtrosValores);
 
-        sessionStorage.setItem(this.ssKey("filtros_form_especial"), JSON.stringify(this.filtrosValores))
-
-        console.log('mapa', dados);
-        console.log('resultado', this.rows);
+        //console.log('mapa', dados);
+        //console.log('resultado', this.rows);
         
 
         // 🔴 AQUI: extrai fasePedido da primeira linha
+
         if (this.rows && this.rows.length && this.rows[0].fasePedido) {
         try {
           // pode vir como array ou como string JSON
@@ -7133,7 +10842,7 @@ if (this.ic_modal_pesquisa === 'S') {
          (f) => f && f.nm_cor
         );
 
-        console.log("legendaAcoesGrid =>", this.legendaAcoesGrid);
+        //console.log("legendaAcoesGrid =>", this.legendaAcoesGrid);
 
    
   } else {
@@ -7167,6 +10876,7 @@ if (this.ic_modal_pesquisa === 'S') {
 
         this.panelIndex = 1; // mostra a grid
 
+        console.log('this rows --> linhas para relatório ',this.rows)
         this.$nextTick(() => {
           try {
             const inst =
@@ -7199,6 +10909,30 @@ if (this.ic_modal_pesquisa === 'S') {
       }
     },
 
+
+    async getRowsFullFromSession() {
+      const k1 = this.ssKey ? this.ssKey("dados_resultado_consulta") : null;
+
+      if (k1) {
+        const scoped = await this.lerCacheSeguro(k1);
+        if (scoped) return scoped;
+      }
+
+      const raw = await this.lerCacheSeguro("dados_resultado_consulta");
+      if (raw) return raw;
+
+      return [];
+    },
+
+    async setRowsFullToSession(rows) {
+      await this.salvarCacheSeguro("dados_resultado_consulta", rows);
+
+      const k1 = this.ssKey ? this.ssKey("dados_resultado_consulta") : null;
+      if (k1) {
+        await this.salvarCacheSeguro(k1, rows);
+      }
+    },
+
     onRowDblClick(e) {
       const data = e.data;
       sessionStorage.setItem("registro_selecionado", JSON.stringify(data));
@@ -7217,8 +10951,6 @@ if (this.ic_modal_pesquisa === 'S') {
 </script>
 
 <style scoped>
-
-
 
 /* Seleção/linha focada laranja */
 .dx-datagrid .dx-row-focused,
@@ -7288,12 +11020,6 @@ if (this.ic_modal_pesquisa === 'S') {
   margin-bottom: 4px;
 }
 
-.row {
-  margin: 0 !important;
-}
-.row > [class*="col-"] {
-  padding: 0 !important;
-}
 
 /* aumenta a altura (min-height) dos campos e alinha os ícones lateral/append */
 .filtro-item .q-field--filled .q-field__control,
@@ -7357,9 +11083,25 @@ if (this.ic_modal_pesquisa === 'S') {
   padding-top: 8px;
   padding-bottom: 6px;
 }
+:deep(.q-field--filled .q-field__control) {
+  background: #ffffff !important;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.06);
+}
+:deep(.q-field--filled .q-field__control:before) {
+  background: #ffffff !important;
+  opacity: 1 !important;
+}
+:deep(.q-field--filled .q-field__control:after) {
+  background: transparent !important;
+}
+:deep(.q-field--filled .q-field__native),
+:deep(.q-field--filled .q-field__label) {
+  color: #1f2937 !important;
+}
 
 .dx-card.wide-card {
   padding: 12px 12px; /* sutil e consistente */
+  border-radius: 8px;
 }
 
 .espaco {
@@ -7380,16 +11122,16 @@ if (this.ic_modal_pesquisa === 'S') {
 }
 
 .leitura-azul {
-  background-color: #e7f1ff !important;
-  color: #0d47a1;
+  background-color: #e0f7fa !important;
+  color: #00838f;
 }
 /* pode ser global ou no <style scoped> do SFC */
 .leitura-azul .q-field__control {
-  background: #e7f1ff !important;
+  background: #e0f7fa !important;
 }
 .leitura-azul .q-field__native,
 .leitura-azul .q-field__label {
-  color: #0d47a1 !important;
+  color: #00838f !important;
 }
 
 .viewport {
@@ -7435,24 +11177,56 @@ if (this.ic_modal_pesquisa === 'S') {
   border-bottom: 1px solid #ddd;
 }
 
+.grid-top{
+  flex: 0 0 auto;        /* fica no tamanho do conteúdo */
+}
+
+.grid-body{
+  flex: 1 1 auto;        /* pega o resto */
+  min-height: 0;         /* ESSENCIAL p/ scroll interno */
+  overflow: hidden;
+}
+
+/* garante o datagrid expandindo corretamente */
+.grid-body .dx-datagrid{
+  width: 100% !important;
+}
+
 .grid-scroll-shell {
-  overflow-x: auto;        /* só scroll horizontal quando precisar */
-  overflow-y: auto;        /* deixa rolar vertical, não corta o bottom */
+  overflow: hidden;                     
   white-space: normal;     /* não força tudo numa linha só */
   width: 100%;
   position: relative;
   padding: 0 16px 18px 0;  /* mais respiro na direita e embaixo */
   box-sizing: border-box;  /* padding não “rouba” largura */
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;           /* ESSENCIAL p/ flex + grid ocupar altura */
+}
+
+.grid-scroll-shell .dx-datagrid {
+  height: 100% !important;
+  width: 100% !important;
 }
 
 
-
 /* track para garantir largura fluida */
+
 .grid-scroll-track {
   position: relative;
   white-space: nowrap;
-  display: inline-block;
+  display: block;      /* ✅ era inline-block */
   min-width: 100%;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+
+}
+
+/* garante ocupar o container */
+.grid-scroll-track .dx-datagrid {
+  width: 100% !important;
 }
 
 .dx-datagrid-rowsview {
@@ -7484,6 +11258,7 @@ if (this.ic_modal_pesquisa === 'S') {
 }
 
 /* garante que o footer da DevExtreme apareça e não “cole” errado */
+
 .dx-datagrid-total-footer,
 .dx-datagrid-pager {
   position: sticky;
@@ -7500,12 +11275,12 @@ if (this.ic_modal_pesquisa === 'S') {
   z-index: 5;
 }
 .margin-menu {
-  position: absolute; right: 10px;
-  top: 30px;
+  position: absolute; right: 25px;
+  top: 20px;
  
 }
 .bg-form {
-  position: absolute; top: 20px;
+  position: absolute; top: 10px;
   margin-right: 1px;
   align-items: right;
 }
@@ -7536,20 +11311,157 @@ if (this.ic_modal_pesquisa === 'S') {
 .tabs-form {
   width: 100%;
 }
-.tabsheets-form .tabsheets-form__tab {
+
+.tabsheets-form {
+  width: 100%;
+  background: linear-gradient(90deg, rgba(123, 31, 162, 0.1), rgba(0, 172, 193, 0.08));
+  border-radius: 14px;
+  padding: 6px 8px;
+}
+
+.tabsheets-form .q-tabs__content {
+  gap: 8px;
+  align-items: center;
+  width: 100%;
+  justify-content: center; 
+}
+
+.tabsheets-form .q-tab {
   flex: 1 1 0;
   min-width: 0;
-   justify-content: center; /* centraliza o texto */
+  justify-content: center;
+  text-align: center;
+  color: #3f2b96;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  font-size: 15px;
+  min-height: 46px;
+  line-height: 1.2;
+  border-radius: 12px;
+  transition: all 0.18s ease;  
+  display: flex;
+  align-items: center;      /* centraliza vertical */
+  justify-content: center;  /* centraliza horizontal */ 
 }
-.tabsheets-form .tabsheets-form__tab--active {
-  border-bottom: 3px solid var(--q-color-deep-orange-9);
+.tabsheets-form .q-tab:hover {
+  background: rgba(0, 172, 193, 0.12);
+  color: #4a148c;
+}
+.tabsheets-form .q-tab.q-tab--active {
+  color: #fff;
+  background: linear-gradient(135deg, #6a1b9a, #00838f);
+  box-shadow: 0 12px 30px rgba(123, 31, 162, 0.18);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+}
+.tabsheets-form :deep(.q-tab__label) {
+  width: 100%;
+  text-align: center;
+  letter-spacing: 0.06em;
+  color: inherit;
+}
+
+.tabsheets-form .q-tab__indicator {
+  height: 5px;
+  border-radius: 6px;
+  background: linear-gradient(90deg, #f4511e, #00acc1);
+}
+
+/* centraliza o conteúdo do tab (ícone + label) */
+.tabsheets-form__tab .q-tab__content {
+  
+  justify-content: center;   /* eixo principal */
+  align-items: center;       /* eixo cruzado */
+  width: 100%;
+}
+
+/* centraliza o texto do label */
+.tabsheets-form__tab .q-tab__label {
+  width: 100%;
+  text-align: center;
+}
+
+.dlg-form-card__hero {
+  background: linear-gradient(120deg, #7b1fa2, #00acc1 55%, #f4511e);
+  color: #fff;
+  border-radius: 18px 18px 12px 12px;
+  box-shadow: 0 18px 44px rgba(123, 31, 162, 0.25);
+  margin: 0 14px 6px;
+  padding: 12px 18px 12px;
+  align-items: center;
+}
+
+.dlg-form-card__hero-main {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin-top: -15px;
+}
+
+.dlg-form-card__hero-icon {
+  width: 82px;
+  height: 82px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.28), rgba(255, 255, 255, 0.08));
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.22);
+}
+.dlg-form-card__hero-icon .q-icon {
+  font-weight: 900;
+  opacity: 0.95;
+  box-shadow: 0 16px 38px rgba(123, 31, 162, 0.25);
+  margin: 0;
+  padding: 0;
+  font-size: 38px;
+  display: grid;
+  place-items: center;
+}
+.dlg-form-card__title {
+  margin-top: 2px;
+}
+
+.dlg-form-card__eyebrow {
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 800;
+  opacity: 0.9;
+}
+
+.dlg-form-card__title {
+  font-size: 22px;
+  line-height: 30px;
+  font-weight: 800;
+}
+
+.dlg-form-card__close {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+
+
+.dlg-form-card__title {
+  font-size: 22px;
+  line-height: 30px;
+  font-weight: 800;
+}
+
+.dlg-form-card__close {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.dlg-form-card__divider {
+  margin: 0 18px;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0), rgba(255, 255, 255, 0.6), rgba(255, 255, 255, 0));
+  height: 2px;
 } 
 
 .dlg-form-card {
-  min-width: 760px;
-  max-width: 94vw;
-  height: 90vh;        /* altura fixa do modal */
-  max-height: 90vh;
+  width: 100vw; 
+  height: 100vh;
+  max-width: 100vw;
+  max-height: 100vh;
   display: flex;
   flex-direction: column;
 }
@@ -7658,6 +11570,541 @@ if (this.ic_modal_pesquisa === 'S') {
   color: #fff !important;
 }
 
+/* Mantém ambos na mesma linha e com espaçamento */
+.no-wrap {
+  flex-wrap: nowrap;
+}
+
+
+.toolbar-scroll {
+  overflow-x: auto;
+  white-space: nowrap;
+}
+
+.seta-form {
+  margin-left: 10px;
+  color: #512da8
+}
+
+.tab_principal {
+  margin-left: 200px;
+}
+
+
+/* largura padrão do bloco de lookup */
+.lookup-desc {
+  min-width: 520px;
+}
+
+.lookup-cod {
+  width: 190px;
+  max-width: 240px;
+}
+
+/* ===== LOOKUP (pesquisa/seleção) ===== */
+/* Como o style é scoped, precisamos de :deep para atingir o DOM interno do Quasar */
+
+
+/* ===== READONLY/AUTONUM (sem edição) ===== */
+.leitura-azul.q-field--filled .q-field__control {
+  background: #e0f7fa !important;
+}
+
+.leitura-azul .q-field__native,
+.leitura-azul .q-field__label,
+.leitura-azul .q-field__append .q-icon,
+.leitura-azul .q-field__prepend .q-icon {
+  color: #00838f !important;
+}
+
+/* ===== LOOKUP (azul claro) - precisa :deep por causa do scoped ===== */
+
+/* Fundo azul claro no filled */
+:deep(.campo-azul.q-field--filled .q-field__control) {
+  background-color: rgba(0, 172, 193, 0.08) !important;
+}
+
+/* Tira overlay escuro do filled (hover/focus) */
+:deep(.campo-azul.q-field--filled .q-field__control:before),
+:deep(.campo-azul.q-field--filled .q-field__control:after) {
+  background: transparent !important;
+}
+
+/* Texto/label */
+:deep(.campo-azul .q-field__label),
+:deep(.campo-azul .q-field__native) {
+  color: #008ba3 !important;
+}
+
+/* Ícones (lupa / append) */
+:deep(.campo-azul .q-field__append .q-icon),
+:deep(.campo-azul .q-field__prepend .q-icon) {
+  color: #008ba3 !important;
+}
+
+.takeover-grid .area-filhas {
+  height: calc(100vh - 0px) !important;
+}
+
+.area-filhas-full {
+  position: relative;
+  width: 100%;
+  height: calc(100vh - 0px);
+}
+
+/* se seu layout tiver paddings/margens do pai, zera quando takeover */
+.takeover-grid {
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+/* se existir algum container interno limitando altura, ajuda */
+.takeover-grid .content,
+.takeover-grid .content-block,
+.takeover-grid .q-page,
+.takeover-grid .q-card {
+  height: 100% !important;
+}
+
+
+.area-filhas-full {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: calc(100vh - 0px);
+}
+
+.cards-wrapper{
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  margin-left: 15px;
+  gap: 18px;
+}
+
+.card-unico{
+  border-radius: 18px;
+  transition: transform .2s ease, box-shadow .2s ease;
+  padding: 18px;
+  background: #fff;
+}
+
+.card-unico:hover{
+  transform: translateY(-4px);
+  box-shadow: 0 12px 28px rgba(0,0,0,.18);
+}
+
+.card-unico-body{
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.logo-unico{
+  width: 70px;
+  height: 70px;
+  border-radius: 50%;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background: rgba(103, 58, 183, .12); /* deep-purple leve */
+  border: 1px solid rgba(103, 58, 183, .25);
+}
+
+.logo-letter{
+  font-size: 28px;
+  font-weight: 800;
+  color: #673ab7;
+  text-transform: uppercase;
+}
+
+.card-campos{
+  width: 100%;
+  max-width: 520px;
+  text-align: left;
+  margin-top: 8px;
+}
+
+
+.tree-card{
+  border-radius: 16px;
+  padding: 10px 12px;
+}
+
+.tree-title{
+  font-weight: 800;
+  color: #2b2b2b;
+}
+
+.tree-subtitle{
+  font-size: 12px;
+  color: rgba(0,0,0,.55);
+  margin-top: 2px;
+}
+
+.dlg-form-premium {
+  padding: 18px;
+}
+
+/* =========================================================
+   PREMIUM DIALOG - SÓ afeta o QDialog com content-class="dlg-form-branco"
+   ========================================================= */
+
+:deep(.q-dialog__inner.dlg-form-branco) {
+  --pf-text: #0f172a;
+  --pf-muted: rgba(15, 23, 42, 0.62);
+
+  --pf-line: rgba(15, 23, 42, 0.12);
+  --pf-line2: rgba(15, 23, 42, 0.20);
+
+  --pf-brand: #7b1fa2;          /* purple-7 */
+  --pf-brand-soft: rgba(123, 31, 162, 0.14);
+  --pf-highlight: #00acc1;      /* cyan-6 */
+  --pf-hover: rgba(0, 172, 193, 0.08);
+
+  --pf-required: #f4511e;       /* deep-orange-6 */
+  --pf-required-soft: rgba(244, 81, 30, 0.14);
+
+  --pf-readonly: rgba(2, 6, 23, 0.05);
+
+  --pf-radius: 14px;
+  --pf-ring: 0 0 0 4px rgba(0, 172, 193, 0.18);
+  --pf-shadow: 0 20px 48px rgba(15, 23, 42, 0.12);
+
+  background: linear-gradient(135deg, rgba(123, 31, 162, 0.06), rgba(0, 172, 193, 0.05)) !important;
+}
+
+/* Card do dialog com presença */
+:deep(.q-dialog__inner.dlg-form-branco .q-card) {
+  background: #fff !important;
+  border-radius: 18px !important;
+  box-shadow: var(--pf-shadow) !important;
+  border: 1px solid rgba(123, 31, 162, 0.08);
+}
+
+/* =========================================================
+   CAMPOS - funciona para FILLED e OUTLINED
+   ========================================================= */
+
+/* Base do control */
+:deep(.q-dialog__inner.dlg-form-branco .q-field .q-field__control) {
+  border-radius: var(--pf-radius) !important;
+  box-shadow: inset 0 0 0 1px var(--pf-line) !important;
+  transition: transform .12s ease, box-shadow .15s ease, background-color .15s ease;
+}
+
+/* FILLED: o fundo de verdade está no :before */
+:deep(.q-dialog__inner.dlg-form-branco .q-field--filled .q-field__control:before) {
+  opacity: 1 !important;
+  background: #fff !important;
+  transition: background-color .15s ease;
+}
+:deep(.q-dialog__inner.dlg-form-branco .q-field--filled .q-field__control) {
+  background: #fff !important;
+  box-shadow: inset 0 0 0 1px var(--pf-line) !important;
+}
+
+/* FILLED: remove underline/overlay padrão */
+:deep(.q-dialog__inner.dlg-form-branco .q-field--filled .q-field__control:after) {
+  opacity: 0 !important;
+  background: transparent !important;
+}
+
+/* Label e texto */
+:deep(.q-dialog__inner.dlg-form-branco .q-field__label) {
+  color: var(--pf-muted) !important;
+  font-weight: 650;
+}
+:deep(.q-dialog__inner.dlg-form-branco .q-field__native),
+:deep(.q-dialog__inner.dlg-form-branco .q-field__input) {
+  color: var(--pf-text) !important;
+}
+
+/* Hover */
+:deep(.q-dialog__inner.dlg-form-branco .q-field:hover .q-field__control) {
+  transform: translateY(-1px);
+  box-shadow: inset 0 0 0 1px var(--pf-line2) !important;
+}
+:deep(.q-dialog__inner.dlg-form-branco .q-field--filled:hover .q-field__control:before) {
+  background: var(--pf-hover) !important;
+}
+
+/* Focus */
+:deep(.q-dialog__inner.dlg-form-branco .q-field--focused .q-field__control) {
+  transform: translateY(-1px);
+  box-shadow: inset 0 0 0 1px rgba(0, 172, 193, 0.68), var(--pf-ring) !important;
+}
+:deep(.q-dialog__inner.dlg-form-branco .q-field--filled.q-field--focused .q-field__control:before) {
+  background: var(--pf-brand-soft) !important;
+}
+
+/* Required */
+:deep(.q-dialog__inner.dlg-form-branco .q-field--required .q-field__control) {
+  box-shadow: inset 0 0 0 1px rgba(244, 81, 30, 0.48) !important;
+}
+:deep(.q-dialog__inner.dlg-form-branco .q-field--filled.q-field--required .q-field__control:before) {
+  background: var(--pf-required-soft) !important;
+}
+:deep(.q-dialog__inner.dlg-form-branco .q-field--required .q-field__label:after) {
+  color: var(--pf-required) !important;
+  font-weight: 900;
+}
+
+/* Readonly/Disabled */
+:deep(.q-dialog__inner.dlg-form-branco .q-field--readonly .q-field__control:before),
+:deep(.q-dialog__inner.dlg-form-branco .q-field--disabled .q-field__control:before) {
+  background: var(--pf-readonly) !important;
+}
+:deep(.q-dialog__inner.dlg-form-branco .q-field--readonly .q-field__control),
+:deep(.q-dialog__inner.dlg-form-branco .q-field--disabled .q-field__control) {
+  opacity: 1 !important;
+}
+
+/* Ícones */
+:deep(.q-dialog__inner.dlg-form-branco .q-field__append .q-icon),
+:deep(.q-dialog__inner.dlg-form-branco .q-field__prepend .q-icon) {
+  color: rgba(15, 23, 42, 0.55) !important;
+  transition: transform .12s ease, color .15s ease;
+}
+:deep(.q-dialog__inner.dlg-form-branco .q-field:hover .q-field__append .q-icon),
+:deep(.q-dialog__inner.dlg-form-branco .q-field:hover .q-field__prepend .q-icon) {
+  color: var(--pf-brand) !important;
+  transform: scale(1.07);
+}
+
+/* =========================================================
+   FIX FUNDO DOS INPUTS (tirar o cinza de vez)
+   APLICA SÓ no dialog com content-class="dlg-form-branco"
+   ========================================================= */
+
+:deep(.q-dialog__inner.dlg-form-branco .q-field--filled .q-field__control),
+:deep(.q-dialog__inner.dlg-form-branco .q-field--outlined .q-field__control),
+:deep(.q-dialog__inner.dlg-form-branco .q-field--standout .q-field__control) {
+  background: #ffffff !important; /* evita cinza no control */
+}
+
+/* FILLED: fundo real é o :before */
+:deep(.q-dialog__inner.dlg-form-branco .q-field--filled .q-field__control:before) {
+  opacity: 1 !important;
+  background: #ffffff !important; /* branco de verdade */
+}
+
+/* OUTLINED/STANDOUT às vezes não usam :before como fundo, então garante também */
+:deep(.q-dialog__inner.dlg-form-branco .q-field--outlined .q-field__control),
+:deep(.q-dialog__inner.dlg-form-branco .q-field--standout .q-field__control) {
+  background-color: #ffffff !important;
+}
+
+/* alguns componentes colocam “tinta” no input interno */
+:deep(.q-dialog__inner.dlg-form-branco .q-field__native),
+:deep(.q-dialog__inner.dlg-form-branco .q-field__input) {
+  background: transparent !important;
+}
+
+/* se existir efeito de “hover cinza” vindo de overlay do Quasar */
+:deep(.q-dialog__inner.dlg-form-branco .q-field__control:after) {
+  background: transparent !important;
+}
+
+/* fundo suave no body do dialog pra dar contraste com os inputs brancos */
+:deep(.q-dialog__inner.dlg-form-branco .dlg-form-card__body) {
+  background: #ffffff !important;
+  padding: 18px !important;
+}
+
+/* inputs com mais “cara de app” */
+:deep(.q-dialog__inner.dlg-form-branco .q-field .q-field__control) {
+  box-shadow: inset 0 0 0 1px rgba(15,23,42,.12) !important;
+}
+:deep(.q-dialog__inner.dlg-form-branco .q-field--focused .q-field__control) {
+  box-shadow: inset 0 0 0 1px rgba(0,172,193,.68), 0 0 0 4px rgba(123,31,162,.16) !important;
+}
+
+:deep(.dlg-form-card__body .q-field) {
+  background: #ffffff !important;
+  border-radius: 14px;
+}
+:deep(.dlg-form-card__body .q-field__control) {
+  background: #ffffff !important;
+  box-shadow: inset 0 0 0 1px rgba(15,23,42,.10) !important;
+}
+:deep(.dlg-form-card__body .q-field--filled .q-field__control),
+:deep(.dlg-form-card__body .q-field--outlined .q-field__control),
+:deep(.dlg-form-card__body .q-field--standout .q-field__control) {
+  background: #ffffff !important;
+}
+:deep(.dlg-form-card__body .q-field__control:before),
+:deep(.dlg-form-card__body .q-field__control:after) {
+  background: transparent !important;
+}
+:deep(.dlg-form-card__body .q-field__label) {
+  color: #455a64 !important;
+  font-weight: 650;
+}
+:deep(.dlg-form-card__body .q-field__native),
+:deep(.dlg-form-card__body .q-field__input) {
+  color: #1f2937 !important;
+}
+:deep(.dlg-form-card__body .q-field__append) {
+  order: 2;
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+:deep(.dlg-form-card__body .q-field__prepend) {
+  order: 1;
+}
+:deep(.dlg-form-card__body .q-field__append .q-icon),
+:deep(.dlg-form-card__body .q-field__prepend .q-icon) {
+  color: #607d8b !important;
+}
+
+/* organiza os ícones do select: seta antes do botão de limpar */
+:deep(.dlg-form-card__body .q-select .q-field__append .q-icon.q-select__dropdown-icon) {
+  order: 1;
+}
+:deep(.dlg-form-card__body .q-select .q-field__append .q-icon.q-field__focusable-action) {
+  order: 2;
+}
+:deep(.dlg-form-card__body .q-select .q-field__append .q-icon:not(.q-select__dropdown-icon):not(.q-field__focusable-action)) {
+  order: 3;
+}
+
+/* =========================================================
+   MODAL PREMIUM: só afeta o QDialog com content-class="dlg-form-branco"
+   ========================================================= */
+:global(.dlg-form-branco) {
+  --pf-text: #0f172a;
+  --pf-muted: rgba(15, 23, 42, 0.62);
+
+  --pf-line: rgba(15, 23, 42, 0.12);
+  --pf-line2: rgba(15, 23, 42, 0.20);
+
+  --pf-brand: #7b1fa2;
+  --pf-brand-soft: rgba(123, 31, 162, 0.14);
+  --pf-highlight: #00acc1;
+  --pf-hover: rgba(0, 172, 193, 0.08);
+
+  --pf-required: #f4511e;
+  --pf-required-soft: rgba(244, 81, 30, 0.14);
+  --pf-readonly: rgba(2, 6, 23, 0.05);
+
+
+  --pf-brand: #7b1fa2;
+  --pf-brand-soft: rgba(123, 31, 162, 0.14);
+  --pf-highlight: #00acc1;
+  --pf-hover: rgba(0, 172, 193, 0.08);
+
+  --pf-required: #f4511e;
+  --pf-required-soft: rgba(244, 81, 30, 0.14);
+  --pf-readonly: rgba(2, 6, 23, 0.05);
+
+  --pf-radius: 14px;
+  --pf-ring: 0 0 0 4px rgba(0, 172, 193, 0.18);
+  --pf-shadow: 0 20px 48px rgba(15, 23, 42, 0.12);
+}
+
+/* Card do dialog com presença */
+:global(.dlg-form-branco .q-card) {
+  background: #fff !important;
+  border-radius: 18px !important;
+  box-shadow: var(--pf-shadow) !important;
+  border: 1px solid rgba(123, 31, 162, 0.08);
+}
+
+/* Base do campo (filled/outlined) */
+:global(.dlg-form-branco .q-field .q-field__control) {
+  border-radius: var(--pf-radius) !important;
+  box-shadow: inset 0 0 0 1px var(--pf-line) !important;
+  transition: transform .12s ease, box-shadow .15s ease, background-color .15s ease;
+}
+
+/* >>> O FUNDO do FILLED é o :before. Se não setar aqui, fica cinza. */
+:global(.dlg-form-branco .q-field--filled .q-field__control:before) {
+  opacity: 1 !important;
+  background: #ffffff !important;
+}
+
+/* Remove underline/overlay padrão do filled (pra não “sujar” a cor) */
+:global(.dlg-form-branco .q-field--filled .q-field__control:after) {
+  opacity: 0 !important;
+  background: transparent !important;
+}
+
+/* Texto e label */
+:global(.dlg-form-branco .q-field__label) {
+  color: var(--pf-muted) !important;
+  font-weight: 650;
+}
+:global(.dlg-form-branco .q-field__native),
+:global(.dlg-form-branco .q-field__input) {
+  color: var(--pf-text) !important;
+}
+
+/* Hover */
+:global(.dlg-form-branco .q-field:hover .q-field__control) {
+  transform: translateY(-1px);
+  box-shadow: inset 0 0 0 1px var(--pf-line2) !important;
+}
+:global(.dlg-form-branco .q-field--filled:hover .q-field__control:before) {
+  background: var(--pf-hover) !important;
+}
+
+/* Focus (efeito “uix”) */
+:global(.dlg-form-branco .q-field--focused .q-field__control) {
+  transform: translateY(-1px);
+  box-shadow: inset 0 0 0 1px rgba(0, 172, 193, 0.68), var(--pf-ring) !important;
+}
+:global(.dlg-form-branco .q-field--filled.q-field--focused .q-field__control:before) {
+  background: var(--pf-brand-soft) !important;
+}
+
+/* Ícones */
+:global(.dlg-form-branco .q-field__append .q-icon),
+:global(.dlg-form-branco .q-field__prepend .q-icon) {
+  color: rgba(15, 23, 42, 0.55) !important;
+  transition: transform .12s ease, color .15s ease;
+}
+:global(.dlg-form-branco .q-field:hover .q-field__append .q-icon),
+:global(.dlg-form-branco .q-field:hover .q-field__prepend .q-icon) {
+  color: var(--pf-brand) !important;
+  transform: scale(1.07);
+}
+
+
+.unico-root{
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* O container principal que envolve a grid precisa poder "crescer" */
+.grid-scroll-shell{
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Onde a grid fica */
+.grid-body{
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.grid-shell-outer{
+  width: 100%;
+}
+
+.grid-top-outer{
+  width: 100%;
+}
+
+.dx-datagrid{
+  height: 100% !important;
+}
 
 </style>
-
