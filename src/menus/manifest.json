@@ -1,1 +1,4 @@
-[{ "id": 8832, "name": "Objetivo", "pageSize": 200 }]
+[
+  { "id": 8832, "name": "Objetivo", "pageSize": 200 },
+  { "id": 8833, "name": "Lote Contábeis", "pageSize": 200 }
+]
