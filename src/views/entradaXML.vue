@@ -24,6 +24,27 @@
           <q-btn rounded color="deep-purple-7" class=" q-ml-sm" icon="picture_as_pdf" @click="exportarPDF" />
           <q-btn rounded color="deep-purple-7" class=" q-ml-sm" icon="description" @click="abrirRelatorio" />
           <q-btn rounded color="deep-purple-7" class=" q-ml-sm" icon="view_list" @click="dlgMapaAtributos = true" />
+<q-btn
+  color="deep-purple-7"
+  class=" q-ml-sm"
+  dense
+  rounded
+  icon="visibility"
+  label="NFS-e"
+  :disable="!podeVisualizarNFSe"
+  @click="visualizarNFSe"
+/>
+<q-btn
+  color="deep-purple-7"
+  class=" q-ml-sm"
+  rounded
+  dense
+  icon="visibility"
+  label="CT-e"
+  :disable="!podeVisualizarCTe"
+  @click="visualizarCTe"
+/>
+
 
           <!-- TODO: checar se é necessário -->
           <!-- Botão de processos (3 pontinhos) -->
@@ -309,6 +330,175 @@
         </q-card-section>
       </q-card>
     </q-dialog>
+
+
+    <q-dialog v-model="nfseRel.open" maximized>
+  <q-card class="bg-white">
+    <q-bar>
+      <div class="text-weight-medium">Visualização NFS-e</div>
+      <q-space />
+      <q-btn dense flat icon="print" @click="imprimirNFSe" />
+      <q-btn dense flat icon="close" v-close-popup />
+    </q-bar>
+
+    <q-card-section class="q-pa-md">
+      <div v-if="!nfseRel.dados" class="text-grey">
+        Sem dados.
+      </div>
+
+      <div v-else class="nfse-paper">
+
+        <div class="row items-start q-col-gutter-md">
+          <div class="col-8">
+            <div class="text-h6">NFS-e (DANFSE)</div>
+            <div class="text-caption text-grey">Layout: {{ nfseRel.dados.ds_layout }}</div>
+          </div>
+          <div class="col-4 text-right">
+            <div class="text-subtitle1"><b>Nº:</b> {{ nfseRel.dados.nr_nfse }}</div>
+            <div><b>Emissão:</b> {{ nfseRel.dados.dt_emissao }}</div>
+            <div><b>Cód. Verificação:</b> {{ nfseRel.dados.cd_verificacao }}</div>
+          </div>
+        </div>
+
+        <q-separator class="q-my-sm" />
+
+        <div class="row q-col-gutter-md">
+          <div class="col-6">
+            <div class="text-subtitle2">Prestador</div>
+            <div><b>CNPJ:</b> {{ nfseRel.dados.cnpj_prestador }}</div>
+            <div><b>IM:</b> {{ nfseRel.dados.im_prestador }}</div>
+          </div>
+          <div class="col-6">
+            <div class="text-subtitle2">Tomador</div>
+            <div><b>CNPJ:</b> {{ nfseRel.dados.cnpj_tomador }}</div>
+          </div>
+        </div>
+
+        <q-separator class="q-my-sm" />
+
+        <div class="row q-col-gutter-md">
+          <div class="col-12">
+            <div class="text-subtitle2">Serviço</div>
+            <div class="row q-col-gutter-md">
+              <div class="col-4"><b>Item Lista:</b> {{ nfseRel.dados.item_lista_servico }}</div>
+              <div class="col-4"><b>Cód. Trib. Mun.:</b> {{ nfseRel.dados.cod_trib_municipio }}</div>
+              <div class="col-4"><b>Município Prest.:</b> {{ nfseRel.dados.municipio_prestacao }}</div>
+            </div>
+            <div class="q-mt-sm">
+              <b>Discriminação:</b>
+              <div class="nfse-box">{{ nfseRel.dados.ds_discriminacao }}</div>
+            </div>
+          </div>
+        </div>
+
+        <q-separator class="q-my-sm" />
+
+        <div class="row q-col-gutter-md">
+          <div class="col-3"><b>Vlr Serviços:</b> {{ nfseRel.dados.vl_servicos }}</div>
+          <div class="col-3"><b>Base Calc:</b> {{ nfseRel.dados.base_calculo }}</div>
+          <div class="col-3"><b>Alíquota:</b> {{ nfseRel.dados.aliq_iss }}</div>
+          <div class="col-3"><b>Vlr ISS:</b> {{ nfseRel.dados.vl_iss }}</div>
+          <div class="col-12 text-right q-mt-sm">
+            <div class="text-subtitle1"><b>Valor Líquido:</b> {{ nfseRel.dados.vl_liquido }}</div>
+          </div>
+        </div>
+
+      </div>
+    </q-card-section>
+  </q-card>
+</q-dialog>
+
+<q-dialog v-model="cteRel.open" maximized>
+  <q-card class="bg-white">
+    <q-bar>
+      <div class="text-weight-medium">DACTE Simplificado</div>
+      <q-space />
+      <q-btn dense flat icon="print" @click="imprimirCTe" />
+      <q-btn dense flat icon="close" v-close-popup />
+    </q-bar>
+
+    <q-card-section class="q-pa-md">
+      <div v-if="!cteRel.dados" class="text-grey">
+        Sem dados.
+      </div>
+
+      <div v-else class="cte-paper">
+
+        <div class="row items-start q-col-gutter-md">
+          <div class="col-8">
+            <div class="text-h6">Conhecimento de Transporte Eletrônico (CT-e)</div>
+            <div class="text-caption text-grey">
+              Chave: {{ cteRel.dados.ch_cte }}
+            </div>
+          </div>
+
+          <div class="col-4 text-right">
+            <div class="text-subtitle1">
+              <b>Nº:</b> {{ cteRel.dados.nr_cte }} <span v-if="cteRel.dados.serie">/ {{ cteRel.dados.serie }}</span>
+            </div>
+            <div><b>Emissão:</b> {{ cteRel.dados.dt_emissao }}</div>
+            <div><b>Modal:</b> {{ cteRel.dados.modal }} <span v-if="cteRel.dados.cfop">| <b>CFOP:</b> {{ cteRel.dados.cfop }}</span></div>
+          </div>
+        </div>
+
+        <q-separator class="q-my-sm" />
+
+        <div class="row q-col-gutter-md">
+          <div class="col-6">
+            <div class="text-subtitle2">Emitente</div>
+            <div><b>CNPJ:</b> {{ cteRel.dados.cnpj_emit }}</div>
+            <div><b>Nome:</b> {{ cteRel.dados.xnome_emit }}</div>
+          </div>
+          <div class="col-6">
+            <div class="text-subtitle2">Destinatário</div>
+            <div><b>Doc:</b> {{ cteRel.dados.cnpj_dest }}</div>
+            <div><b>Nome:</b> {{ cteRel.dados.xnome_dest }}</div>
+          </div>
+        </div>
+
+        <q-separator class="q-my-sm" />
+
+        <div class="row q-col-gutter-md">
+          <div class="col-12">
+            <div class="text-subtitle2">Percurso</div>
+            <div class="row q-col-gutter-md">
+              <div class="col-6">
+                <b>Origem:</b> {{ cteRel.dados.xmun_ini }} - {{ cteRel.dados.uf_ini }}
+              </div>
+              <div class="col-6">
+                <b>Destino:</b> {{ cteRel.dados.xmun_fim }} - {{ cteRel.dados.uf_fim }}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <q-separator class="q-my-sm" />
+
+        <div class="row q-col-gutter-md">
+          <div class="col-12">
+            <div class="text-subtitle2">Carga</div>
+            <div class="row q-col-gutter-md">
+              <div class="col-4"><b>Vlr Carga:</b> {{ cteRel.dados.v_carga }}</div>
+              <div class="col-8"><b>Produto Predominante:</b> {{ cteRel.dados.pro_pred }}</div>
+            </div>
+          </div>
+        </div>
+
+        <q-separator class="q-my-sm" />
+
+        <div class="row q-col-gutter-md">
+          <div class="col-3"><b>Vlr Prestação:</b> {{ cteRel.dados.v_tprest }}</div>
+          <div class="col-3"><b>Vlr a Receber:</b> {{ cteRel.dados.v_rec }}</div>
+          <div class="col-3"><b>Tipo CT-e:</b> {{ cteRel.dados.tp_cte }}</div>
+          <div class="col-3"><b>Tipo Serviço:</b> {{ cteRel.dados.tp_serv }}</div>
+        </div>
+
+      </div>
+    </q-card-section>
+  </q-card>
+</q-dialog>
+
+
   </div>
 </template>
 
@@ -594,6 +784,7 @@ export default {
     const { first, last } = currentMonthRange()
 
     return {
+      cd_empresa: localStorage.cd_empresa || 0,
       tituloMenu: localStorage.nm_menu_titulo || "Entrada de XML",
       iLote : 0,
       importando: false,
@@ -624,6 +815,8 @@ export default {
       opcoesTipoXml: [
         { label: "55 - NFe", value: 55 },
         { label: "65 - NFCe", value: 65 },
+        { label: "NFS-e (Serviço - GINFES)", value: 200 },
+        { label: "CT-e (Conhecimento Transporte)", value: 300 },
       ],
 
       usarScrollVirtual: false,
@@ -671,7 +864,19 @@ export default {
       gridRows: [],
       gridColumns: [],
       gridSummary: null,
-      empresa: localStorage.empresa
+      empresa: localStorage.empresa,
+      nfseRel: {
+        open: false,
+        loading: false,
+        dados: null
+      },
+      cteRel: {
+        open: false,
+        loading: false,
+        dados: null
+      },
+ 
+
     };
   },
   async created () {
@@ -681,6 +886,23 @@ export default {
   },
 
   computed: {
+  
+  podeVisualizarCTe () {
+    const driver = this._tipoDriver(this.form.cd_tipo_xml || this.filtro.cd_tipo_xml);
+    if (driver.tipo !== 'CTE') return false;
+
+    const row = this.linhaSelecionada || (this.selectedRows && this.selectedRows[0]);
+    return !!(row && row.cd_cte_xml);
+  },
+  
+  podeVisualizarNFSe () {
+    const driver = this._tipoDriver(this.form.cd_tipo_xml || this.filtro.cd_tipo_xml);
+    if (driver.tipo !== 'NFSE') return false;
+    // ajuste aqui conforme seu controle de seleção:
+    return this.linhaSelecionada && (this.linhaSelecionada.cd_nfse_xml || this.linhaSelecionada.cd_nfse_xml === 0);
+  },
+
+
   podeImportar () {
     const temArquivos = Array.isArray(this.form.arquivos) && this.form.arquivos.length > 0
     const temXmlDigitado = !!this.form.ds_xml
@@ -693,6 +915,107 @@ export default {
   },  
 
   methods: {
+
+    imprimirCTe () {
+  window.print();
+},
+
+    async visualizarCTe () {
+  const row = this.linhaSelecionada || (this.selectedRows && this.selectedRows[0]);
+  const id = row && row.cd_cte_xml;
+
+  if (!id) {
+    this.$q.notify({ type: 'warning', position: 'center', message: 'Selecione um CT-e.' });
+    return;
+  }
+
+  this.cteRel.loading = true;
+
+  try {
+    const cfg = this.headerBanco ? { headers: { 'x-banco': this.headerBanco } } : undefined;
+
+    // mantenha o mesmo formato que seu /exec já aceita (objeto)
+    const body = 
+    [{ ic_json_parametro: 'S',
+       cd_cte_xml: id }];
+
+
+    const resp = await api.post('/exec/pr_cte_xml_obter', body, cfg);
+    const rows = this.resolveRows(resp && resp.data);
+    const dados = Array.isArray(rows) ? rows[0] : null;
+
+    if (!dados) {
+      this.$q.notify({ type: 'warning', position: 'center', message: 'CT-e não encontrado.' });
+      return;
+    }
+
+    this.cteRel.dados = dados;
+    this.cteRel.open = true;
+
+  } catch (e) {
+    const r = e && e.response;
+    const msg =
+      (r && r.data && (r.data.Msg || r.data.message || r.data.error)) ||
+      e.message ||
+      'Erro ao abrir visualização do CT-e.';
+    this.$q.notify({ type: 'negative', position: 'center', message: msg });
+  } finally {
+    this.cteRel.loading = false;
+  }
+},
+
+
+    imprimirNFSe () {
+  // imprime o modal. Se quiser imprimir só a área nfse-paper,
+  // a gente cria CSS @media print mais enxuto.
+  window.print();
+},
+
+async visualizarNFSe () {
+  const row = this.linhaSelecionada; // ajuste conforme seu grid
+  const id = row && row.cd_nfse_xml;
+
+  if (!id) {
+    this.$q.notify({ type: 'warning', position: 'center', message: 'Selecione uma NFS-e.' });
+    return;
+  }
+
+  this.nfseRel.loading = true;
+
+  try {
+    const cfg = this.headerBanco ? { headers: { 'x-banco': this.headerBanco } } : undefined;
+
+    // IMPORTANTE: manter o mesmo formato de payload que seu /exec já aceita.
+    // Seu consultar original funciona com OBJETO. Então aqui também vai como OBJETO.
+    const body = [{ 
+      ic_json_parametro: 'S',
+      cd_nfse_xml: id }];
+
+    const resp = await api.post('/exec/pr_nfse_xml_obter', body, cfg);
+    const rows = this.resolveRows(resp && resp.data);
+    const dados = Array.isArray(rows) ? rows[0] : null;
+
+    if (!dados) {
+      this.$q.notify({ type: 'warning', position: 'center', message: 'NFS-e não encontrada.' });
+      return;
+    }
+
+    this.nfseRel.dados = dados;
+    this.nfseRel.open = true;
+
+  } catch (e) {
+    const r = e && e.response;
+    const msg =
+      (r && r.data && (r.data.Msg || r.data.message || r.data.error)) ||
+      e.message ||
+      'Erro ao abrir visualização.';
+    this.$q.notify({ type: 'negative', position: 'center', message: msg });
+  } finally {
+    this.nfseRel.loading = false;
+  }
+},
+
+    
     async loadPayload(cd_menu, cd_usuario) {
       //
 
@@ -1286,6 +1609,7 @@ export default {
         if (!rowsSrc.length) {
           this.$q?.notify?.({
             type: "warning",
+            position: 'center', 
             message: "Sem dados para exportar.",
           });
           return;
@@ -1541,6 +1865,7 @@ export default {
         console.error("PDF erro", e);
         this.$q?.notify?.({
           type: "negative",
+          position: 'center', 
           message: "Falha ao exportar PDF.",
         });
       }
@@ -1656,20 +1981,48 @@ try { return process.env.VUE_APP_API_BASE || window.location.origin } catch(e){ 
 
 abrirDanfe(row){
   
-  //console.log('abrir danfe', row);
+  // Se o DxDataGrid te entrega { data: { ... } } em alguns templates,
+  // garanta o objeto certo:
+  const r = row?.data ? row.data : row;
 
- const banco = this.getBanco() || localStorage.nm;
- const base = this.getApiBase();
+  // 1) SETA a seleção usada pelos relatórios
+  this.linhaSelecionada = r;
+
+  // 2) pega o tipo vindo do select (form ou filtro)
+  const cdTipo = Number(this.form?.cd_tipo_xml ?? this.filtro?.cd_tipo_xml ?? 0);
+
+  // debug forte
+  console.log('PDF -> row:', row);
+  console.log('PDF -> cdTipo:', cdTipo, 'typeof:', typeof cdTipo);
+
+  const driver = this._tipoDriver(cdTipo);
+  const tipo = (driver?.tipo || '').toUpperCase();
+
+  console.log('PDF -> driver:', driver, 'tipo:', tipo);
+
+   if (tipo === 'NFSE') {
+      return this.visualizarNFSe()  // já usa linhaSelecionada
+   }
+
+   if (tipo === 'CTE') {
+      return this.visualizarCTe()   // já usa linhaSelecionada
+   }
+
+   //continua o que está está gerando corretamente
+
+   //console.log('abrir danfe', row);
+
+   const banco = this.getBanco() || localStorage.nm;
+   const base = this.getApiBase();
  
  //console.log(banco, base);
-
 
  const chave = String(row.cd_chave_acesso || row.chave || row.chave_acesso || '').replace(/\D+/g,'');
  
  //console.log('chave de acesso :', chave);
 
  if (!chave || chave.length !== 44) {
-    this.$q.notify({ type:'warning', message:'Chave inválida.' });
+    this.$q.notify({ type:'warning', position: 'center', message:'Chave inválida.' });
     return;
  }
 
@@ -1702,7 +2055,7 @@ const url = `${base}/api/nfe/nfce/danfe/xml/${encodeURIComponent(row.cd_nota_sai
 window.open(url,'_blank');
 return;
 }
-this.$q.notify({type:'warning', message:'Linha sem chave de acesso (44 dígitos).'});
+this.$q.notify({type:'warning', position: 'center', message:'Linha sem chave de acesso (44 dígitos).'});
 },
 
 baixarXml(row){
@@ -1711,7 +2064,7 @@ baixarXml(row){
 const base = this.getApiBase();
 const chave = String(row.cd_chave_acesso || row.chave || row.chave_acesso || '').replace(/\D+/g,'');
 if (!chave || chave.length !== 44){
-this.$q.notify({type:'warning', message:'Esta linha não tem chave de acesso (44 dígitos).'});
+this.$q.notify({type:'warning', position: 'center', message:'Esta linha não tem chave de acesso (44 dígitos).'});
 return;
 }
 //const url = `${base}/api/nfe/nfce/xml/${encodeURIComponent(chave)}${banco?`?banco=${encodeURIComponent(banco)}`:''}`.replace(/\$/g,'$$');
@@ -1781,7 +2134,7 @@ window.open(url,'_blank');
         this.form.ds_xml = evt.target.result;
       };
       reader.onerror = () => {
-        this.$q.notify({ type: "negative", message: "Erro ao ler o XML." });
+        this.$q.notify({ type: "negative", position: 'center', message: "Erro ao ler o XML." });
       };
       reader.readAsText(file, "UTF-8");
     },
@@ -1869,15 +2222,66 @@ window.open(url,'_blank');
         const stamp = new Date();
         const nome = `notas_xml_${stamp.getFullYear()}-${pad2(stamp.getMonth()+1)}-${pad2(stamp.getDate())}_${pad2(stamp.getHours())}${pad2(stamp.getMinutes())}.xlsx`;
         saveAs(new Blob([buffer], { type: 'application/octet-stream' }), nome);
-        this.$q.notify({ type: 'positive', message: 'Excel gerado com sucesso.' });
+        this.$q.notify({ type: 'positive', position: 'center', message: 'Excel gerado com sucesso.' });
       } catch (e) {
-        this.$q.notify({ type: 'negative', message: e.message || 'Falha ao exportar Excel.' });
+        this.$q.notify({ type: 'negative', position: 'center', message: e.message || 'Falha ao exportar Excel.' });
       } finally {
         this.exporting = false;
       }
     },
 
-    async enviar () {
+    
+    _tipoDriver (cdTipo) {
+      const t = Number(cdTipo || 0)
+
+      // NFe / NFCe (produto)
+      if (t === 55 || t === 65) {
+        return {
+          tipo: 'NFE',
+          inserirProc: 'pr_nota_xml_inserir',
+          listarProc: 'pr_nota_xml_listar',
+          processarProc: 'pr_egis_recebimento_processo_modulo',
+          processarParametro: 5
+        }
+      }
+
+      // NFS-e (serviço - GINFES)
+      if (t === 200) {
+        return {
+          tipo: 'NFSE',
+          inserirProc: 'pr_nfse_xml_inserir',
+          listarProc: 'pr_nfse_xml_listar',
+           obterProc:  'pr_nfse_xml_obter',
+          processarProc: 'pr_egis_nota_servico_processo',
+          processarParametro: 900
+        }
+      }
+
+      // CT-e (placeholder)
+      if (t === 300) {
+        return {
+          tipo: 'CTE',
+          inserirProc: 'pr_cte_xml_inserir',
+          listarProc: 'pr_cte_xml_listar',
+          obterProc:  'pr_cte_xml_obter',
+          processarProc: 'pr_cte_processo',
+          processarParametro: 950,
+          disabled: false
+        }
+      }
+
+      // fallback
+      return {
+        tipo: 'NFE',
+        inserirProc: 'pr_nota_xml_inserir',
+        listarProc: 'pr_nota_xml_listar',
+        processarProc: 'pr_egis_recebimento_processo_modulo',
+        processarParametro: 5
+      }
+    },
+
+
+    async enviarOld () {
   if (!this.podeImportar) return;
 
   this.importando = true;
@@ -1899,7 +2303,8 @@ window.open(url,'_blank');
           cd_tipo_xml: this.form.cd_tipo_xml,
           ds_xml: xml,
           cd_chave_acesso: chave,
-          cd_usuario_inclusao: this.usuario?.cd_usuario || null
+          cd_empresa: this.cd_empresa || localStorage.cd_empresa || 0,
+          cd_usuario_inclusao: localStorage.cd_usuario || this.usuario?.cd_usuario || null
         }];
 
         console.log('Importando XML:', file.name, 'chave:', chave, body);
@@ -1945,7 +2350,144 @@ window.open(url,'_blank');
   } catch (e) {
     console.error('Erro ao importar XML(s):', e);
     if (this.$q?.notify) {
-      this.$q.notify({ type: 'negative', message: 'Erro ao importar XML(s): ' + (e.message || e) });
+      this.$q.notify({ type: 'negative', position: 'center', message: 'Erro ao importar XML(s): ' + (e.message || e) });
+    } else {
+      alert('Erro ao importar XML(s): ' + (e.message || e));
+    }
+  } finally {
+    this.importando = false;
+  }
+},
+
+//
+
+ async enviar () {
+
+  if (!this.podeImportar) return;
+
+  const driver = this._tipoDriver(this.form.cd_tipo_xml);
+  if (driver.disabled) {
+    this.$q?.notify?.({ type: 'warning', position: 'center', message: 'Tipo ainda não implantado.' });
+    return;
+  }
+
+  this.importando = true;
+  const arquivos = Array.isArray(this.form.arquivos) ? this.form.arquivos : [];
+
+  const cfg = this.headerBanco
+    ? { headers: { 'x-banco': this.headerBanco } }
+    : undefined;
+
+  try {
+    // 1) há arquivos selecionados? importa cada um
+    if (arquivos.length) {
+      for (const file of arquivos) {
+        const xml = await this.lerArquivoXml(file);
+        const chave = this.extrairChaveAcesso(xml, file.name) || null;
+        
+        let body = '' 
+
+        /*
+        const body = driver.tipo === 'NFSE'
+          ? [{
+              ic_json_parametro: 'S',
+              cd_usuario_inclusao: this.usuario?.cd_usuario || null,
+              ds_layout: 'GINFES',
+              ds_xml: xml
+            }]
+          : [{
+              ic_json_parametro: 'S',
+              cd_tipo_xml: this.form.cd_tipo_xml,
+              ds_xml: xml,
+              cd_chave_acesso: chave,
+              cd_usuario_inclusao: this.usuario?.cd_usuario || null
+            }];
+        */
+
+
+        if (driver.tipo === 'NFSE') {
+  // ✅ NFSe: melhor mandar cd_empresa e manter ic_json_parametro
+  body = [{
+    ic_json_parametro: 'S',
+    cd_empresa: this.cd_empresa || localStorage.cd_empresa || 0,
+    cd_usuario_inclusao: localStorage.cd_usuario || this.usuario?.cd_usuario || null,
+    ds_layout: 'GINFES',
+    ds_xml: xml
+  }];
+
+} else if (driver.tipo === 'CTE') {
+  // ✅ CT-e (300)
+  body = [{
+    ic_json_parametro: 'S',
+    cd_empresa: this.cd_empresa || localStorage.cd_empresa || 0,
+    cd_usuario_inclusao: localStorage.cd_usuario || this.usuario?.cd_usuario || null,
+    ds_layout: 'CTE',
+    ds_xml: xml
+  }];
+
+} else {
+  // ✅ NFe/NFCe (como já estava)
+  body = [{
+    ic_json_parametro: 'S',
+    cd_tipo_xml: this.form.cd_tipo_xml,
+    ds_xml: xml,
+    cd_chave_acesso: chave,
+    cd_empresa: this.cd_empresa || localStorage.cd_empresa || 0,
+    cd_usuario_inclusao: localStorage.cd_usuario || this.usuario?.cd_usuario || null,
+
+  }];
+}
+
+        console.log('Importando XML:', file.name, 'chave:', chave, body);
+
+        //
+        await api.post(`/exec/${driver.inserirProc}`, body, cfg);
+        //
+
+      }
+
+    } else if (this.form.ds_xml) {
+      // 2) fallback: sem arquivos, mas XML digitado/colado manualmente
+      const chave = this.extrairChaveAcesso(this.form.ds_xml, '') || null;
+
+      const body = driver.tipo === 'NFSE'
+        ? [{
+            cd_usuario_inclusao: this.usuario?.cd_usuario || null,
+            ds_layout: 'GINFES',
+            ds_xml: this.form.ds_xml
+          }]
+        : [{
+            ic_json_parametro: 'S',
+            cd_tipo_xml: this.form.cd_tipo_xml,
+            ds_xml: this.form.ds_xml,
+            cd_chave_acesso: chave,
+            cd_usuario_inclusao: this.usuario?.cd_usuario || null
+          }];
+
+      console.log('Importando XML único (ds_xml): chave:', chave, body, `${driver.inserirProc}`);
+
+      await api.post(`/exec/${driver.inserirProc}`, body, cfg);
+
+    } else {
+      console.warn('Nenhum XML selecionado/definido para importar.');
+      return;
+    }
+
+    // 3) limpar form e recarregar grid
+
+    this.form.arquivos = [];
+    this.form.ds_xml = '';
+
+    // ajuste aqui para o método que você usa para listar as notas importadas
+    if (typeof this.consultar === 'function') {
+      await this.consultar();
+    }
+
+
+  } catch (e) {
+    console.error('Erro ao importar XML(s):', e);
+    if (this.$q?.notify) {
+      this.$q.notify({ type: 'negative', position: 'center', message: 'Erro ao importar XML(s): ' + (e.message || e) });
     } else {
       alert('Erro ao importar XML(s): ' + (e.message || e));
     }
@@ -1956,6 +2498,7 @@ window.open(url,'_blank');
 
 
 
+//
     setPeriodoPadrao() {
       if (!this.filtro.dt_inicial || !this.filtro.dt_final) {
         const { first, last } = currentMonthRange();
@@ -1965,10 +2508,10 @@ window.open(url,'_blank');
     },
 
     //Processsar a Notas 
-    async processar() {
+    async processarOld() {
       //
       if (!this.rows || !this.rows.length) {
-        this.$q.notify({ type: 'warning', message: 'Nenhuma nota para processar.' })
+        this.$q.notify({ type: 'warning', position: 'center', message: 'Nenhuma nota para processar.' })
         return
       }
 
@@ -2036,7 +2579,169 @@ window.open(url,'_blank');
   
     },
 
-    async consultar() {
+
+    //Processsar a Notas 
+    async processar() {
+      const driver = this._tipoDriver(this.form.cd_tipo_xml);
+      if (driver.disabled) {
+        this.$q?.notify?.({ type: 'warning', position: 'center', message: 'Tipo ainda não implantado.' });
+        return;
+      }
+
+      //
+      if (!this.rows || !this.rows.length) {
+        this.$q.notify({ type: 'warning', position: 'center', message: 'Nenhuma nota para processar.' })
+        return
+      }
+
+    this.processingNotas = true
+
+    const cfg = this.headerBanco
+      ? { headers: { 'x-banco': this.headerBanco } }
+      : undefined
+
+
+       try {
+      const cd_usuario =
+        Number(localStorage.getItem("cd_usuario")) ||
+        Number(this.usuario?.cd_usuario || 1)
+
+      // loop das notas da grid
+      for (const row of this.rows) {
+        // tenta achar o código da nota de entrada na linha
+        const idProcesso = driver.tipo === 'NFSE'
+          ? (row.cd_nfse_xml || row.cd_identificacao || null)
+          : (row.cd_identificacao || null)
+
+        if (!idProcesso) {
+          console.warn('Linha sem cd_nota_entrada válido:', row)
+          continue
+        }
+
+        const cfg = this.headerBanco ? { headers: { "x-banco": this.headerBanco } } : undefined;
+
+        const body = driver.tipo === 'NFSE'
+          ? [{
+              ic_json_parametro: 'S',
+              cd_parametro: driver.processarParametro,
+              cd_usuario: cd_usuario,
+              dados_registro: JSON.stringify({ cd_nfse_xml: idProcesso })
+            }]
+          : [{
+              // se o seu backend usa isso como nos outros procs, mantém:
+              ic_json_parametro: 'S',
+              cd_parametro: driver.processarParametro,
+              cd_nota_entrada: idProcesso,
+              cd_operacao_fiscal: 0,
+              cd_usuario: cd_usuario,
+              cd_pedido_compra: 0,
+              cd_item_pedido_compra: 0,
+              cd_nota_nfe: row.cd_xml_nota || 0,
+              cd_empresa_fat: row.cd_empresa_fat || null
+            }]
+
+        console.log('payload do processo --> ', body);
+
+        // chamada ao exec da procedure
+        await api.post(`/exec/${driver.processarProc}`, body, cfg)
+
+      }
+
+      this.$q.notify({ type: 'positive', 
+      position: 'center',
+      message: 'Notas processadas com sucesso.' })
+
+    } catch (e) {
+      console.error(e)
+      this.$q.notify({
+        type: 'negative',
+        position: 'center',
+        message: e?.message || 'Erro ao processar notas.'
+      })
+    } finally {
+      this.processingNotas = false
+    }
+  
+    },
+
+async consultar () {
+  this.setPeriodoPadrao();
+  this.loading = true;
+
+  // escolhe o tipo a partir do filtro (ou do form como fallback)
+  const driver = this._tipoDriver(this.filtro.cd_tipo_xml || this.form.cd_tipo_xml);
+
+  if (driver.disabled) {
+    this.loading = false;
+    this.$q?.notify?.({ type: 'warning', position: 'center', message: 'Tipo ainda não implantado.' });
+    return;
+  }
+
+  try {
+    const cfg = this.headerBanco ? { headers: { "x-banco": this.headerBanco } } : undefined;
+
+    const dtIni = parseDMY(this.filtro.dt_inicial);
+    const dtFim = parseDMY(this.filtro.dt_final);
+
+    // monta payload conforme o tipo
+    // (mantive o formato OBJETO igual seu consultar original, porque no seu /exec isso funcionou)
+    
+    const body =
+      (driver.tipo === 'NFSE' || driver.tipo === 'CTE')
+        ? [{
+            ic_json_parametro: 'S',
+            cd_empresa: this.cd_empresa || null, // opcional, mas ajuda
+            dt_inicial: dtIni ? yyyymmdd(dtIni) : null,
+            dt_final: dtFim ? yyyymmdd(dtFim) : null,
+          }]
+        : {
+            ic_json_parametro: 'N',
+            cd_tipo_xml: this.filtro.cd_tipo_xml,
+            dt_ini: dtIni ? yyyymmdd(dtIni) : null,
+            dt_fim: dtFim ? yyyymmdd(dtFim) : null,
+          };
+
+    // chama a PR correta
+    const resp = await api.post(`/exec/${driver.listarProc}`, body, cfg);
+
+    const rows = this.resolveRows(resp && resp.data);
+    this.rows = Array.isArray(rows) ? rows : [];
+
+    console.log('Dados da consulta notas', body, rows);
+
+    this.columns = this.inferirColunas(this.rows);
+
+    try {
+      // OBS: no seu código você usa cd_tabela e cdTabela (um com underscore e outro camel)
+      // Mantive exatamente seu padrão, só ajuste se sua prop correta for cd_tabela mesmo.
+      this.cd_tabela = 0;
+      this.columns = await mapColumnsFromDB(this.cd_tabela, this.columns, { cd_parametro: 1, useCache: true });
+
+      const nomes = this.columns.map(c => c.dataField).filter(Boolean);
+      const probe = await fetchMapaAtributo(this.cdTabela, nomes, { cd_parametro: 1, useCache: false });
+      console.table(nomes);
+      console.log('Consultar() - byAtrib:', probe.byAtrib);
+
+    } catch (e) {
+      console.warn('Mapa atributo indisponível (segue rótulos padrões):', e);
+    }
+
+    this.$q.notify({ type: "positive", position: 'center', message: `${this.rows.length} registro(s).` });
+    this.forceGridResize();
+
+  } catch (e) {
+    const r = e && e.response;
+    const msg =
+      (r && r.data && (r.data.Msg || r.data.message || r.data.error)) ||
+      e.message ||
+      "Erro ao consultar.";
+    this.$q.notify({ type: "negative", position: 'center', message: msg });
+  } finally {
+    this.loading = false;
+  }
+},
+
+    async consultarOld() {
 
       this.setPeriodoPadrao();
 
@@ -2080,7 +2785,7 @@ window.open(url,'_blank');
         }
 
 
-        this.$q.notify({ type: "positive", message: `${this.rows.length} registro(s).` });
+        this.$q.notify({ type: "positive", position: 'center', message: `${this.rows.length} registro(s).` });
         
         this.forceGridResize();
 
@@ -2090,13 +2795,21 @@ window.open(url,'_blank');
           (r && r.data && (r.data.Msg || r.data.message || r.data.error)) ||
           e.message ||
           "Erro ao consultar.";
-        this.$q.notify({ type: "negative", message: msg });
+        this.$q.notify({ type: "negative", position: 'center', message: msg });
       } finally {
         this.loading = false;
       }
     },
+
+
+
   },
+
+  
   async mounted() {
+
+    this.cd_empresa = localStorage.cd_empresa || 0;
+
     await this.consultar();
      this._onResize = () => this.forceGridResize();
      window.addEventListener('resize', this._onResize);
@@ -2172,4 +2885,30 @@ window.open(url,'_blank');
   align-items: center;
   width: 100%;
 }
+
+.nfse-paper { max-width: 980px; margin: 0 auto; }
+.nfse-box { border: 1px solid #ddd; padding: 8px; min-height: 90px; white-space: pre-wrap; }
+@media print {
+  .q-dialog__backdrop, .q-bar, .q-btn { display: none !important; }
+}
+
+.cte-paper {
+  max-width: 980px;
+  margin: 0 auto;
+}
+
+@media print {
+  /* some toolbars/buttons */
+  .q-dialog__backdrop,
+  .q-bar,
+  .q-btn {
+    display: none !important;
+  }
+
+  /* tenta garantir fundo branco */
+  body {
+    background: #fff !important;
+  }
+}
+
 </style>
