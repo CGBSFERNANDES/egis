@@ -5,8 +5,6 @@
     modo_inicial="GRID"
     :overrides="overrides"
     :hooks="hooks"
-    @voltar="onVoltar"
-    @fechar="onFechar"
   />
 </template>
 

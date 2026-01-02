@@ -40,7 +40,10 @@
     class="q-ml-sm bg-form"
   />
 </div>
+
 <slot name="toolbar-left" :engine="this" />
+
+<template v-if="!uiLite">
 
           <q-btn
             v-if="cd_tabela > 0 && !isHidden('novo')"
@@ -69,6 +72,7 @@
           </q-btn>
 
         <q-btn
+          v-if="!isHidden('refresh')"
           dense
           rounded
           icon="refresh"
@@ -110,6 +114,7 @@
        </q-btn>
 
         <q-btn
+          v-if="!isHidden('pdf')"
           rounded
           dense
           color="deep-purple-7"
@@ -121,6 +126,7 @@
          <q-tooltip>Exportar PDF</q-tooltip>
         </q-btn>
         <q-btn
+          v-if="!isHidden('relatorio')"
           rounded
           dense
           color="deep-purple-7"
@@ -133,6 +139,7 @@
         </q-btn>
 
       <q-btn
+        v-if="!isHidden('dash')"
         dense
         rounded
         color="deep-purple-7"
@@ -160,6 +167,7 @@
      <q-tooltip>Processos</q-tooltip>
      </q-btn>
         <q-btn
+           v-if="!isHidden('mapaAtributos')"
            rounded
            dense
            color="deep-purple-7"
@@ -171,6 +179,7 @@
         <q-tooltip>Mapa de Atributos</q-tooltip>
         </q-btn>
         <q-btn
+          v-if="!isHidden('info')"
           dense
           rounded
           color="deep-purple-7"
@@ -220,6 +229,7 @@
       <q-tooltip>identificação</q-tooltip>
       </q-chip>
 
+      </template>
       <slot name="toolbar-right" :engine="this" />
 
         </h2>
@@ -319,12 +329,15 @@
               <div class="dlg-form-card__title">
                 {{ tituloMenu || title }} —
                 {{
-                   formSomenteLeitura
-                   ? "Consulta de registro"
-                   : formMode === "I"
-                   ? "Novo registro"
-                   : "Editar registro"
+                    formMode === "E"
+                      ? "Excluir registro"
+                      : formSomenteLeitura
+                      ? "Consulta de registro"
+                      : formMode === "I"
+                      ? "Novo registro"
+                      : "Editar registro"
                   }}
+
               </div>
             </div>
           </div>
@@ -587,6 +600,7 @@
         <q-separator />
 
         <q-card-actions align="right">
+            <!-- Cancelar -->
           <q-btn
             rounded
             class="q-mt-sm q-ml-sm"
@@ -595,9 +609,20 @@
             label="Cancelar"
             @click="fecharForm()"
           />
-
+           <!-- EXCLUIR -->
           <q-btn
-            v-if="!formSomenteLeitura"
+            v-if="formMode === 'E'"
+            rounded
+            unelevated
+            color="deep-orange-9"
+            class="q-mt-sm q-ml-sm"
+            :loading="salvando"
+            label="Excluir"
+            @click="confirmarExclusao"
+          />
+           <!-- SALVAR / ATUALIZAR -->
+          <q-btn
+            v-if="!formSomenteLeitura && formMode !== 'E'"
             rounded
             color="deep-orange-9"
             class="q-mt-sm q-ml-sm"
@@ -814,17 +839,19 @@
         active-color="deep-orange-9"
         indicator-color="deep-orange-9"
         narrow-indicator
+        color="deep-purple-7"
       >
-        <q-tab name="principal" label="PRINCIPAL" />
+        <q-tab name="principal" label="DADOS" />
         <q-tab
            v-for="(t, idx) in tabsDetalhe"
            :key="`panel_${t.key || 'x'}_${idx}`"
            :name="t.key || `p_${idx}`"
            :label="t.label"
            :disable="t.disabled"
+           
         />
       </q-tabs>
-      <q-separator color="deep-orange-9" />
+      
     </div>
 
     <!-- 2) PRINCIPAL: fica SEMPRE no DOM.
@@ -836,6 +863,7 @@
 <!-- ======================= -->
 <!-- TABSHEETS DO FORMULARIO -->
 <!-- ======================= -->
+
 <div v-if="1===2 && tabsheets.length" class="q-mb-md">
 
   <q-tabs
@@ -856,6 +884,7 @@
   </q-tabs>
 
   <q-separator color="deep-orange-9" />
+
 </div>
 
 <!-- FIM DAS TABSHEETS DO FORMULARIO -->
@@ -1119,6 +1148,7 @@
 
 
         <!-- ======= MODO CARDS ======= -->
+        
         <div
           v-if="String(ic_card_menu || 'N').toUpperCase() === 'S' && exibirComoCards"
           class="q-mt-md"
@@ -1210,17 +1240,17 @@
               class="dx-card wide-card"              
               height="100%"
               width="100%"              
-              v-if="temSessao"
+              v-if="temSessao && rows.length"
               id="grid-padrao"
               ref="grid"
               :data-source="rows || dataSourceConfig"
               :columns="columns"
-              :key-expr="keyName || id"
+              :key-expr="keyName || 'id'"
               :summary="gridSummaryConfig"
               :show-borders="false"
               :focused-row-enabled="false"
               :focused-row-key="null"
-              :focused-row-index="null"
+              :focused-row-index="null"          
               :column-auto-width="true"
               :column-hiding-enabled="false"
               :column-resizing-mode="'widget'"
@@ -1282,9 +1312,27 @@
               <DxColumnChooser :enabled="true" />
 
             </dx-data-grid>
-            </div>
 
-           
+ <div v-else-if="ic_pesquisa_banco === 'S'"
+      class="no-records">
+    <div class="no-records__card">
+      <div class="no-records__title">
+        <span class="no-records__icon">!</span>
+        Atenção
+      </div>
+
+      <p class="no-records__text">
+        Não existem registros na base de dados para os filtros/período selecionados.
+      </p>
+
+      <p class="no-records__hint">
+        Dica: revise o período, empresa, parâmetros ou demais filtros da consulta.
+      </p>
+    </div>
+  </div>
+
+
+            </div>       
 
           </transition>
            </div>
@@ -1331,6 +1379,7 @@
     <!-- FIM DA PRINCIPAL -->
 
     <!-- 3) PAINÉIS DAS ABAS DE DETALHE: só existem quando tabsDetalhe.length > 0 -->
+
     <q-tab-panels v-if="tabsDetalhe.length" v-model="abaAtiva" animated>
       <q-tab-panel v-for="t in tabsDetalhe" :key="t.key" :name="t.key">
         <!-- Toolbar do detalhe -->
@@ -1347,7 +1396,7 @@
           />
           <q-btn
             class="q-ml-sm"
-            color="black"
+            color="deep-purple-7"
             dense
             rounded
             label="Buscar"
@@ -1355,7 +1404,7 @@
           />
           <q-space />
           <q-btn
-            v-if="idPaiDetalhe"
+            v-if="idPaiDetalhe && false"
             color="primary"
             rounded
             dense
@@ -1366,6 +1415,7 @@
         </div>
 
         <!-- Banner com ID + descrição do pai -->
+
         <div class="q-mb-sm" v-if="paiSelecionadoId !== null">
           <q-banner dense class="bg-grey-2 text-grey-9 q-pa-sm" rounded>
             <div class="row items-center">
@@ -1376,6 +1426,7 @@
                   class="q-mr-sm"
                 >
                   {{ paiSelecionadoId }}
+        
                 </q-badge>
               </div>
               <div class="col ellipsis">
@@ -1393,7 +1444,7 @@
             :data-source="(filhos[t.cd_menu] && filhos[t.cd_menu].rows) || []"
             :columns="(filhos[t.cd_menu] && filhos[t.cd_menu].columns) || []"
             :key-expr="
-              (filhos[t.cd_menu] && filhos[t.cd_menu].keyExpr) || id"
+              (filhos[t.cd_menu] && filhos[t.cd_menu].keyExpr) || 'id'"
             :show-borders="true"
             :row-alternation-enabled="true"
             :repaint-changes-only="true"
@@ -2272,6 +2323,7 @@ export default {
     overrides: { type: Object, default: () => ({}) },
     hooks: { type: Object, default: () => ({}) },
     services: { type: Object, default: () => ({}) },
+    uiPreset: { type: String, default: "full" } // "full" | "lite"
 
   },
 
@@ -2304,6 +2356,8 @@ export default {
 
   data() {
     return {
+      keyFieldDb: null,
+      _syncSelecionando: false,
       _gridDimTimer: null,
       gridAutoFit: true,
       gridPageSize: 200, // ajuste: 100 / 200 / 500 conforme performance
@@ -2473,7 +2527,8 @@ export default {
     cd_menu_principal: 0, 
     formStack: [],
     dialogFiltroSelecao: false,
-    filtroSelecao: { keyField: '', keys: [] }
+    filtroSelecao: { keyField: '', keys: [] },
+    ic_pesquisa_banco : 'N'
   
     };
   },
@@ -2552,6 +2607,7 @@ export default {
 
     locale('pt'); // ou 'pt-BR'
     
+    this.ic_pesquisa_banco = 'N';
     localStorage.cd_filtro = 0;
     localStorage.cd_parametro = 0;
     localStorage.cd_tipo_consulta = 0;
@@ -2574,6 +2630,11 @@ export default {
   },
 
   computed: {
+
+    uiLite() {
+     return !!this.engineOverrides.ui_lite
+    },
+
     engineOverrides() {
     return this.overrides || {}
     },
@@ -2950,7 +3011,55 @@ export default {
 
   methods: {
 
+    ensureKeyOnRows() {
+  if (!this.keyFieldDb) this.resolveKeyFieldDb();
+  if (!Array.isArray(this.rows) || !this.rows.length) return;
+
+  const meta = this.getMetaAtual ? this.getMetaAtual() : [];
+  const pkDb = this.keyFieldDb;
+
+  // nome "Código" (ou outro) na grid
+  const pkGridCaption =
+    meta.find(m => String(m.ic_atributo_chave || "").trim().toUpperCase() === "S")?.nm_atributo_consulta;
+
+  this.rows = this.rows.map(r => {
+    const row = { ...r };
+
+    // se já tem pkDb, ok
+    if (row[pkDb] != null) return row;
+
+    // tenta pegar do caption (ex.: "Código")
+    if (pkGridCaption && row[pkGridCaption] != null) {
+      row[pkDb] = row[pkGridCaption];
+      return row;
+    }
+
+    // fallback: campo "Código" padrão
+    if (row["Código"] != null) row[pkDb] = row["Código"];
+
+    return row;
+  });
+},
+
+    resolveKeyFieldDb() {
+  const cdMenu = Number(this.cd_menu || sessionStorage.getItem("cd_menu") || localStorage.getItem("cd_menu"));
+  const metaKey = `campos_grid_meta_${cdMenu}`;
+
+  let meta = [];
+  try {
+    meta = JSON.parse(sessionStorage.getItem(metaKey) || "[]");
+  } catch (_) {}
+
+  const pk = meta.find(m => String(m.ic_atributo_chave || "").trim().toUpperCase() === "S");
+  this.keyFieldDb = pk?.nm_atributo ? String(pk.nm_atributo).trim() : "id";
+
+  console.log("🔑 keyFieldDb resolvido:", this.keyFieldDb);
+  return this.keyFieldDb;
+},
+
     isHidden(btn) {
+      if (this.uiPreset === "lite") return true
+
       return String(this.hideButtons[btn] || "false") === "true" || this.hideButtons[btn] === true
     },
 
@@ -3939,6 +4048,7 @@ localizarRegistroPorChave(chave) {
   if (!Array.isArray(this.rows) || !this.rows.length) return null
 
   const keyField = this.keyName || 'id'
+
   const alvo = Number(chave || 0)
   if (!keyField || !alvo) return null
 
@@ -3950,6 +4060,7 @@ posicionarNaGridPorChave(chave) {
   if (!grid) return
 
   const keyField = this.keyName || 'id'
+
   const alvo = Number(chave || 0)
   if (!alvo) return
 
@@ -4670,14 +4781,31 @@ console.log('nm_atributo_consulta:', attr.nm_atributo_consulta, 'VAL:', this.for
 },
 
   //
+async onSelectionChangedGrid(e) {
+  // pega a última selecionada (ou a primeira)
+  const row = e?.selectedRowsData?.[e.selectedRowsData.length - 1]
+  if (!row) return
 
-  onSelectionChangedGrid(e) {
+  // evita loop caso o onRowClick altere seleção internamente
+  if (this._syncSelecionando) return
+  this._syncSelecionando = true
+
+  try {
+    // chama o mesmo fluxo do clique na linha
+    await this.onRowClickPrincipal({ data: row, row: { data: row } })
+  } finally {
+    this.$nextTick(() => (this._syncSelecionando = false))
+  }
+},
+
+  onSelectionChangedGridOld(e) {
 
     // e.selectedRowsData é um array com os registros completos
     this.registrosSelecionados = e.selectedRowsData || []
 
      // pega a chave pelo seu keyName/id
      const keyField = this.keyName || this.id || 'id'
+
      this.cd_chave_registro_local = e.selectedRowsData ? Number(e.selectedRowsData[keyField] || 0) : 0
 
     // se você quiser só as chaves, pode usar e.selectedRowKeys
@@ -4784,6 +4912,7 @@ selecionarERetornarOld(rows) {
 
 
        // captura mudanças de sort
+
       if (e.fullName.includes('sortOrder') || e.fullName.includes('sortIndex')) {
         this.$nextTick(() => {
           const grid = this.$refs.grid && this.$refs.grid.instance
@@ -4813,6 +4942,7 @@ selecionarERetornarOld(rows) {
 
       // força atualização da toolbar
       dataGrid.repaint();
+      //
     }
   
 
@@ -5503,6 +5633,7 @@ _buildMapaRowsFromMeta(meta) {
   rows.sort((a, b) => (a.ordem || 999999) - (b.ordem || 999999))
 
   return rows
+
 },
 
     async carregarCatalogoRelatorios() {
@@ -5579,6 +5710,7 @@ async refreshGrid () {
   },
 
   async onNovoRegistro() {
+
     try {
       const novo = this.montarRegistroNovo()
 
@@ -6535,6 +6667,17 @@ async refreshGrid () {
     //
     async abrirFormEspecial({ modo = "I", registro = {} } = {}) {
 
+      // 1) define modo (I/A/E)
+      const m = String(modo || "I").toUpperCase();
+
+      this.formMode =
+        m === "A" || Number(modo) === 2 ? "A" :
+        m === "E" || m === "D" || Number(modo) === 3 ? "E" :
+        "I";
+        
+     // no modo E, travar edição (pra não salvar sem querer)
+     this.formSomenteLeitura = (this.formMode === "E");   
+
      // console.log('registros do form ->', registro);
 
       try {
@@ -6544,8 +6687,8 @@ async refreshGrid () {
         await this.runHook("beforeOpenEdit", { modo, registro })
 
         // 1) define modo
-        this.formMode =
-          String(modo).toUpperCase() === "A" || Number(modo) === 2 ? "A" : "I";
+        //this.formMode =
+        //  String(modo).toUpperCase() === "A" || Number(modo) === 2 ? "A" : "I";
 
         // 2) pegue os metadados primeiro (lookups dependem disso)
         this.atributosForm = this.obterAtributosParaForm();
@@ -6577,7 +6720,8 @@ async refreshGrid () {
         // 3) base
 
         this.record = this.record || {};
-        this.formData = this.formData || registro || {};
+        //this.formData = this.formData || registro || {};
+        this.formData = JSON.parse(JSON.stringify(registro || {}));
 
         if (this.formMode === "I") {
           // inclusão
@@ -7634,14 +7778,15 @@ async syncLookupsFromFormData() {
     // salvar o CRUD (inclusão/alteração)
 
     async salvarCRUD(opts) {
+
       const params = opts || {};
 
       // 1) registro canônico (o que está no form)
       const registro = params.registro != null ? params.registro : (this.formData || this.formulario || this.registroAtual || {})
       //
 
-
       const modoIn = params.modo != null ? params.modo : this.modoCRUD; // pode vir 'I' | 'A' | 'E' | 1 | 2 | 3
+
       function mapModo(m) {
         const s = String(m).toUpperCase();
         if (s === "1" || s === "I" || s === "N" || s === "C") return 1; // Inclusão
@@ -7651,10 +7796,15 @@ async syncLookupsFromFormData() {
           return 3; // Exclusão
         return 0;
       }
-
+      
       let cd_parametro_form = mapModo(modoIn);
       let cd_documento_form = "0";
       let keyVal;
+
+      if (cd_parametro_form === "3" && (!registro || !registro[this.keyNameInfer()])) {
+         throw new Error("Sem registro indicado para excluir!");
+      }
+
 
       try {
 
@@ -7745,6 +7895,7 @@ async syncLookupsFromFormData() {
           //
 
           if (valor === "") valor = null;
+
           //
           //Date
           if (
@@ -7785,6 +7936,7 @@ async syncLookupsFromFormData() {
           //console.log('Processando atributo:', m.nm_atributo, 'Valor encontrado:', valor);
 
           // 4) CHAVE PRIMÁRIA correta a partir do payload
+          
           const chaveAttr = (
             meta.find(
               (m) =>
@@ -7795,10 +7947,10 @@ async syncLookupsFromFormData() {
           ).nm_atributo;
           //
 
-          //console.log('Atributo chave encontrado:', chaveAttr);
-          //console.log('Valor da chave no row:', row[chaveAttr]);
-          //console.log('Payload completo do row:', row);
-          //console.log('Payload meta:', meta);
+          console.log('Atributo chave encontrado:', chaveAttr);
+          console.log('Valor da chave no row:', row[chaveAttr]);
+          console.log('Payload completo do row:', row);
+          console.log('Payload meta:', meta);
 
           if (chaveAttr && m.nm_atributo === chaveAttr) {
             cd_documento_form = valor || "0";
@@ -7824,7 +7976,7 @@ async syncLookupsFromFormData() {
 
         });
 
-        //console.log('cd_documento_form:', cd_documento_form);
+        console.log('cd_documento_form:', cd_documento_form);
 
         //
 
@@ -7922,6 +8074,8 @@ async syncLookupsFromFormData() {
         });
         ///
 
+        console.log('registro do response --> ', response );
+
         this.notifyOk(
           this.formMode === "I"
             ? "Registro atualizado com sucesso."
@@ -7932,12 +8086,13 @@ async syncLookupsFromFormData() {
         await this.runHook("afterSave", { modo, registro, response })
         //
 
+        //
+        //Fechar o Modal
         this.dlgForm = false;
 
         if (this.embedMode) {
            this.$emit("voltar"); // ou "fechar" conforme seu fluxo
         }
-
 
         // === RECARREGAR A GRID (coloque logo após o POST OK) ===
         try {
@@ -7949,6 +8104,18 @@ async syncLookupsFromFormData() {
         } catch (e) {
           console.warn("Refresh pós-CRUD falhou:", e);
         }
+
+        //
+        //this.applyCrudResult({ modo: cd_parametro_form, response, registroLocal: row, meta: this.getMetaAtual() })
+        //
+
+       //
+       // === pós-CRUD: atualizar grid local (sem consultar tudo) ===
+
+
+       //
+
+
         
       } catch (e) {
         console.error("Falha ao salvar CRUD:", e);
@@ -7960,9 +8127,175 @@ async syncLookupsFromFormData() {
       }
     },
 
-    //
-    keyNameInfer() {
+ applyCrudResult({ modo, response, registroLocal = null, meta = null } = {}) {
+      const m = Number(modo || 0); // 1=I, 2=A, 3=E
+      if (![1,2,3].includes(m)) return;
+
+      const d0 = response?.data?.dados?.[0] || null;
+      if (!d0) return;
+
+      const pkField = this.getPkFieldFromMeta(meta);
+      if (!pkField) return;
+
+      // Parse do registro vindo do SQL (pode vir string JSON)
+      let registroDb = d0.registro ?? null;
+      if (typeof registroDb === "string") {
+        const s = registroDb.trim();
+        if (s.startsWith("{") && s.endsWith("}")) {
+          try { registroDb = JSON.parse(s); } catch (_) {}
+        }
+      }
+
+      const chave = d0.chave ?? registroDb?.[pkField] ?? registroLocal?.[pkField] ?? null;
+
+      // DELETE: remove e sai
+      if (m === 3) {
+        if (chave == null) return;
+        if (!Array.isArray(this.rows)) this.rows = [];
+        const idx = this.rows.findIndex(r => String(r?.[pkField]) === String(chave));
+        if (idx >= 0) this.rows.splice(idx, 1);
+        this.focusedRowKey = null;
+        const grid = this.$refs?.grid?.instance;
+        if (grid) grid.refresh();
+        return;
+      }
+
+      // INSERT/UPDATE precisam de objeto
+      if (!registroDb || typeof registroDb !== "object") {
+        // fallback: usa o que estava no form
+        registroDb = registroLocal && typeof registroLocal === "object" ? { ...registroLocal } : null;
+      }
+      if (!registroDb) return;
+
+      // garante PK no objeto
+      if (chave != null && registroDb[pkField] == null) registroDb[pkField] = chave;
+
+      if (!Array.isArray(this.rows)) this.rows = [];
+
+      // mantém/gera id (se você usa id para outras coisas)
+      if (registroDb.id == null) {
+        const maxId = this.rows.reduce((acc, r) => Math.max(acc, Number(r?.id || 0)), 0);
+        registroDb.id = maxId + 1;
+      }
+
+      const idx = this.rows.findIndex(r => String(r?.[pkField]) === String(registroDb[pkField]));
+
+      if (idx >= 0) {
+        // UPDATE (ou INSERT de registro já existente): merge
+        const merged = { ...this.rows[idx], ...registroDb };
+        if (this.$set) this.$set(this.rows, idx, merged);
+        else this.rows[idx] = merged;
+      } else {
+        // INSERT novo
+        this.rows.push({ ...registroDb });
+      }
+
+      // foco/posição na grid
+      this.focusedRowKey = registroDb[pkField];
+
+      this.$nextTick(() => {
+        const grid = this.$refs?.grid?.instance;
+        if (grid && this.focusedRowKey != null) {
+          try {
+            grid.option("focusedRowEnabled", true);
+            grid.option("focusedRowKey", this.focusedRowKey);
+            grid.navigateToRow(this.focusedRowKey);
+            grid.selectRows([this.focusedRowKey], false);
+            grid.refresh();
+          } catch (e) {
+            console.warn("Falha ao focar linha na grid:", e);
+          }
+        }
+      });
+    },
+
+    getKeyFieldFromMeta() {
+  const meta = JSON.parse(sessionStorage.getItem(`campos_grid_meta_${Number(this.cd_menu)}`) || "[]");
+  return meta.find(m => String(m.ic_atributo_chave || "").trim() === "S")?.nm_atributo || "id";
+},
+
+    mapRegistroDbParaGrid(registroDb) {
+  const src = JSON.parse(JSON.stringify(registroDb || {}));
+
+  const meta = JSON.parse(
+    localStorage.getItem(`campos_grid_meta_${this.cd_menu}`) || "[]"
+  );
+
+  // mapa: nm_atributo (db) -> nm_atributo_consulta (grid)
+  const map = new Map();
+  meta.forEach(m => {
+    if (m?.nm_atributo && m?.nm_atributo_consulta) {
+      map.set(m.nm_atributo, m.nm_atributo_consulta);
+    }
+  });
+
+  const out = {};
+  Object.keys(src).forEach(k => {
+    out[map.get(k) || k] = src[k];
+  });
+
+  return out;
+},
+
+getPkFieldFromMeta(metaIn = null) {
+      const meta = Array.isArray(metaIn) && metaIn.length ? metaIn : (Array.isArray(this.gridMeta) ? this.gridMeta : []);
+      const m = meta.find(x => String(x?.ic_atributo_chave || '').trim().toUpperCase() === 'S');
+      const pk = (m?.nm_atributo || m?.nm_atributo_consulta || '').trim();
+      if (pk) return pk;
+
       const p = this.payloadTabela || {};
+      if (p.key_name) return String(p.key_name).trim() || "id";
+
+      // último fallback: derivação pelo nome da tabela
+      const t = (p.nm_tabela || p.nm_tabela_consulta || "").toLowerCase().replace(/^dbo\./, "");
+      return t ? `cd_${t}` : "id";
+    },
+
+    keyNameInfer() {
+      // mantém compatibilidade com chamadas existentes
+      const pk = this.getPkFieldFromMeta();
+      // também atualiza o keyName usado pela grid
+      if (pk && this.keyName !== pk) this.keyName = pk;
+      return pk || "id";
+    },
+
+getMetaAtual() {
+  let meta = Array.isArray(this.gridMeta) ? this.gridMeta : [];
+
+  if (!meta.length) {
+    const cdMenu = this.cd_menu || localStorage.cd_menu || sessionStorage.getItem("cd_menu");
+    const metaKey = `campos_grid_meta_${cdMenu}`;
+    try {
+      meta = JSON.parse(localStorage.getItem(metaKey) || sessionStorage.getItem(metaKey) || "[]");
+    } catch (_) {
+      meta = [];
+    }
+  }
+  return meta;
+},
+
+//
+
+
+async focarNaLinha(keyVal) {
+  const grid = this.$refs?.grid?.instance;
+  if (!grid || keyVal == null) return;
+
+  try {
+    grid.option("focusedRowEnabled", true);
+    grid.option("focusedRowKey", keyVal);
+    await grid.navigateToRow(keyVal);
+    grid.selectRows([keyVal], false);
+  } catch (e) {
+    console.warn("Falha ao focar/navegar na linha:", e);
+  }
+},
+
+    //
+    keyNameInferOLD() {
+
+      const p = this.payloadTabela || {};
+      
       if (p.key_name) return String(p.key_name).trim() || 'id';
       const t = (p.nm_tabela || p.nm_tabela_consulta || "")
         .toLowerCase()
@@ -8800,6 +9133,7 @@ async syncLookupsFromFormData() {
         });
 
         // Resumo
+
         if (summary.length) {
           const lastY = doc.lastAutoTable.finalY || y + 60;
           autoTable(doc, {
@@ -9283,43 +9617,113 @@ async syncLookupsFromFormData() {
       this.abrirFormEspecial({ modo: "A", registro: row });
     },
 
-    async onExcluir(row) {
-      // garanta que é um objeto plano
-      const plain = JSON.parse(JSON.stringify(row));
-      // abrir form especial (se necessário)
-      //
-      this.abrirFormEspecial({ modo: "E", registro: row });
+async confirmarExclusao() {
+  const registro = this.formData || {};
+  const cd_menu  = this.cd_menu || localStorage.cd_menu;
+
+  // ✅ 1) Descobrir o campo chave no localStorage
+  const metaKey = `campos_grid_meta_${cd_menu}`;
+  const meta = JSON.parse(sessionStorage.getItem(metaKey) || "[]");
+
+  console.log('meta --> ',meta)
+
+  const keyField =
+    meta.find(m => String(m.ic_atributo_chave || "").trim() === "S")?.nm_atributo
+    || this.keyNameInfer?.()
+    || "id";
+
+  // ✅ 2) Pegar o valor da chave
+  const keyValue = registro?.[keyField];
+
+  console.log("[Excluir] keyField:", keyField, "keyValue:", keyValue, "registro:", registro);
+
+  if (keyValue == null || keyValue === 0 || keyValue === "0") {
+    this.$q.notify({
+      type: "warning",
+      position: "center",
+      message: `Nenhum registro válido selecionado para exclusão (chave ${keyField} não encontrada).`
+    });
+    return;
+  }
+
+  // ✅ 3) Força o registro a ter a chave correta
+  const registroParaExcluir = { ...registro, [keyField]: keyValue };
+
+  this.salvando = true;
+  try {
+    await this.runHook("beforeDelete", { registro: registroParaExcluir });
+
+    const response = await this.salvarCRUD({
+      modo: "E",
+      registro: registroParaExcluir
+    });
+
+    await this.runHook("afterDelete", { registro: registroParaExcluir, response });
+
+    this.$q.notify({ type: "positive", message: "Registro excluído com sucesso." });
+    this.fecharForm();
+  } catch (e) {
+    console.error(e);
+    this.$q.notify({ type: "negative", message: e?.message || "Erro ao excluir registro." });
+  } finally {
+    this.salvando = false;
+  }
+},
+
+
+    async onExcluir(e) {
+      
+      // DevExtreme geralmente manda o registro em e.row.data
+      const rowData = e?.row?.data || e?.data || e;
+
+      if (!rowData || typeof rowData !== "object") {
+         this.$q.notify({ type: "warning", 
+         position: "center",
+         message: "Não foi possível identificar o registro para exclusão." });
+         return;
+
+      }
+       //if (!row) return;
+
+       // garanta que é um objeto plano
+      //const plain = JSON.parse(JSON.stringify(row));
+
+      
+      // garante objeto plano
+      const plain = JSON.parse(JSON.stringify(rowData));
       //
 
-      if (!confirm("Confirma exclusão?")) return;
+      const meta = JSON.parse(localStorage.getItem(`campos_grid_meta_${this.cd_menu}`) || "[]");
+const keyField = meta.find(m => String(m.ic_atributo_chave || "").trim() === "S")?.nm_atributo;
 
-      //await this.salvarCRUD({ modo: 'E', registro: row });
-      //this.gridInst.refresh(); // ou recarregue os dados
+if (keyField && plain[keyField] == null) {
+  // se por algum motivo o valor veio em outro lugar (ex: Código)
+  plain[keyField] = plain["Código"] ?? plain["codigo"] ?? plain["id"];
+}
 
       //console.log('Excluir registro:', plain);
       this.formData = plain;
       //
       this.formMode = "E";
 
-      await this.runHook("beforeDelete", { registro })
+      // abrir form especial (se necessário)
+      //
+      this.abrirFormEspecial({ modo: "E", registro: plain });
+      //
+
+      //if (!confirm("Confirma exclusão?")) return;
+
+      //await this.runHook("beforeDelete", { plain })
 
       // mapa campos se necessário
-      await this.salvarCRUD({ modo: "E", registro: plain }); // cd_parametro_form = 3
+      //const response = await this.salvarCRUD({ modo: "E", registro: plain }); // cd_parametro_form = 3
       //
 
       //
-      await this.runHook("afterDelete", { registro, response })
+      //await this.runHook("afterDelete", { plain, response })
       //
 
 
-      // refresh seguro da grid
-      //try {
-      //  const inst = this.$refs && this.$refs.grid && this.$refs.grid.instance ? this.$refs.grid.instance : null;
-      // if (inst) inst.refresh();
-      // else if (typeof this.consultar === 'function') await this.consultar();
-      // }
-      //   catch(_) {}
-      //
     },
 
     montarRegistroVazio() {
@@ -9349,6 +9753,7 @@ async syncLookupsFromFormData() {
       if (!mapa || !Object.keys(mapa).length) return { ...row };
 
       const novo = {};
+
       Object.keys(row).forEach((k) => {
         const destino = mapa[k] || k;
         novo[destino] = row[k];
@@ -9998,6 +10403,7 @@ console.log('form->', this.form);
 
        //Validação//
        //Se existe Tabela ou Procedimento
+
         if (this.temConfigConsultaInvalida()) {
            this.abrirAvisoConfigConsulta()
         return
@@ -10179,7 +10585,8 @@ console.log('form->', this.form);
       //Legenda de Ações
       this.aplicarLegendaAcoesGrid();
       //
-
+      //ccf 
+      //this.keyName = this.keyNameInfer("db"); // ex.: cd_processo 
       
       //
 
@@ -10855,6 +11262,8 @@ if (
        
         //this.rows = (dados || []).map((it, idx) => ({ id: it.id || idx + 1, ...it }));      
           
+        //
+        this.ic_pesquisa_banco = 'S';
         //
 
         this.rows = (dados || []).map((it, idx) => ({ id: it.id || idx + 1, ...it }));
@@ -12192,6 +12601,63 @@ if (this.ic_modal_pesquisa === 'S') {
 
 .dx-datagrid{
   height: 100% !important;
+}
+
+.no-records {
+  height: 100%;
+  min-height: 240px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.no-records__card {
+  width: min(680px, 100%);
+  background: #FBE9E7; /* deep-orange-100 */
+  border: 1px solid #FFAB91;
+  border-left: 6px solid #F4511E; /* deep-orange-600 */
+  border-radius: 14px;
+  box-shadow: 0 14px 32px rgba(81, 45, 168, 0.18);
+  padding: 20px 22px;
+}
+
+.no-records__title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+  font-size: 19px;
+  font-weight: 800;
+  color: #512DA8; /* deep-purple-700 */
+}
+
+.no-records__icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #F4511E; /* deep-orange-600 */
+  color: #ffffff;
+  font-weight: 900;
+  font-size: 18px;
+  box-shadow: 0 4px 10px rgba(244, 81, 30, 0.4);
+}
+
+.no-records__text {
+  margin: 0 0 10px 0;
+  font-size: 14.5px;
+  color: #424242;
+  line-height: 1.55;
+}
+
+.no-records__hint {
+  margin: 0;
+  font-size: 13.5px;
+  color: #009688; /* teal-500 */
+  font-weight: 600;
 }
 
 </style>

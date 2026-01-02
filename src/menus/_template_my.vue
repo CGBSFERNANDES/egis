@@ -9,8 +9,6 @@
     :overrides="overrides"
     :hooks="hooks"
     @selecionou="onSelecionou"
-    @voltar="onVoltar"
-    @fechar="onFechar"
   >
     <!-- Exemplo: botões extras -->
     <template #toolbar-right="{ engine }">

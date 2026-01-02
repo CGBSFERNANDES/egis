@@ -731,43 +731,23 @@ const router = new Router({
 });
 
 router.beforeEach((to, from, next) => {
-  // to.replace = false;
-
-  // if (to.name == from.name) {
-  //   router.replace({ name: "home" });
-  // }
-
   if (to.name === "login-form" && auth.authenticated()) {
     next({ name: "home" });
   }
 
-  if (to.matched.some((record) => record.meta.requiresAuth)) {
+  if (to.matched.some(record => record.meta.requiresAuth)) {
     if (!auth.authenticated()) {
       next({
         name: "login-form",
-        //query: { redirect: to.fullPath }
       });
     } else {
-      // next({
-      //   name: `${this.route$.name}`
-      // });
-
-      //next();
-
       next();
-      //next({ name: to.name });
-
-      //volta para o proprio componente - testado e //
-      // next({ name: from.name });
-
-      //alert(this.route$.name);
     }
   } else {
     next();
-    //next({ name: from.name });
-
-    //alert(this.route$.name);
   }
 });
+
+
 
 export default router;

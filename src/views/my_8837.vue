@@ -19,12 +19,12 @@
 import UnicoFormEspecial from "@/views/unicoFormEspecial.vue"
 import api from "@/boot/axios"
 
-const MENU_ID = 8833
-const LANCAMENTO_MENU_ID = 883300
+const MENU_ID = 8837
+const LANCAMENTO_MENU_ID = 883700
 const LANCAMENTO_TAB_KEY = "det_lancamentos"
 
 export default {
-  name: "my_8833",
+  name: "my_8837",
   components: { UnicoFormEspecial },
 
   props: {
@@ -44,7 +44,7 @@ export default {
       carregandoLancamentos: false,
 
       overrides: {
-        title: "Lote Contábeis 8833",
+        title: (localStorage.nm_menu_titulo + ' * ') || "Diário Contábil",
         gridPageSize: 200,
       },
     }
@@ -80,9 +80,10 @@ export default {
     async mapPayloadHook({ payload = {}, engine }) {
       const cdEmpresa = Number(localStorage.cd_empresa || 0)
       const cdLote =
-        this.loteSelecionado ||
-        payload?.cd_lote ||
+        this.resolveLoteId(payload) ||
+        this.resolveLoteId(engine?.registroSelecionado) ||
         engine?.paiSelecionadoId ||
+        this.loteSelecionado ||
         null
 
       return {
@@ -94,8 +95,7 @@ export default {
 
     async carregarLancamentos(registro) {
       const engine = this.$refs.engine
-      const cdLote =
-        Number(registro?.cd_lote || registro?.cd_chave_pesquisa || 0) || null
+      const cdLote = this.resolveLoteId(registro)
 
       if (!engine || !cdLote) return
 
@@ -126,9 +126,15 @@ export default {
         this.lancamentoColumns = columns
 
         const tab = this.ensureLancamentoTab(engine)
-        this.populateLancamentosFilho({ engine, tab, rows, columns, cdLote, registro })
+        this.populateLancamentosFilho({
+          engine,
+          tab,
+          rows,
+          columns,
+          cdLote,
+          registro,
+        })
       } catch (err) {
-        // mantém o fluxo do engine sem quebrar
         console.error("Falha ao carregar lançamentos do lote", err)
       } finally {
         this.carregandoLancamentos = false
@@ -227,13 +233,11 @@ export default {
 
     resolveKeyExpr(rows) {
       const exemplo = Array.isArray(rows) && rows.length ? rows[0] : {}
-      const candidatos = [
-        "cd_lancamento_contabil",
-        "cd_lote",
-        "id",
-      ]
+      const candidatos = ["cd_lancamento_contabil", "cd_lote", "id"]
 
-      const encontrado = candidatos.find((k) => Object.prototype.hasOwnProperty.call(exemplo, k))
+      const encontrado = candidatos.find((k) =>
+        Object.prototype.hasOwnProperty.call(exemplo, k)
+      )
       return encontrado || "id"
     },
 
@@ -249,6 +253,25 @@ export default {
 
       if (isOnlyStatus) clone.pop()
       return clone
+    },
+
+    resolveLoteId(registro) {
+      if (!registro) return null
+      const candidatos = [
+        "cd_lote",
+        "cd_lote_contabil",
+        "cd_chave_pesquisa",
+        "id",
+      ]
+
+      for (const key of candidatos) {
+        if (Object.prototype.hasOwnProperty.call(registro, key)) {
+          const valor = Number(registro[key])
+          if (!Number.isNaN(valor) && valor > 0) return valor
+        }
+      }
+
+      return null
     },
   },
 

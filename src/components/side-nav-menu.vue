@@ -434,9 +434,13 @@ export default {
     clearInterval(localStorage.polling)
     localStorage.polling = 0
   }
-
+  
   // 8) Navega SEMPRE por name
   this.$router.push({ name: routeName }).catch(() => {})
+
+  //
+  sessionStorage.setItem("egis:returnTo", this.$route.fullPath)
+  //
 
   // 9) stopPropagation
   const pointerEvent = e.event
