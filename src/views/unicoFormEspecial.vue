@@ -2767,10 +2767,67 @@ export default {
         return preferidos || candidatos[0] || null
       },          
 
-  dashboardAtributos() {
-    const cols = Array.isArray(this.columns) ? this.columns : [];
-    return cols.filter(c => c && c.ic_dashboard_atributo === 'S');
-  },
+dashboardAtributos() {
+  const cols = Array.isArray(this.columns) ? this.columns : [];
+  return cols.filter(c => {
+    const f1 = String(c && c.ic_dashboard_atributo || "N").toUpperCase();
+    const f2 = String(c && c.ic_ic_dashboard_atributo || "N").toUpperCase(); // caso venha com esse nome
+    return (f1 === "S" || f2 === "S");
+  });
+},
+
+dashboardCards() {
+  const rows = Array.isArray(this.rows) ? this.rows : [];   // <-- FIX 1
+  const attrs = this.dashboardAtributos || [];
+  if (!rows.length || !attrs.length) return [];
+
+  const row0 = rows[0] || {};
+
+  return attrs.map((a) => {
+    // escolhe a chave certa conforme o que existe no row (caption / nm_atributo_consulta / nm_atributo / dataField)
+    const candidatos = [
+      (a && a.caption),
+      (a && a.nm_atributo_consulta),
+      (a && a.nm_edit_label),
+      (a && a.nm_atributo),
+      (a && a.dataField),
+    ].filter(Boolean).map(s => String(s).trim());
+
+    const key =
+      candidatos.find(k => Object.prototype.hasOwnProperty.call(row0, k)) ||
+      candidatos[0];
+
+    const titulo = (a && (a.nm_edit_label || a.caption || a.nm_atributo_consulta)) ? String(a.nm_edit_label || a.caption || a.nm_atributo_consulta).trim() : key;
+
+    const agg = (a && a.nm_dashboard_agregacao) ? String(a.nm_dashboard_agregacao).toUpperCase() : "SUM";
+
+    let valor = null;
+
+    if (agg === "COUNT") {
+      valor = rows.length;
+    } else if (agg === "DISTINCT_COUNT") {
+      const set = new Set(rows.map(r => r && r[key]).filter(v => v !== null && v !== undefined));
+      valor = set.size;
+    } else {
+      const nums = rows
+        .map(r => Number(r && r[key]))
+        .filter(v => !Number.isNaN(v));
+
+      if (agg === "AVG") valor = nums.length ? (nums.reduce((s,v)=>s+v,0) / nums.length) : 0;
+      else if (agg === "MAX") valor = nums.length ? Math.max(...nums) : 0;
+      else if (agg === "MIN") valor = nums.length ? Math.min(...nums) : 0;
+      else /* SUM */ valor = nums.reduce((s,v)=>s+v,0);
+    }
+
+    return {
+      field: key,
+      titulo,
+      valor,
+      subtitulo: a.nm_dashboard_subtitulo || "",
+      formato: a.nm_dashboard_formato || a.nm_formato || a.format || "",   // <-- FIX 2 (pega formato real)
+    };
+  });
+},
 
   dashboardCols () {
     const cols = Array.isArray(this.columns) ? this.columns : [];
