@@ -12,7 +12,7 @@
     </div>
     <div id="form-demo">
       <div class="widget-container">
-        <form action="your-action" @submit="handleSubmit">
+        <form action="your-action" @submit.prevent="handleSubmit">
           <q-date
             color="orange-9"
             text-color="white"
@@ -59,7 +59,9 @@
     props: {
       cd_volta_home: { type: Number, default: 0 },
     },
-    emits: ["FechaSelecao"],
+
+    emits: ["FechaSelecao", "click"],
+
 
     data() {
       return {
@@ -107,6 +109,7 @@
       },
     },
     methods: {
+
       async handleSubmit() {
         this.$emit("click");
         if (this.data_final_inicial == null) return;
@@ -122,6 +125,7 @@
         //if (this.$refs.modulo._isMounted == true) {
         //  await this.$refs.modulo.pollData();
         //}
+
         if (this.cd_volta_home != 1) {
           this.$router.push({
             name: "home",
@@ -140,11 +144,28 @@
           "success",
           500
         );
-        const btn = document.querySelector("#CarregamentoF5");
 
-        btn.click();
+        //
+        //const btn = document.querySelector("#CarregamentoF5");
+        //if (btn && typeof btn.click === "function") {
+        //   btn.click();
+       // }
+
+        this.$nextTick(() => {
+  let btn = document.querySelector("#CarregamentoF5");
+  if (btn && typeof btn.click === "function") return btn.click();
+
+  setTimeout(() => {
+    btn = document.querySelector("#CarregamentoF5");
+    if (btn && typeof btn.click === "function") btn.click();
+  }, 50);
+});
+
+
         notify("Datas Selecionadas com sucesso");
+
       },
+
       handleClose() {
         this.$emit("click");
       },

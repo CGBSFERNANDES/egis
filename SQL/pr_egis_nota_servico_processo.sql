@@ -1,15 +1,15 @@
 --BANCO DA EMPRESA/CLIENTE
 --use EGISSQL_355
 
-IF OBJECT_ID(N'dbo.pr_egis_motor_processo_modulo', N'P') IS NOT NULL
-    DROP PROCEDURE dbo.pr_egis_motor_processo_modulo;
+IF OBJECT_ID(N'dbo.pr_egis_nota_servico_processo', N'P') IS NOT NULL
+    DROP PROCEDURE dbo.pr_egis_nota_servico_processo;
 GO
 
 
 -------------------------------------------------------------------------------
---sp_helptext  pr_egis_motor_processo_modulo
+--sp_helptext  pr_egis_nota_servico_processo
 -------------------------------------------------------------------------------
--- pr_egis_motor_processo_modulo
+-- pr_egis_nota_servico_processo
 -------------------------------------------------------------------------------
 --GBS Global Business Solution Ltda                                        2025
 -------------------------------------------------------------------------------
@@ -33,7 +33,7 @@ GO
 SET QUOTED_IDENTIFIER ON;
 GO
 
-CREATE PROCEDURE pr_egis_motor_processo_modulo
+CREATE PROCEDURE pr_egis_nota_servico_processo
 ------------------------
 @json nvarchar(max) = ''
 ------------------------------------------------------------------------------
@@ -115,8 +115,6 @@ declare @cd_modelo            int = 0
 declare @cd_grupo_usuario     int = 0
 declare @qt_contrato_empresa  int = 0
 declare @cd_modulo            int = 0
-declare @ds_prompt            nvarchar(max) = ''
-
 
 --select * from egisadmin.dbo.empresa
 
@@ -167,7 +165,6 @@ select @cd_modulo              = valor from #json where campo = 'cd_modulo'
 ---------------------------------------------------------------------------------------------
 select @dados_registro         = valor from #json where campo = 'dados_registro'
 select @dados_modal            = valor from #json where campo = 'dados_modal'
-select @ds_prompt              = valor from #json where campo = 'ds_prompt'
 
 --------------------------------------------------------------------------------------
 
@@ -183,7 +180,7 @@ set @cd_parametro         = ISNULL(@cd_parametro,0)
 set @cd_usuario           = isnull(@cd_usuario,0)
 set @cd_grupo_usuario     = isnull(@cd_grupo_usuario,0)
 set @cd_modulo            = isnull(@cd_modulo,0)
-set @ds_prompt            = isnull(@ds_prompt,'')
+
 
 ---------------------------------------------------------------------------------------------------------------------------------------------------------    
 
@@ -211,33 +208,10 @@ BEGIN
 
 END
 
---select * from tipo_destinatario
-
-----------------------------------------------------------------------------------------------------
-
 
 if @cd_parametro = 1
 begin
-  --select @cd_empresa
-  select
-    m.*,
-    r.nm_rota,
-    r.nm_identificacao_rota,
-    r.nm_caminho_componente,
-    r.nm_layout_componente
-  from
-    egisadmin.dbo.menu m
-    inner join egisadmin.dbo.api_rota r on r.cd_rota = m.cd_rota
-    --select * from egisadmin.dbo.api_rota
-
-  where
-    m.nm_menu_titulo like '%'+@ds_prompt+'%'
-    and
-    isnull(m.cd_rota,0)>0
-    and
-    isnull(m.cd_aplicacao,0) = 3
-
-  
+ 
     -- Status padronizado (sempre o ÚLTIMO resultset antes de sair)
     SET @__sucesso = 1;
     SET @__codigo  = 200;
@@ -248,22 +222,100 @@ begin
 
 end
 
+--NFSE
+
 if @cd_parametro = 10
 begin
-  select 
-    s.*,
-    r.nm_rota,
-    r.nm_identificacao_rota,
-    r.nm_caminho_componente,
-    r.nm_layout_componente
-  from 
-    egisadmin.dbo.egis_motor_sugestao s
-    left outer join egisadmin.dbo.menu m     on m.cd_menu = s.cd_menu
-    left outer join egisadmin.dbo.api_rota r on r.cd_rota = m.cd_rota
-  order by
-    s.nm_sugestao
-  
-    -- Status padronizado (sempre o ÚLTIMO resultset antes de sair)
+
+
+     -- Status padronizado (sempre o ÚLTIMO resultset antes de sair)
+    SET @__sucesso = 1;
+    SET @__codigo  = 200;
+    SET @__mensagem = N'OK';
+    SELECT @__sucesso AS sucesso, @__codigo AS codigo, @__mensagem AS mensagem;
+ 
+
+  return
+
+end
+
+--CTe
+
+if @cd_parametro = 20
+begin
+
+
+     -- Status padronizado (sempre o ÚLTIMO resultset antes de sair)
+    SET @__sucesso = 1;
+    SET @__codigo  = 200;
+    SET @__mensagem = N'OK';
+    SELECT @__sucesso AS sucesso, @__codigo AS codigo, @__mensagem AS mensagem;
+ 
+
+  return
+
+end
+
+
+if @cd_parametro = 900
+begin
+ 
+   /*
+   DECLARE @cd_nfse_xml INT = TRY_CONVERT(INT, JSON_VALUE(@dados_registro, '$.cd_nfse_xml'));
+
+;WITH X AS (
+  SELECT *
+  FROM dbo.nfse_xml WITH(NOLOCK)
+  WHERE cd_nfse_xml = @cd_nfse_xml
+)
+INSERT INTO dbo.nota_entrada_servico
+(
+  cd_fornecedor,
+  cd_lei116_servico,
+  cd_atividade_servico,
+  nm_obs_servico,
+  cd_usuario_inclusao,
+  dt_usuario_inclusao,
+
+  cd_nfse_xml,
+  nr_nfse,
+  cd_verificacao,
+  dt_emissao,
+  cnpj_prestador,
+  cnpj_tomador,
+  vl_servicos,
+  vl_iss,
+  aliq_iss,
+  base_calculo,
+  municipio_prestacao,
+  ds_discriminacao
+)
+SELECT
+  f.cd_fornecedor,                          -- resolver pelo CNPJ prestador
+  X.item_lista_servico,
+  X.cod_trib_municipio,
+  LEFT(X.ds_discriminacao, 60),
+  @cd_usuario,
+  GETDATE(),
+
+  X.cd_nfse_xml,
+  X.nr_nfse,
+  X.cd_verificacao,
+  X.dt_emissao,
+  X.cnpj_prestador,
+  X.cnpj_tomador,
+  X.vl_servicos,
+  X.vl_iss,
+  X.aliq_iss,
+  X.base_calculo,
+  X.municipio_prestacao,
+  X.ds_discriminacao
+FROM X
+LEFT JOIN dbo.fornecedor f
+  ON f.cd_cnpj = X.cnpj_prestador;  -- ajustar para o nome real do campo/tabela
+
+   */
+   -- Status padronizado (sempre o ÚLTIMO resultset antes de sair)
     SET @__sucesso = 1;
     SET @__codigo  = 200;
     SET @__mensagem = N'OK';
@@ -273,52 +325,26 @@ begin
 
 end
 
---Sugestões para utilizadas pelo Usuário------------------------------
+IF @cd_parametro = 910
+BEGIN
+  -- @dados_registro tem JSON com $.nfse.*
+  DECLARE @numero VARCHAR(30) = JSON_VALUE(@dados_registro, '$.nfse.numero');
+  DECLARE @cnpj_prestador VARCHAR(20) = JSON_VALUE(@dados_registro, '$.nfse.prestador.cnpj');
+  DECLARE @valor_servicos DECIMAL(18,2) = TRY_CONVERT(DECIMAL(18,2), JSON_VALUE(@dados_registro, '$.nfse.servico.valores.valorServicos'));
+  DECLARE @discriminacao NVARCHAR(2000) = JSON_VALUE(@dados_registro, '$.nfse.servico.discriminacao');
 
-if @cd_parametro = 50
-begin
-  --select * from egisadmin.dbo.egis_motor_sugestao
+  -- TODO: aqui entram seus INSERTs reais
+  -- INSERT INTO <SuaTabelaCabecalho>(...) VALUES (...)
 
-  select 
-    u.cd_usuario,
-    u.nm_fantasia_usuario,
-    u.nm_usuario,
-    s.cd_sugestao,
-    s.nm_sugestao,
-    s.ds_sugestao
-
-  from
-    egisadmin.dbo.Sugestao_Egis_Usuario us 
-    inner join egisadmin.dbo.egis_motor_sugestao s on s.cd_sugestao = us.cd_sugestao
-    inner join egisadmin.dbo.usuario u             on u.cd_usuario  = us.cd_usuario
-
-  where
-    u.cd_usuario = @cd_usuario
-
-  -- Status padronizado (sempre o ÚLTIMO resultset antes de sair)
+    -- Status padronizado (sempre o ÚLTIMO resultset antes de sair)
     SET @__sucesso = 1;
     SET @__codigo  = 200;
     SET @__mensagem = N'OK';
     SELECT @__sucesso AS sucesso, @__codigo AS codigo, @__mensagem AS mensagem;
  
-  return
+  RETURN;
+END
 
-end
-
-----------------------------------------------------------------------------------------------------
-if @cd_parametro in ( 100, 101, 102, 103 )
-begin
-  select 'R$ 1000,00' as vendas
-
--- Status padronizado (sempre o ÚLTIMO resultset antes de sair)  
-    SET @__sucesso = 1;
-    SET @__codigo  = 200;
-    SET @__mensagem = N'OK';
-    SELECT @__sucesso AS sucesso, @__codigo AS codigo, @__mensagem AS mensagem;
- 
-  return
-
-end
 
 if @cd_parametro = 9999
 begin
@@ -378,7 +404,7 @@ go
 ------------------------------------------------------------------------------
 --Testando a Stored Procedure
 ------------------------------------------------------------------------------
---exec  dbo.pr_egis_motor_processo_modulo
+--exec  dbo.pr_egis_nota_servico_processo
 ------------------------------------------------------------------------------
 --use egissql
 --go
@@ -387,23 +413,98 @@ go
 
 --select * from egisadmin.dbo.usuario
 
---use egissql
-go
---exec  dbo.pr_egis_motor_processo_modulo '[{"cd_parametro": 0 }]' 
---exec  dbo.pr_egis_motor_processo_modulo '[{"cd_parametro": 1,"ds_prompt":"faturamento" }]'
-go
---exec  dbo.pr_egis_motor_processo_modulo '[{"cd_parametro": 10, "cd_usuario": 113 }]' 
 
-
---exec  dbo.pr_egis_motor_processo_modulo '[{"cd_parametro": 50, "cd_usuario": 113 }]' 
+--exec  dbo.pr_egis_nota_servico_processo '[{"cd_parametro": 0 }]' 
+--exec  dbo.pr_egis_nota_servico_processo '[{"cd_parametro": 1, "cd_usuario": 113 }]' 
 go
 
-exec pr_egis_motor_processo_modulo '[
-    {
-        "ic_json_parametro": "S",
-        "cd_parametro": 1,
-        "cd_empresa": 1,
-        "cd_usuario": 113,
-        "ds_prompt": "vendas"
-    }
-]'
+
+IF OBJECT_ID('dbo.nfse_xml', 'U') IS NULL
+BEGIN
+  CREATE TABLE dbo.nfse_xml (
+      cd_nfse_xml           INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
+      cd_empresa            INT              NULL,
+      cd_usuario_inclusao   INT              NULL,
+      dt_usuario_inclusao   DATETIME         NOT NULL DEFAULT(GETDATE()),
+
+      ds_layout             VARCHAR(30)      NOT NULL DEFAULT('GINFES'),
+      ds_xml                NVARCHAR(MAX)    NOT NULL,
+
+      -- extraídos do XML (melhor pro filtro/consulta)
+      nr_nfse               VARCHAR(30)      NULL,
+      cd_verificacao        VARCHAR(60)      NULL,
+      dt_emissao            DATETIME         NULL,
+
+      cnpj_prestador        VARCHAR(20)      NULL,
+      cnpj_tomador          VARCHAR(20)      NULL,
+      im_prestador          VARCHAR(30)      NULL,
+
+      vl_servicos           DECIMAL(18,2)    NULL,
+      vl_iss                DECIMAL(18,2)    NULL,
+      vl_liquido            DECIMAL(18,2)    NULL,
+      aliq_iss              DECIMAL(9,4)     NULL,
+      base_calculo          DECIMAL(18,2)    NULL,
+
+      item_lista_servico    VARCHAR(20)      NULL,
+      cod_trib_municipio    VARCHAR(30)      NULL,
+      municipio_prestacao   VARCHAR(10)      NULL,
+
+      ds_discriminacao      NVARCHAR(2000)   NULL,
+
+      hash_xml              VARBINARY(32)    NOT NULL
+  );
+
+  CREATE UNIQUE INDEX UX_nfse_xml_hash ON dbo.nfse_xml(hash_xml);
+  CREATE INDEX IX_nfse_xml_dt ON dbo.nfse_xml(dt_emissao);
+  CREATE INDEX IX_nfse_xml_prestador_num ON dbo.nfse_xml(cnpj_prestador, nr_nfse);
+END
+GO
+
+
+IF OBJECT_ID('dbo.cte_xml', 'U') IS NULL
+BEGIN
+  CREATE TABLE dbo.cte_xml (
+      cd_cte_xml            INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
+      cd_empresa            INT              NULL,
+      cd_usuario_inclusao   INT              NULL,
+      dt_usuario_inclusao   DATETIME         NOT NULL DEFAULT(GETDATE()),
+
+      ds_layout             VARCHAR(30)      NOT NULL DEFAULT('CTE'),
+      ds_xml                NVARCHAR(MAX)    NOT NULL,
+
+      ch_cte                VARCHAR(44)      NULL,
+      nr_cte                VARCHAR(30)      NULL,
+      serie                 VARCHAR(10)      NULL,
+      dt_emissao            DATETIME         NULL,
+
+      tp_cte                VARCHAR(2)       NULL,
+      tp_serv               VARCHAR(2)       NULL,
+      modal                 VARCHAR(5)       NULL,
+      cfop                  VARCHAR(10)      NULL,
+
+      cnpj_emit             VARCHAR(20)      NULL,
+      xnome_emit            NVARCHAR(200)    NULL,
+
+      cnpj_dest             VARCHAR(20)      NULL,
+      xnome_dest            NVARCHAR(200)    NULL,
+
+      uf_ini                VARCHAR(2)       NULL,
+      uf_fim                VARCHAR(2)       NULL,
+      xmun_ini              NVARCHAR(60)     NULL,
+      xmun_fim              NVARCHAR(60)     NULL,
+
+      v_tprest              DECIMAL(18,2)    NULL,
+      v_rec                 DECIMAL(18,2)    NULL,
+
+      v_carga               DECIMAL(18,2)    NULL,
+      pro_pred              NVARCHAR(60)     NULL,
+
+      hash_xml              VARBINARY(32)    NOT NULL
+  );
+
+  CREATE UNIQUE INDEX UX_cte_xml_hash ON dbo.cte_xml(hash_xml);
+  CREATE INDEX IX_cte_xml_dt ON dbo.cte_xml(dt_emissao);
+  CREATE INDEX IX_cte_xml_emit_dt ON dbo.cte_xml(cnpj_emit, dt_emissao);
+  CREATE INDEX IX_cte_xml_ch ON dbo.cte_xml(ch_cte);
+END
+GO

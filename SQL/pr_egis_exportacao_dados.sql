@@ -1725,7 +1725,7 @@ go
 
 --EXEC pr_egis_exportacao_dados
 --N'[{
---   "cd_empresa": 1,
+--   "cd_empresa": 360,
 --   "cd_parametro": 20,
 --   "cd_modelo": 2,
 --   "cd_usuario": 123

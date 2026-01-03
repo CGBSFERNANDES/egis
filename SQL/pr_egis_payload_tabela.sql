@@ -132,6 +132,7 @@ set @cd_relatorio      = isnull(@cd_relatorio,0)
 --Verifica se o Menu é de Composicao para atualizar a Tabsheet
 
 ----------------------------------------------------------------------------------------------------------
+
 if @cd_menu>0
 begin
   --select * from egisadmin.dbo.Menu_Tabsheet where cd_menu = 8088
@@ -150,6 +151,9 @@ begin
 
 end
 
+--select * from egisadmin.dbo.Menu_Tabsheet
+
+--select @cd_menu, @cd_tabsheet
 
 --Form
 
@@ -282,6 +286,7 @@ begin
 
 end
 
+--select @sqlTabsheet
 ------Processo inicial-------------------------------------------------------------------------------------------------
 
 if @cd_menu_processo>0
@@ -544,7 +549,8 @@ end
        isnull(@ic_treeview_menu,'N')                                              as ic_treeview_menu,
        isnull(a.ic_atributo_pai,'N')                                              as ic_atributo_pai,
        isnull(a.ic_atributo_filho,'N')                                            as ic_atributo_filho,
-       isnull(a.ic_treeview_atributo,'N')                                         as ic_treeview_atributo
+       isnull(a.ic_treeview_atributo,'N')                                         as ic_treeview_atributo,
+       isnull(a.ic_dashboard_atributo,'N')                                        as ic_dashboard_atributo
 
             
        into #Resultado
@@ -786,7 +792,8 @@ end
        isnull(m.ic_treeview_menu,'N')                                             as ic_treeview_menu,
        isnull('N','N')                                                            as ic_atributo_pai,
        isnull('N','N')                                                            as ic_atributo_filho,
-       isnull('N','N')                                                            as ic_treeview_atributo
+       isnull('N','N')                                                            as ic_treeview_atributo,
+       isnull(mpc.ic_dashboard_atributo,'N')                                      as ic_ic_dashboard_atributo
 
 
        -----------------------------------------------------------------------------------------------
@@ -859,7 +866,7 @@ go
 ------------------------------------------------------------------------------
 --exec pr_egis_payload_tabela 
 ------------------------------------------------------------------------------
---exec pr_egis_payload_tabela '[{"cd_parametro":1,"cd_menu":"8820","cd_usuario":"4772","dt_inicial":"2025-05-01 00:00:00","dt_final":"2025-05-31 00:00:00"}]'
+--exec pr_egis_payload_tabela '[{"cd_parametro":1,"cd_menu":"8834","cd_usuario":"4772","dt_inicial":"2025-05-01 00:00:00","dt_final":"2025-05-31 00:00:00"}]'
 ------------------------------------------------------------------------------
 --com atributos apenas do modal--
 --exec pr_egis_payload_tabela '[{"cd_parametro":1,"cd_menu":"8518","cd_usuario":"4772","ic_modal_pesquisa" : "S" }]'
@@ -916,4 +923,4 @@ go
 --select * from egisadmin.dbo.form where cd_form = 167
 --select * from egisadmin.dbo.atributo_lista_valor where cd_tabela = 148
 
---
+--use egissql_377

@@ -580,6 +580,7 @@ go
 
 --exec pr_egis_processo_modulos '[{"cd_modulo":108, "cd_parametro": 2, "cd_usuario":113, "dt_inicial": "06/01/2025", "dt_final": "06/30/2025"}]'
 go
+use egissql_282
 
 --use egissql_341
 --go

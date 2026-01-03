@@ -224,6 +224,7 @@ declare
             @nm_fantasia_empresa      varchar(30), 
             @nm_empresa               varchar(80),
     		@cd_cnpj_empresa          varchar(14),
+            @cd_cnpj_empresa_1        varchar(14),
     		@cd_identificacao_empresa varchar(50) = '',
     		@cd_banco                 int = 0,
     		@nm_banco                 varchar(40),
@@ -232,8 +233,7 @@ declare
             @conta                    VARCHAR(5),
             @dv_conta                 CHAR(1),
             @carteira                 VARCHAR(3),
-            @codigo_cedente           VARCHAR(20), -- se aplicável
-            @nm_convenio_cobranca     VARCHAR(50) = '';
+            @codigo_cedente           VARCHAR(20); -- se aplicável
 
 
 --Empresa--
@@ -241,7 +241,8 @@ declare
 select      
   @nm_empresa          = nm_empresa,
   @nm_fantasia_empresa = nm_fantasia_empresa,      
-  @cd_cnpj_empresa     = cd_cgc_empresa      
+  @cd_cnpj_empresa     = case when cd_empresa in (360,370,371,372,373,374,376) then '03418924000109' else cd_cgc_empresa end,
+  @cd_cnpj_empresa_1   = cd_cgc_empresa
 from      
   EgisAdmin.dbo.Empresa      
 where      
@@ -259,8 +260,7 @@ SELECT
   @conta                    = RIGHT(REPLICATE('0',5) + REPLACE(REPLACE(LTRIM(RTRIM(ISNULL(cab.nm_conta_banco,''))),'-',''),'.',''),5),
   @dv_conta                 = RIGHT(REPLICATE('0',1) + LTRIM(RTRIM(ISNULL(cab.cd_dac_conta_banco,''))),1),
   @carteira                 = RIGHT(REPLICATE('0',3) + CAST(ISNULL(cob.cd_num_carteira_cobranca,0) AS VARCHAR(3)),3),
-  @cd_identificacao_empresa = isnull(cab.nm_convenio_cobranca,''),
-  @nm_convenio_cobranca     = isnull(cab.nm_convenio_cobranca,'')
+  @cd_identificacao_empresa = isnull(cab.nm_convenio_cobranca,'')
 FROM Conta_Agencia_Banco cab
 JOIN Agencia_Banco a                 ON a.cd_agencia_banco = cab.cd_agencia_banco
 LEFT JOIN conta_carteira_cobranca cc ON cc.cd_conta_banco = cab.cd_conta_banco
@@ -286,183 +286,6 @@ where
 --select @cd_conta_banco, @cd_portador, @cd_numero_banco
 --return
 
----------------------------------------------------------------------------
--- Safra (422) - Geração de Remessa de Pagamento (Cabeçalho/Detalhe/Trailer)
--- cd_parametro = 3
----------------------------------------------------------------------------
-IF @cd_numero_banco = 422 AND ISNULL(@cd_parametro,0) = 3
-BEGIN
-
-  -- Validações básicas
-  IF NULLIF(@nm_convenio_cobranca, '') IS NULL
-     THROW 50006, 'Conta Safra sem código de convênio/configuração para geração de remessa.', 1;
-
-  IF @dt_inicial IS NULL
-     SET @dt_inicial = dbo.fn_data_inicial(@cd_mes,@cd_ano);
-
-  IF @dt_final IS NULL
-     SET @dt_final   = dbo.fn_data_final(@cd_mes,@cd_ano);
-
-  DECLARE @CodigoEmpresaSafra VARCHAR(9) =
-    RIGHT(REPLICATE('0',9) + REPLACE(REPLACE(REPLACE(REPLACE(@nm_convenio_cobranca,'-',''),'.',''),'/',''),' ',''), 9);
-
-  IF @CodigoEmpresaSafra = '000000000'
-     THROW 50007, 'Código Safra inválido (nm_convenio_cobranca).', 1;
-
-  DECLARE @Pagamentos TABLE
-  (
-    TipoServico      INT           NOT NULL,
-    CpfCnpj          VARCHAR(14)   NOT NULL,
-    NomeFavorecido   VARCHAR(60)   NOT NULL,
-    BancoFavorecido  INT           NOT NULL,
-    Agencia          INT           NOT NULL,
-    DvAgencia        CHAR(1)       NULL,
-    Conta            BIGINT        NOT NULL,
-    DvConta          CHAR(1)       NULL,
-    Valor            DECIMAL(15,2) NOT NULL,
-    DataPagamento    DATE          NOT NULL,
-    SeuNumero        VARCHAR(50)   NULL
-  );
-
-  ;WITH PagamentoFonte AS
-  (
-    SELECT
-      d.cd_documento_pagar,
-      d.dt_vencimento_documento,
-      ISNULL(d.vl_saldo_documento_pagar, d.vl_documento_pagar) AS vl_pagamento,
-      ISNULL(vw.cd_cnpj,'')                                    AS cd_cnpj,
-      ISNULL(vw.nm_razao_social, vw.nm_fantasia)               AS nm_favorecido,
-      ISNULL(f.cd_banco,0)                                     AS cd_banco_favorecido,
-      LTRIM(RTRIM(ISNULL(f.cd_agencia_banco,'')))              AS raw_agencia,
-      LTRIM(RTRIM(ISNULL(f.cd_conta_banco,'')))                AS raw_conta,
-      d.cd_portador,
-      d.cd_documento_pagar                                     AS seu_numero_base
-    FROM
-      Documento_Pagar d          WITH (NOLOCK)
-      LEFT JOIN vw_destinatario vw WITH (NOLOCK) ON vw.cd_destinatario      = d.cd_fornecedor
-                                               AND vw.cd_tipo_destinatario = d.cd_tipo_destinatario
-      LEFT JOIN Fornecedor f       WITH (NOLOCK) ON f.cd_fornecedor        = d.cd_fornecedor
-    WHERE
-      ISNULL(d.vl_saldo_documento_pagar,0) > 0
-      AND d.dt_cancelamento_documento IS NULL
-      AND d.dt_vencimento_documento BETWEEN @dt_inicial AND @dt_final
-      AND ISNULL(d.cd_portador,0) = CASE WHEN @cd_portador = 0 THEN ISNULL(d.cd_portador,0) ELSE @cd_portador END
-  ),
-  PagamentoAjustado AS
-  (
-    SELECT
-      pf.cd_documento_pagar,
-      pf.dt_vencimento_documento,
-      pf.vl_pagamento,
-      pf.cd_banco_favorecido,
-      pf.cd_cnpj,
-      pf.nm_favorecido,
-      pf.seu_numero_base,
-      -- Separação de agência/conta + dígito
-      CASE WHEN CHARINDEX('-', pf.raw_agencia) > 0 THEN LEFT(pf.raw_agencia, CHARINDEX('-', pf.raw_agencia)-1) ELSE pf.raw_agencia END AS agencia_num_raw,
-      CASE WHEN CHARINDEX('-', pf.raw_agencia) > 0 THEN SUBSTRING(pf.raw_agencia, CHARINDEX('-', pf.raw_agencia)+1, 10) ELSE '' END AS dv_agencia_raw,
-      CASE WHEN CHARINDEX('-', pf.raw_conta) > 0 THEN LEFT(pf.raw_conta, CHARINDEX('-', pf.raw_conta)-1) ELSE pf.raw_conta END AS conta_num_raw,
-      CASE WHEN CHARINDEX('-', pf.raw_conta) > 0 THEN SUBSTRING(pf.raw_conta, CHARINDEX('-', pf.raw_conta)+1, 10) ELSE '' END AS dv_conta_raw
-    FROM PagamentoFonte pf
-  )
-  INSERT INTO @Pagamentos
-  (
-    TipoServico, CpfCnpj, NomeFavorecido, BancoFavorecido,
-    Agencia, DvAgencia, Conta, DvConta, Valor, DataPagamento, SeuNumero
-  )
-  SELECT
-    20 AS TipoServico,
-    RIGHT(REPLICATE('0',14) + REPLACE(REPLACE(REPLACE(REPLACE(pa.cd_cnpj,'-',''),'.',''),'/',''),' ',''),14) AS CpfCnpj,
-    ISNULL(pa.nm_favorecido,'') AS NomeFavorecido,
-    ISNULL(pa.cd_banco_favorecido,0) AS BancoFavorecido,
-    ISNULL(TRY_CONVERT(INT, NULLIF(REPLACE(REPLACE(REPLACE(REPLACE(pa.agencia_num_raw,'-',''),'.',''),'/',''),' ',''),'')),0) AS Agencia,
-    LEFT(REPLACE(REPLACE(REPLACE(REPLACE(pa.dv_agencia_raw,'-',''),'.',''),'/',''),' ',''),1) AS DvAgencia,
-    ISNULL(TRY_CONVERT(BIGINT, NULLIF(REPLACE(REPLACE(REPLACE(REPLACE(pa.conta_num_raw,'-',''),'.',''),'/',''),' ',''),'')),0) AS Conta,
-    LEFT(REPLACE(REPLACE(REPLACE(REPLACE(pa.dv_conta_raw,'-',''),'.',''),'/',''),' ',''),1) AS DvConta,
-    ISNULL(pa.vl_pagamento,0) AS Valor,
-    ISNULL(pf.dt_vencimento_documento, CONVERT(date, GETDATE())) AS DataPagamento,
-    CONVERT(VARCHAR(50), pa.seu_numero_base) AS SeuNumero
-  FROM PagamentoAjustado pa
-  JOIN PagamentoFonte pf ON pf.cd_documento_pagar = pa.cd_documento_pagar
-  WHERE ISNULL(pa.vl_pagamento,0) > 0;
-
-  IF NOT EXISTS (SELECT 1 FROM @Pagamentos)
-  BEGIN
-     SELECT 'Nenhum título para gerar remessa Safra.' AS ArquivoRemessa;
-     RETURN;
-  END
-
-  DECLARE @DataGeracao DATETIME = GETDATE();
-  DECLARE @DataDDMMAAAA CHAR(8) =
-        RIGHT('00' + CAST(DATEPART(DAY,  @DataGeracao) AS VARCHAR(2)), 2) +
-        RIGHT('00' + CAST(DATEPART(MONTH,@DataGeracao) AS VARCHAR(2)), 2) +
-        RIGHT('0000' + CAST(DATEPART(YEAR, @DataGeracao) AS VARCHAR(4)), 4);
-
-  DECLARE @HoraHHMMSS00 CHAR(8) =
-        RIGHT('00' + CAST(DATEPART(HOUR,  @DataGeracao) AS VARCHAR(2)), 2) +
-        RIGHT('00' + CAST(DATEPART(MINUTE,@DataGeracao) AS VARCHAR(2)), 2) +
-        RIGHT('00' + CAST(DATEPART(SECOND,@DataGeracao) AS VARCHAR(2)), 2) +
-        '00';
-
-  DECLARE @Linhas TABLE (Seq INT IDENTITY(1,1) NOT NULL, Linha CHAR(400) NOT NULL);
-
-  DECLARE @Header CHAR(400) =
-        '0' +
-        @DataDDMMAAAA +
-        @HoraHHMMSS00 +
-        RIGHT(REPLICATE('0',9) + @CodigoEmpresaSafra, 9) +
-        LEFT(ISNULL(@nm_empresa,@nm_fantasia_empresa) + REPLICATE(' ',30), 30) +
-        '422' +
-        LEFT('BANCO SAFRA' + REPLICATE(' ',30), 30) +
-        REPLICATE(' ', 311);
-
-  INSERT INTO @Linhas (Linha) VALUES (@Header);
-
-  INSERT INTO @Linhas (Linha)
-  SELECT
-    CAST(
-      '1' +
-      RIGHT('00' + CAST(p.TipoServico AS VARCHAR(2)), 2) +
-      RIGHT(REPLICATE('0',14) + p.CpfCnpj, 14) +
-      LEFT(UPPER(p.NomeFavorecido) + REPLICATE(' ',30), 30) +
-      RIGHT(REPLICATE('0',4) + CAST(p.BancoFavorecido AS VARCHAR(4)), 4) +
-      RIGHT(REPLICATE('0',5) + CAST(p.Agencia AS VARCHAR(5)), 5) +
-      ISNULL(NULLIF(p.DvAgencia,''), ' ') +
-      RIGHT(REPLICATE('0',12) + CAST(p.Conta AS VARCHAR(12)), 12) +
-      ISNULL(NULLIF(p.DvConta,''), ' ') +
-      RIGHT(REPLICATE('0',13) + CAST(CAST(ROUND(p.Valor,2) * 100 AS BIGINT) AS VARCHAR(13)),13) +
-      RIGHT('00' + CAST(DAY(p.DataPagamento) AS VARCHAR(2)), 2) +
-      RIGHT('00' + CAST(MONTH(p.DataPagamento) AS VARCHAR(2)), 2) +
-      RIGHT('0000' + CAST(YEAR(p.DataPagamento) AS VARCHAR(4)), 4) +
-      LEFT(ISNULL(p.SeuNumero,'') + REPLICATE(' ',20), 20) +
-      REPLICATE(' ',289)
-    AS CHAR(400))
-  FROM @Pagamentos p
-  ORDER BY p.DataPagamento, p.TipoServico, p.NomeFavorecido;
-
-  DECLARE @QtdDetalhes INT = (SELECT COUNT(1) FROM @Pagamentos);
-  DECLARE @TotalRegistros INT = @QtdDetalhes + 2;
-  DECLARE @SomaCentavos BIGINT = (SELECT CAST(SUM(CAST(ROUND(Valor,2) * 100 AS BIGINT)) AS BIGINT) FROM @Pagamentos);
-
-  DECLARE @Trailer CHAR(400) =
-        '9' +
-        RIGHT(REPLICATE('0',6) + CAST(@TotalRegistros AS VARCHAR(6)), 6) +
-        RIGHT(REPLICATE('0',15) + CAST(ISNULL(@SomaCentavos,0) AS VARCHAR(15)), 15) +
-        REPLICATE(' ',378);
-
-  INSERT INTO @Linhas (Linha) VALUES (@Trailer);
-
-  DECLARE @ArquivoRemessa VARCHAR(MAX) = '';
-
-  SELECT @ArquivoRemessa = @ArquivoRemessa + Linha + CHAR(13) + CHAR(10)
-  FROM @Linhas
-  ORDER BY Seq;
-
-  SELECT Seq, Linha FROM @Linhas ORDER BY Seq;
-  SELECT @ArquivoRemessa AS ArquivoRemessa;
-  RETURN;
-END
-
 -----------------
 --3) Documentos para Enviar para o Banco --------------------------------------------------
 ------------------
@@ -482,7 +305,8 @@ select
   c.nm_pais,
   c.nm_estado,
   c.sg_estado,
-  c.nm_cidade
+  c.nm_cidade,
+  c.cd_tipo_pessoa
 
 into
   #DocumentoRemessa
@@ -703,6 +527,18 @@ BEGIN
 
 ---------------------------------------------------------------------------
 -- Valor (13,2) sem pontuação
+
+--Calculo Juros--
+
+declare @pc_juros float = 0.00
+select 
+  top 1
+  @pc_juros = isnull(pc_taxa_cobranca_banco,0)
+from
+  Parametro_Financeiro
+
+declare @jurosCalculado char(13)
+
 DECLARE @valor_13 CHAR(13) = RIGHT(REPLICATE('0',13) + REPLACE(REPLACE(CONVERT(VARCHAR(20), CONVERT(NUMERIC(13,2), ROUND(@valor,2)), 2),'.',''),',',''),13);
 ----------------------------------
 
@@ -726,14 +562,18 @@ DECLARE @seu_num_10 CHAR(10) = LEFT(RIGHT(REPLICATE('0',10) + REPLACE(REPLACE(@s
 --Dados do Cliente/Destinatário--
 
 -- buscar do recebedor/sacado do título
+declare @TipoDest varchar(2) 
+DECLARE @vlrjuros CHAR(13) = RIGHT(REPLICATE('0',13) + REPLACE(REPLACE(CONVERT(VARCHAR(20), CONVERT(NUMERIC(13,2), ROUND(@valor,2)), 2),'.',''),',',''),13)
 
 SELECT
-  @nome_sacado = LEFT(ISNULL(dr.nm_razao_social, dr.nm_fantasia), 30),
-  @endereco    = LEFT(ISNULL(dr.nm_endereco + ', ' + dr.cd_numero_endereco, ''), 40),
-  @bairro      = LEFT(ISNULL(dr.nm_bairro,''), 12),
-  @cep8        = RIGHT(REPLICATE('0',8) + REPLACE(REPLACE(ISNULL(dr.cd_cep,''),'-',''),'.',''), 8),
-  @cidade      = LEFT(ISNULL(dr.nm_cidade,''), 15),
-  @uf          = LEFT(ISNULL(dr.sg_estado,''), 2)
+  @nome_sacado    = LEFT(ISNULL(dr.nm_razao_social, dr.nm_fantasia), 30),
+  @endereco       = LEFT(ISNULL(dr.nm_endereco + ', ' + dr.cd_numero_endereco, ''), 40),
+  @bairro         = LEFT(ISNULL(dr.nm_bairro,''), 12),
+  @cep8           = RIGHT(REPLICATE('0',8) + REPLACE(REPLACE(ISNULL(dr.cd_cep,''),'-',''),'.',''), 8),
+  @cidade         = LEFT(ISNULL(dr.nm_cidade,''), 15),
+  @uf             = LEFT(ISNULL(dr.sg_estado,''), 2),
+  @TipoDest       = LEFT(ISNULL(dr.cd_tipo_pessoa,'0'), 2),
+  @jurosCalculado = RIGHT(REPLICATE('0',13) + REPLACE(REPLACE(CONVERT(VARCHAR(20), CONVERT(NUMERIC(13,2), ROUND((@valor * (@pc_juros/100)/30),2)), 2),'.',''),',',''),13)
 FROM
   #DocumentoRemessa dr
 where
@@ -747,6 +587,7 @@ DECLARE @det VARCHAR(400) = '';
 
 -- Preparos
 DECLARE @cnpj14 CHAR(14) = RIGHT(REPLICATE('0',14) + ISNULL(@cd_cnpj_empresa,''), 14);
+DECLARE @cnpj14_1 CHAR(14) = RIGHT(REPLICATE('0',14) + ISNULL(@cd_cnpj_empresa_1,''), 14);
 DECLARE @ag4    CHAR(4)  = RIGHT('0000' + @agencia, 4);
 DECLARE @dv1    CHAR(1)  = @dv_conta;
 
@@ -764,11 +605,11 @@ DECLARE @valor13 CHAR(13) = RIGHT(REPLICATE('0',13) + REPLACE(REPLACE(CONVERT(VA
 DECLARE @emiss_6 CHAR(6) = @data_hoje_6; -- já calculado no header
 
 -- Sacado (upper + pad)
-DECLARE @nome30  CHAR(30) = RIGHT(LEFT(UPPER(ISNULL(@nome_sacado,'')) + REPLICATE(' ',30),30),30);
-DECLARE @ender40 CHAR(40) = RIGHT(LEFT(UPPER(ISNULL(@endereco  ,'')) + REPLICATE(' ',40),40),40);
-DECLARE @bairro12 CHAR(12)= RIGHT(LEFT(UPPER(ISNULL(@bairro    ,'')) + REPLICATE(' ',12),12),12);
-DECLARE @cidade15 CHAR(15)= RIGHT(LEFT(UPPER(ISNULL(@cidade   ,'')) + REPLICATE(' ',15),15),15);
-DECLARE @uf2     CHAR(2)  = RIGHT(LEFT(UPPER(ISNULL(@uf       ,'')) + REPLICATE(' ',2), 2),2);
+DECLARE @nome30   CHAR(30) = RIGHT(LEFT(UPPER(ISNULL(@nome_sacado,'')) + REPLICATE(' ',30),30),30);
+DECLARE @ender40  CHAR(40) = RIGHT(LEFT(UPPER(ISNULL(@endereco  ,'')) + REPLICATE(' ',40),40),40);
+DECLARE @bairro12 CHAR(12) = RIGHT(LEFT(UPPER(ISNULL(@bairro    ,'')) + REPLICATE(' ',12),12),12);
+DECLARE @cidade15 CHAR(15) = RIGHT(LEFT(UPPER(ISNULL(@cidade   ,'')) + REPLICATE(' ',15),15),15);
+DECLARE @uf2      CHAR(2)  = RIGHT(LEFT(UPPER(ISNULL(@uf       ,'')) + REPLICATE(' ',2), 2),2);
 
 --Banco Itaú----------------------------------------------------------------------------------------
 
@@ -783,31 +624,38 @@ begin
     @ag4 +                -- 018-021
     @conta7 + @dv1 +      -- 022-029
     REPLICATE(' ', 8) +   -- 030-037 (uso do banco)  <<< mantém 8 espaços como no header
-    @seu_curto +          -- 038-043  (espelhando seu arquivo bom: “337114” aparece logo aqui)
-    REPLICATE(' ', 19) +  -- 044-062  (uso do banco)
-    '00005000' +          -- 063-070  (ex.: multa/juros dia – igual ao seu bom)
+    'MC' + @seu_curto +          -- 038-043  (espelhando seu arquivo bom: “337114” aparece logo aqui)
+    REPLICATE(' ', 17) +  -- 044-062  (uso do banco)
+    
+    --'00005000' +          -- 063-070  (ex.: multa/juros dia – igual ao seu bom)
+    @nosso8 +
     REPLICATE(' ', 12) +  -- 071-082
     '0109' +              -- 083-086  (carteira/espécie conforme contrato – seu bom traz “0109”)
     REPLICATE(' ', 21) +  -- 087-107
     'I01' +               -- 108-110  (código ocorrência Itaú – igual ao seu bom)
-    RIGHT(LEFT(@seu_curto + REPLICATE(' ',12),12),12) + -- 111-122 (seu número expandido)
-    REPLICATE(' ', 4) +   -- 123-126
-    '19' + RIGHT(@venc_6,4) +  -- 127-132 (ex.: “191025” no seu bom → dia 19/10/25)
+    RIGHT(LEFT('MC' + @seu_curto + REPLICATE(' ',10),10),10) + -- 111-122 (seu número expandido)
+    RIGHT(@venc_6,6) +  -- 127-132 (ex.: “191025” no seu bom → dia 19/10/25)
     @valor13 +            -- 133-145 (valor título)
     '341' +               -- 146-148 (banco)
     REPLICATE(' ', 5) +   -- 149-153
     '01' +                -- 154-155 (espécie)
     'N' +                 -- 156 (aceite)
     @emiss_6 +            -- 157-162 (emissão)
-    REPLICATE('0', 62) +  -- 163-224 (juros/descontos/outros)
+    '43'   +              -- 1° Instrução
+    '59'   +              -- 2° Instrução
+    @jurosCalculado    +  -- 163-224 (juros/descontos/outros)
+    REPLICATE('0', 46) +
+    @TipoDest +
+    @cnpj14_1 +
     @nome30 +             -- 225-254
+    REPLICATE(' ', 10) +
     @ender40 +            -- 255-294
     @bairro12 +           -- 295-306
     @cep8 +               -- 307-314
     @cidade15 +           -- 315-329
     @uf2 +                -- 330-331
     REPLICATE(' ', 394-331); -- 332-394 (filler)
-
+    
 end
 
 
@@ -836,7 +684,7 @@ begin
       '1' +
       REPLICATE('0', 19) +       -- 002-020 (débito automático)
       @id_empresa_17 +            -- 021-037
-      @controle25 +               -- 038-062
+      'MX' + @controle25 +               -- 038-062
       '237' +                     -- 063-065
       '0' +                       -- 066 (sem multa)
       '0000' +                    -- 067-070
@@ -1006,9 +854,9 @@ go
 ------------------------------------------------------------------------------
 go
 
-go
+--go
 
-use egissql_370
+--use egissql_370
 
 /*
 EXEC pr_egis_geracao_remessa_banco 
@@ -1027,6 +875,11 @@ EXEC pr_egis_geracao_remessa_banco
 --        "cd_usuario": 1        
 --      }
 --    ]'
---go
+----go
+
+
+
+
+
 
 

@@ -190,9 +190,20 @@
         >
         <q-tooltip>Informações</q-tooltip>
         </q-btn>
-
+<q-btn
+   dense
+    rounded
+          color="deep-purple-7"
+          class="q-mt-sm q-ml-sm"          
+          size="lg"
+          icon="filter_alt_off" 
+          @click="drawerFiltros = true"
+>
+<q-tooltip>Seleção de Filtros</q-tooltip>
+        </q-btn>
 
       <!-- TOGGLE: GRID x CARDS (só aparece quando meta permite) -->
+
       <q-toggle
           v-if="String(ic_card_menu || 'N').toUpperCase() === 'S'"
           v-model="exibirComoCards"
@@ -205,6 +216,7 @@
       />
 
       <!-- TOGGLE TreeView x Grid -->
+
       <q-toggle
         v-if="String(ic_treeview_menu || 'N').toUpperCase() === 'S'"
         v-model="exibirComoTree"
@@ -767,8 +779,17 @@
   </q-card>
 </q-dialog>
 
-    <!-- FILTROS (mesma ideia do Form Especial) -->
 
+<div v-if="dashboardCards && dashboardCards.length" class="kpi-row">
+  <div v-for="(k, i) in dashboardCards" :key="`kpi_${i}`" class="kpi">
+    <div class="kpi-title">{{ k.titulo }}</div>
+    <div class="kpi-value">{{ formatarValorCard(k.valor, k.formato) }}</div>
+    <div class="kpi-sub">{{ k.subtitulo }}</div>
+  </div>
+</div>
+
+
+    <!-- FILTROS (mesma ideia do Form Especial) -->
 
     <section class="hpanel pane filtros">
       <!-- seus filtros aqui -->
@@ -780,7 +801,7 @@
         icon="filter_list"
         label="Seleção de Filtros"
         expand-separator
-   
+        header-class="text-weight-bold"
       >
         <slot name="filtros-bloco">
           <form
@@ -1172,7 +1193,7 @@
           <div class="cards-wrapper" style="margin-top: 10px">
             <div
               v-for="(r, idx) in cardsFiltrados"
-              :key="r[id] || r[keyName] || idx"
+              :key="(r && r.id != null) ? r.id : idx"
               class="card-unico dx-card cursor-pointer"
               @dblclick="abrirFormEspecial({ modo: 'A', registro: r })"
             >
@@ -1223,13 +1244,12 @@
             </div>
           </div>
         </div>
+       
 
-        
-
-        <!-- GRID PRINCIPAL -->
+        <!-- GRID PRINCIPAL     @initialized="onGridInitialized" @onSelectionChanged="onSelectionChangedPrincipal"  -->
 
         <div
-          v-else
+          
           v-show="!(String(ic_treeview_menu || 'N').toUpperCase() === 'S' && exibirComoTree)"
           class="grid-scroll-shell">
          <div class="grid-scroll-track">
@@ -1256,7 +1276,7 @@
               :column-resizing-mode="'widget'"
               :remote-operations="false"
               :row-alternation-enabled="false"
-              :repaint-changes-only="true"
+              :repaint-changes-only="false"
               :paging="{ enabled: true, pageSize: gridPageSize }"
               :pager="{
                 visible: true,
@@ -1274,14 +1294,15 @@
               }"
               :selection="gridSelectionConfig"              
               @selection-changed="onSelectionChangedGrid"
+              @onSelectionChanged="onSelectionChangedPrincipal"
               @toolbar-preparing="onToolbarPreparing"
               @rowClick="onRowClickPrincipal"
               @option-changed="onOptionChanged"
               @rowDblClick="
                 (e) => abrirFormEspecial({ modo: 'A', registro: e.data })
               "
-               @row-prepared="onRowPreparedPrincipal"
-               @onSelectionChanged="onSelectionChangedPrincipal"
+               @row-prepared="onRowPreparedPrincipal"                 
+              
             >
             <template #acoesGridColorCellTemplate="{ data }">
   <div class="acoes-grid-color-wrapper">
@@ -1540,6 +1561,63 @@
     <q-card-actions align="right">
       <q-btn flat label="Fechar" color="primary" v-close-popup @click="showAvisoConfig = false" />
     </q-card-actions>
+  </q-card>
+</q-dialog>
+
+<q-dialog v-model="drawerFiltros" position="right">
+  <q-card style="width: 420px; max-width: 90vw;">
+    <q-card-section class="row items-center">
+      <div class="text-subtitle1 text-weight-bold">Filtros</div>
+      <q-space />
+      <q-btn flat round dense icon="close" @click="drawerFiltros = false" />
+    </q-card-section>
+
+    <q-separator />
+
+    <q-card-section class="q-pa-md">
+      <!-- seu form de filtros (igual, sem mudar nada) -->
+      <form
+        class="dx-card wide-card"
+        action="#"
+        @submit.prevent="handleSubmit && handleSubmit($event)"
+      >
+        <div class="row q-col-gutter-md filtros-grid">
+          <div
+            v-for="(f, idx) in filtros.filter(x => x.ic_visivel_filtro !== 'N')"
+            :key="`filtro_${f.nm_campo_chave_lookup || f.nm_atributo || 'x'}_${idx}`"
+            class="col-12 filtro-item"
+          >
+            <component
+              :is="f.nm_lookup_tabela ? 'q-select' : 'q-input'"
+              v-model="filtrosValores[f.nm_campo_chave_lookup || f.nm_atributo]"
+              :type="inputType(f)"
+              :label="f.nm_edit_label || f.nm_filtro || f.nm_atributo"
+              :options="f._options || []"
+              option-value="value"
+              option-label="label"
+              filled
+              clearable
+              stack-label
+              :disable="f.ic_fixo_filtro === 'S'"
+            >
+              <template v-if="!f.nm_lookup_tabela" v-slot:prepend>
+                <q-icon name="tune" />
+              </template>
+            </component>
+          </div>
+        </div>
+
+        <div class="row q-mt-md q-gutter-sm justify-end">
+          <q-btn
+            color="deep-orange-9"
+            rounded
+            icon="search"
+            label="Aplicar"
+            @click="consultar && consultar(); drawerFiltros = false"
+          />
+        </div>
+      </form>
+    </q-card-section>
   </q-card>
 </q-dialog>
 
@@ -2353,10 +2431,17 @@ export default {
   },
 
   // ===== DADOS =====
-
+  
   data() {
     return {
+      dashboardRows: [],
+      drawerFiltros: false,
       keyFieldDb: null,
+      _rowClickLock: false,
+      _dedupRowClick: { key: null, ts: 0 },
+      selectedRowKeys: [],
+      focusedRowKey: null,
+      _gridReady: false,
       _syncSelecionando: false,
       _gridDimTimer: null,
       gridAutoFit: true,
@@ -2681,9 +2766,61 @@ export default {
 
         return preferidos || candidatos[0] || null
       },          
-    
+
+  dashboardAtributos() {
+    const cols = Array.isArray(this.columns) ? this.columns : [];
+    return cols.filter(c => c && c.ic_dashboard_atributo === 'S');
+  },
+
+  dashboardCols () {
+    const cols = Array.isArray(this.columns) ? this.columns : [];
+    return cols.filter(c => {
+      const flag = String(c.ic_ic_dashboard_atributo || c.ic_dashboard_atributo || "N").toUpperCase();
+      return flag === "S";
+    });
+  },
+
+  
+  dashboardCards () {
+    const rows = Array.isArray(this.rows) ? this.rows : [];
+    const cols = Array.isArray(this.columns) ? this.columns : [];
+    if (!rows.length || !cols.length) return [];
+
+    const dashCols = cols.filter(c => String(c.ic_ic_dashboard_atributo || "N").toUpperCase() === "S");
+
+    return dashCols.map(c => {
+      const titulo = c.caption || c.nm_atributo_consulta || c.dataField || "—";
+
+      // seus rows vêm com chave = caption ("Total R$", "(%) ", etc)
+      const key = c.nm_atributo_consulta || titulo;
+
+      const nums = rows
+        .map(r => Number(r && r[key]))
+        .filter(v => !Number.isNaN(v));
+
+      const isPercent = String(titulo).includes("%") || String(c.format || "").includes("%");
+
+      const valor = isPercent
+        ? (nums.length ? (nums.reduce((s,v)=>s+v,0) / nums.length) : 0)
+        : nums.reduce((s,v)=>s+v,0);
+
+      return {
+        titulo,
+        valor,
+        formato: c.format,
+        subtitulo: isPercent ? "média no período" : "total no período"
+      };
+    });
+  },
+
+
+
     cardsFiltrados () {
-      const lista = Array.isArray(this.rows) ? this.rows : []
+      //const lista = Array.isArray(this.rows) ? this.rows : []
+      const lista =
+      (Array.isArray(this.rows) && this.rows.length) ? this.rows :
+      (Array.isArray(this.dashboardRows) ? this.dashboardRows : []);
+
       const f = String(this.filtroCardsTexto || '').trim().toLowerCase()
       if (!f) return lista
 
@@ -3010,6 +3147,44 @@ export default {
   },
 
   methods: {
+ 
+
+onGridInitialized(e) {
+  if (this._gridReady) return;
+  this._gridReady = true;
+
+  const grid = e.component;
+  if (!grid) return;
+
+  this.$nextTick(() => {
+    try {
+      // força criação interna de estado (SEM selecionar nada visível)
+      grid.option("focusedRowIndex", -1);
+      grid.clearSelection();
+
+      // força cálculo de layout
+      grid.repaint();
+    } catch (err) {}
+  });
+},
+
+  formatarKpiValor(valor, formato) {
+    if (valor === null || valor === undefined) return "—";
+
+    if (formato === "moeda") {
+      return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(Number(valor) || 0);
+    }
+    if (formato === "percentual") {
+      return `${(Number(valor) || 0).toFixed(2)}%`;
+    }
+    if (formato === "inteiro") {
+      return new Intl.NumberFormat("pt-BR").format(Math.round(Number(valor) || 0));
+    }
+    // default: mostra “bonito”
+    return new Intl.NumberFormat("pt-BR").format(Number(valor) || 0);
+  },
+
+
 
     ensureKeyOnRows() {
   if (!this.keyFieldDb) this.resolveKeyFieldDb();
@@ -3666,37 +3841,77 @@ findNodeById (nodes, id) {
     },
 
     cardCampos (row) {
+      
+      console.log( 'cardCampos -->', row);
+
       const cols = (this.columns || [])
         .filter(c => c && c.dataField)          // ignora coluna buttons
-        .slice(0, 4)                            // pega 4 campos pro card
+        .slice(0, 5)                            // pega 4 campos pro card
 
-      return cols.map(c => {
-        const label = c.caption || c.dataField
-        const raw = row ? row[c.dataField] : null
-        const value = this.formatarValorCard(raw, c.format)
-        return { label, value }
-      })
+     return cols.map(c => {
+  const label = c.caption || c.dataField || c.nm_atributo_consulta
+
+  const campo =
+    c.nm_atributo_consulta ||
+    c.dataField ||
+    c.nm_atributo ||
+    c.caption
+
+  // ✅ fallback: se não achar pelo campo técnico, tenta pelo caption (que é como está no row)
+  const raw = row
+    ? (row[campo] !== undefined ? row[campo] : row[label])
+    : null
+
+  const value = this.formatarValorCard(raw, c.format)
+
+  console.log('valor do card -->', campo, label, raw, c.format)
+
+  return { label, value }
+})
+
     },
 
-    formatarValorCard (v, fmt) {
-      if (v === null || v === undefined) return '—'
 
-      // moeda BR se a coluna estiver como currency
-      if (fmt === 'currency') {
-        const n = Number(v)
-        if (!Number.isFinite(n)) return String(v)
-        return n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
-      }
+    formatarValorCard (raw, format) {
+  if (raw === null || raw === undefined || raw === "") return "—";
 
-      // number / fixedPoint
-      if (fmt === 'number' || fmt === 'fixedPoint') {
-        const n = Number(v)
-        if (!Number.isFinite(n)) return String(v)
-        return n.toLocaleString('pt-BR')
-      }
+  // tenta converter para número quando possível
+  const n = (typeof raw === "number") ? raw : Number(String(raw).replace(/\./g, "").replace(",", "."));
+  const isNum = !Number.isNaN(n);
 
-      return String(v)
-    },
+  const f = String(format || "").toLowerCase();
+
+  // moeda
+  if (f === "currency" || f.includes("moeda") || f.includes("brl") || f.includes("r$")) {
+    const v = isNum ? n : 0;
+    return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v);
+  }
+
+  // percentual
+  if (f.includes("%") || f.includes("percent")) {
+    const v = isNum ? n : 0;
+    return `${new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 2 }).format(v)}%`;
+  }
+
+  // decimal (2 casas)
+  if (f.includes("decimal") || f.includes("float")) {
+    const v = isNum ? n : 0;
+    return new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(v);
+  }
+
+  // inteiro
+  if (f.includes("int")) {
+    const v = isNum ? Math.round(n) : raw;
+    return isNum ? new Intl.NumberFormat("pt-BR").format(v) : String(raw);
+  }
+
+  // default: se for número, formata “bonito”
+  if (isNum) {
+    return new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 6 }).format(n);
+  }
+
+  return String(raw);
+},
 
     temConfigConsultaInvalida () {
       const cdTabela = Number(this.cd_tabela || 0)
@@ -4782,9 +4997,24 @@ console.log('nm_atributo_consulta:', attr.nm_atributo_consulta, 'VAL:', this.for
 
   //
 async onSelectionChangedGrid(e) {
+
+  // se o click já está sendo tratado, não entra aqui
+  if (this._rowClickLock) return;
+  //
+
   // pega a última selecionada (ou a primeira)
   const row = e?.selectedRowsData?.[e.selectedRowsData.length - 1]
   if (!row) return
+
+  const keyAtual =
+    (this.keyName && typeof row[this.keyName] !== "undefined") ? row[this.keyName]
+    : (typeof row.id !== "undefined") ? row.id
+    : null;
+
+  // marca dedup (porque quase sempre veio logo após um clique)
+  this._dedupRowClick = { key: keyAtual, ts: Date.now() };
+
+
 
   // evita loop caso o onRowClick altere seleção internamente
   if (this._syncSelecionando) return
@@ -5076,6 +5306,22 @@ abrirSeletorArquivo (attr) {
     ref.click()
   }
 },
+    onFiltroCardsChange () {
+      try {
+        const grid = this.$refs.grid && this.$refs.grid.instance
+        if (grid && typeof grid.searchByText === 'function') {
+          grid.searchByText(this.filtroCardsTexto || '')
+        }
+      } catch (e) {
+        // silencioso pra não quebrar tela
+      }
+    },
+
+  onFiltroCardsClear () {
+      this.filtroCardsTexto = ''
+      this.onFiltroCardsChange()
+    },
+
 onFileSelected (attr, event) {
   const file = event.target.files && event.target.files[0]
   if (!file) return
@@ -5926,7 +6172,31 @@ async refreshGrid () {
 
     // ao clicar numa linha da PRINCIPAL
 
-    onRowClickPrincipal(e) {
+    async onRowClickPrincipal(e) {
+
+        // ===== anti "pisca": evita dupla execução (rowClick + selectionChanged) =====
+  const keyAtual =
+    (e && typeof e.key !== "undefined") ? e.key
+    : (e && e.data && this.keyName && typeof e.data[this.keyName] !== "undefined") ? e.data[this.keyName]
+    : (e && e.data && typeof e.data.id !== "undefined") ? e.data.id
+    : null;
+
+  const agora = Date.now();
+  if (
+    this._dedupRowClick &&
+    this._dedupRowClick.key === keyAtual &&
+    (agora - this._dedupRowClick.ts) < 250
+  ) {
+    return;
+  }
+  this._dedupRowClick = { key: keyAtual, ts: agora };
+  // ==========================================================================
+
+    // trava reentrância no mesmo ciclo de render
+  if (this._rowClickLock) return;
+
+  this._rowClickLock = true;
+
       const data = e && (e.data || e.row?.data) ? e.data || e.row.data : null;
       const cdMenu = Number(localStorage.cd_menu || this.cd_menu_entrada || 0);
 
@@ -5964,20 +6234,7 @@ async refreshGrid () {
   } catch (err) {
     console.warn('Falha ao gravar registro selecionado no sessionStorage:', err)
   }
-
-  // (se quiser também pode emitir pro modal e nem depender de storage depois)
-  // this.$emit('selecionou', plain)
-      // salva registro selecionado como você já faz no dblclick
-/*
-      sessionStorage.setItem("registro_selecionado", JSON.stringify(data));
-
   
-      if (cd_menu)
-        sessionStorage.setItem(
-          `registro_selecionado_${cd_menu}`,
-          JSON.stringify(data)
-        );
-*/
       // descobre a PK do pai usando sua meta atual (mesma lógica que você já usa)
       
       let pkPai =
@@ -6026,6 +6283,7 @@ async refreshGrid () {
       // 4) guardar para a consulta do detalhe
 
       let descKey = null;
+
       try {
         const meta = Array.isArray(this.gridMeta)
           ? this.gridMeta
@@ -6074,6 +6332,7 @@ async refreshGrid () {
       this.paiSelecionadoTexto = descKey ? data[descKey] || "" : "";
 
       // 5) habilitar as abas de detalhe
+      
       this.tabsDetalhe = this.tabsDetalhe.map((t) => ({
         ...t,
         disabled: false,
@@ -6221,14 +6480,18 @@ async refreshGrid () {
     },
 
   onRowPreparedPrincipal(e) {
+
   // só linhas de dados
   if (!e || e.rowType !== "data" || !e.data) return;
 
-  let rawColor = null;
+  // ✅ se o grid está preparando a linha por causa de seleção, NÃO mexe no DOM
+  //if (e.isSelected) return;
 
+  let rawColor = null;
 
   // 1) tenta pegar a primeira cor da acoesGridColor
   const cores = this.getAcoesGridCores(e.data.acoesGridColor);
+
   if (cores && cores.length) {
     const c0 = cores[0] || {};
     rawColor = (c0.cor || c0.nm_cor || "").trim();
@@ -6241,18 +6504,34 @@ async refreshGrid () {
 
   if (!rawColor) return;
 
-
   const cor = String(rawColor).trim();
   if (!cor) return;
 
   // normaliza o elemento da linha
   let rowEl = e.rowElement;
+
+
   if (Array.isArray(rowEl)) {
     rowEl = rowEl[0];
   } else if (rowEl && rowEl.get && typeof rowEl.get === "function") {
     rowEl = rowEl.get(0);
   }
+
   if (!rowEl) return;
+
+// ✅ se a mesma cor já foi aplicada nesta linha, não refaz (evita blink)
+const flag = `__uic_cor_${cor}`;
+if (rowEl.dataset && rowEl.dataset[flag] === "1") return;
+
+// se mudou a cor, limpa flags antigas (pra não acumular)
+if (rowEl.dataset) {
+  Object.keys(rowEl.dataset).forEach(k => {
+    if (k.startsWith("__uic_cor_")) delete rowEl.dataset[k];
+  });
+  rowEl.dataset[flag] = "1";
+}
+
+
 
   // pega TODOS os <td> da linha
   const tds = rowEl.querySelectorAll("td");
@@ -6270,15 +6549,17 @@ async refreshGrid () {
 
   // 1) limpa bg- do <tr> e zera background
   limparBgClasses(rowEl);
-  rowEl.style.backgroundColor = "";
+
+ // rowEl.style.backgroundColor = "";
 
   // 2) limpa bg- e background de TODOS os <td>
   tds.forEach((td) => {
     limparBgClasses(td);
-    td.style.backgroundColor = "";
+    //td.style.backgroundColor = "";
   });
 
   // 3) aplica cor APENAS a partir da 2ª coluna (índice 1 em diante)
+  
   if (isQuasarColor) {
     const bgClass = `bg-${cor}`;
     tds.forEach((td, index) => {
@@ -11276,7 +11557,9 @@ if (
           this.$nextTick(() => this.montarTreeview())
         }
 
-
+        //DashBoard 
+        this.dashboardRows = this.rows;
+        //
 
 // >>> NOVO: se veio do botão lápis (modal de pesquisa),
 // abre automaticamente o formulário de edição
@@ -11481,8 +11764,9 @@ if (this.ic_modal_pesquisa === 'S') {
 
 /* Compacta o card de filtros */
 .filtros-card {
-  padding: 12px 14px; /* antes era maior */
-  border-radius: 10px;
+  padding: 10px 14px; /* antes era maior */
+  border-radius: 14px;
+  box-shadow: 0 18px 40px rgba(0,0,0,.10);
 }
 
 /* Reduz o espaço entre as colunas sem cortar o padding interno */
@@ -12170,58 +12454,6 @@ if (this.ic_modal_pesquisa === 'S') {
   min-height: calc(100vh - 0px);
 }
 
-.cards-wrapper{
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  margin-left: 15px;
-  gap: 18px;
-}
-
-.card-unico{
-  border-radius: 18px;
-  transition: transform .2s ease, box-shadow .2s ease;
-  padding: 18px;
-  background: #fff;
-}
-
-.card-unico:hover{
-  transform: translateY(-4px);
-  box-shadow: 0 12px 28px rgba(0,0,0,.18);
-}
-
-.card-unico-body{
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-}
-
-.logo-unico{
-  width: 70px;
-  height: 70px;
-  border-radius: 50%;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  background: rgba(103, 58, 183, .12); /* deep-purple leve */
-  border: 1px solid rgba(103, 58, 183, .25);
-}
-
-.logo-letter{
-  font-size: 28px;
-  font-weight: 800;
-  color: #673ab7;
-  text-transform: uppercase;
-}
-
-.card-campos{
-  width: 100%;
-  max-width: 520px;
-  text-align: left;
-  margin-top: 8px;
-}
-
-
 .tree-card{
   border-radius: 16px;
   padding: 10px 12px;
@@ -12658,6 +12890,112 @@ if (this.ic_modal_pesquisa === 'S') {
   font-size: 13.5px;
   color: #009688; /* teal-500 */
   font-weight: 600;
+}
+
+.filtro-item .q-field__control {
+  border-radius: 14px;
+}
+
+/* KPI */
+.kpi-row{
+  display:grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 12px;
+  margin: 10px 0 12px 15px;
+}
+.kpi{
+  border-radius: 18px;
+  padding: 14px 16px;
+  background: #fff;
+  border: 1px solid rgba(0,0,0,.08);
+  box-shadow: 0 8px 18px rgba(0,0,0,.06);
+}
+.kpi-title{
+  font-size: 12px;
+  opacity: .75;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: .4px;
+}
+.kpi-value{
+  margin-top: 6px;
+  font-size: 22px;
+  font-weight: 950;
+}
+.kpi-sub{
+  margin-top: 4px;
+  font-size: 12px;
+  opacity: .70;
+  font-weight: 800;
+}
+
+
+/* Cards */
+/* container */
+.cards-wrapper{
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 18px;
+  margin-left: 15px;
+  align-items: stretch;
+}
+
+/* o card (q-card / dx-card / div) */
+.cards-wrapper >>> .card-unico{
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  border-radius: 18px;
+  background: #fff;
+  border: 1px solid rgba(0,0,0,.08);
+  box-shadow: 0 8px 18px rgba(0,0,0,.06);
+  overflow: hidden;
+  min-height: 260px;
+}
+
+/* topo central */
+.cards-wrapper >>> .card-topo{
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 18px 18px 8px 18px;
+  text-align: center;
+}
+
+/* bolinha do M */
+.cards-wrapper >>> .logo-unico{
+  width: 78px;
+  height: 78px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  margin: 0 auto 6px auto;
+  border: 1px solid rgba(91,42,165,.20);
+  background: radial-gradient(circle at 30% 30%, rgba(128,90,213,.18), rgba(128,90,213,.06));
+}
+.cards-wrapper >>> .logo-letter{
+  font-weight: 900;
+  font-size: 28px;
+  color: #5b2aa5;
+}
+
+/* corpo (campos) */
+.cards-wrapper >>> .card-campos{
+  padding: 8px 22px 10px 22px;
+  line-height: 1.65;
+  font-size: 13px;
+}
+.cards-wrapper >>> .card-campos b{
+  font-weight: 900;
+}
+
+/* ação (botão ABRIR) sempre embaixo e central */
+.cards-wrapper >>> .card-actions{
+  margin-top: auto;
+  padding: 10px 12px 14px 12px;
+  display: flex;
+  justify-content: center;
 }
 
 </style>

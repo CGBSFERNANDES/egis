@@ -11,7 +11,7 @@
 --  dt_usuario_inclusao  DATETIME      NOT NULL DEFAULT(GETDATE()),
 --  cd_usuario           INT           NULL,              -- último usuário que alterou (se usar update)
 --  dt_usuario           DATETIME      NULL               -- data da última alteração
---);
+--);   
 --GO
 
 

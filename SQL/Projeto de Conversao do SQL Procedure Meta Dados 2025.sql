@@ -698,7 +698,7 @@ from
 
 			*/
 
- insert meta_procedures ( nome_procedure, criado_em ) values ('pr_egis_servicos_processo_modulo', getdate())
+ insert meta_procedures ( nome_procedure, criado_em ) values ('pr_egis_nfe_monitor_processo', getdate())
 
 
 use egissql_rubio
@@ -714,5 +714,34 @@ go
 select * into egisadmin.dbo.meta_procedures           from meta_procedures 
 select * into egisadmin.dbo.meta_procedure_parametros from meta_procedure_parametros
 select * into egisadmin.dbo.meta_procedure_colunas    from meta_procedure_colunas      
+
+update 
+ egisadmin.dbo.menu
+ set
+   ic_json_parametro = 'S',
+   cd_parametro = 5,
+   ic_card_menu = 'S'
+   where
+     cd_menu = 8842
+
+use egissql_rubio
+
+alter table meta_procedure_colunas add ic_dashboard_atributo char(1) null
+
+update
+  meta_procedure_colunas
+set
+  ic_dashboard_atributo = 'N'
+
+
+  update
+    meta_procedure_colunas
+	set
+	  ic_dashboard_atributo = 'S'
+  WHERE
+    id in ( 2562, 2561 )
+
+	select * from meta_procedure_colunas    WHERE
+    id in ( 2562, 2561 )
 
 

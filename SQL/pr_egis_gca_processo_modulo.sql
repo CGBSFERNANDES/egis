@@ -33,7 +33,7 @@ create procedure pr_egis_gca_processo_modulo
 --with encryption
 
 as                        
-                        
+
 set @json = isnull(@json,'')
                         
 declare @cd_empresa          int                        
@@ -74,7 +74,9 @@ declare @cd_celular_cliente varchar(20) = ''
 declare @nm_email_cliente varchar(50) = ''           
 declare @cd_funcionario nvarchar(max)=''               
 declare @cd_identificacao_promocao varchar(30) = ''              
-declare @cd_promocao int = 0              
+declare @cd_promocao int = 0   
+declare @qt_limite_promocao_semana int = 0
+declare @qt_promocao_semana int = 0         
 declare @operador    varchar(50) = ''                        
 declare @operador_password   varchar(50) = ''                        
 declare @nm_nfe_link  varchar(50) = ''                        
@@ -82,7 +84,7 @@ declare @nm_basesql  varchar(50) = ''
 declare @jsonItens        nvarchar(max)=''              
 declare @cd_tabela_preco int              
 declare @cd_funcionario_int int          
-declare @qt_produto_promocao float          
+declare @qt_produto_promocao float
 declare @vl_troco float  
 declare @cd_bandeira_cartao int
 declare @cd_nsu_tef varchar(50)          
@@ -92,6 +94,7 @@ declare @cd_autorizacao_tef_pix varchar(50)
 declare @nm_bandeira_cartao varchar(50)
 declare @pc_taxa_bandeira float = 0.00
 declare @ic_finalizado_divisao char(1)
+declare @ic_nfce char(1)
 -- Declaração de variáveis específicas para verificação                        
 DECLARE @ic_atendimento CHAR(1);                        
 DECLARE @cd_terminal INT = 0;                        
@@ -100,10 +103,15 @@ DECLARE @operador_final INT = 0;
 declare @cd_tipo_movimento_caixa int          
 declare @cd_terminal_caixa int          
 declare @cd_tipo_pagamento int
+declare @cd_tipo_pagamento_tab int
 declare @cd_loja int
 declare @cd_cpf_digitado varchar(18)
 declare @cd_maquina_cartao int
-          
+declare @cd_condicao_pagamento int
+declare @cd_condicao_pagamento_band int
+-- Periodo Semana------------------------------------------------
+declare @dt_inicio_semana datetime
+declare @dt_fim_semana datetime
           
 DECLARE @cd_nota_saida int          
 declare @base_url varchar(200)          
@@ -125,7 +133,10 @@ begin
   set @dt_inicial       = dbo.fn_data_inicial(@cd_mes,@cd_ano)                        
   set @dt_final         = dbo.fn_data_final(@cd_mes,@cd_ano)                        
 end                        
-                    
+
+set @dt_inicio_semana = DATEADD(wk, DATEDIFF(wk, 0, @dt_hoje), 0)-1                  
+set @dt_fim_semana = DATEADD(wk, DATEDIFF(wk, 0, @dt_hoje), 0) +5
+
 if @nm_basesql = ''                        
 begin                        
  SET @nm_basesql = 'EGISSQL_358'                        
@@ -184,12 +195,15 @@ select @cd_nsu_tef_pix         = valor from #json with(nolock) where campo = 'cd
 select @cd_autorizacao_tef_pix = valor from #json with(nolock) where campo = 'cd_autorizacao_tef_pix'
 select @nm_bandeira_cartao = valor from #json with(nolock) where campo = 'nm_bandeira_cartao'
 select @jsonitens          = valor from #json with(nolock) where campo = 'jsonItens' 
-select @ic_finalizado_divisao = valor from #json where campo = 'ic_finalizado'              
+select @ic_finalizado_divisao = valor from #json where campo = 'ic_finalizado'  
+select @ic_nfce = valor from #json where campo = 'ic_nfce'            
 
 select @cd_tipo_movimento_caixa = valor from #json where campo = 'cd_tipo_movimento_caixa'                        
 select @cd_tipo_pagamento = valor from #json where campo = 'cd_tipo_pagamento'                        
 select @cd_loja = valor from #json where campo = 'cd_loja'
               
+if (isnull(@ic_nfce,'') = '') or (@ic_nfce is null)
+  set @ic_nfce = 'S'
 
 if ltrim(rtrim(@nm_bandeira_cartao)) = ''
   set @nm_bandeira_cartao = null
@@ -268,7 +282,17 @@ end
                 
               
 if @cd_tabela_preco is null or @cd_tabela_preco = 0              
-  set @cd_tabela_preco = 0              
+  set @cd_tabela_preco = 0  
+
+select
+  @cd_tipo_pagamento_tab = isnull(cd_tipo_pagamento,0)
+from
+  Tipo_Pagamento_Caixa
+where
+  cd_tipo_pagamento_net = @cd_tipo_pagamento
+
+if @cd_tipo_pagamento_tab is null or isnull(@cd_tipo_pagamento_tab,0) = 0
+  set @cd_tipo_pagamento_tab = @cd_tipo_pagamento              
                         
 set @cd_documento = ISNULL(@cd_documento,0)            
           
@@ -433,7 +457,7 @@ begin
  --END                   
           
     -- Extrair dados específicos para criação do pedido                        
-    declare @cd_condicao_pagamento int                        
+                            
     declare @ds_observacao varchar(2000)                        
     declare @cd_tipo_pedido int                        
                        
@@ -722,746 +746,967 @@ and cd_item_pedido_venda = @cd_item_remover
                                     
 end                
               
----------------------------------------------------------------------------------------------------------------------------------------------------------                            
--- 06 - Calculo de Promoção              
----------------------------------------------------------------------------------------------------------------------------------------------------------                            
-if @cd_parametro = 6              
-begin              
-                
-  set @cd_funcionario_int = cast(@cd_funcionario as int)            
-              
-  if @cd_funcionario_int is null or @cd_funcionario_int = 0              
-    set @cd_funcionario_int = 0              
-              
-  if @cd_identificacao_promocao is null or @cd_identificacao_promocao = ''              
-    set @cd_identificacao_promocao = ''              
-              
-  select top 1               
-    @cd_promocao = cd_promocao               
-  from               
-    Promocao               
-  where               
-    cd_identificacao_promocao = @cd_identificacao_promocao         
-    and        
-    isnull(ic_ativa_promocao,'N') = 'S'        
-           
-  if @cd_promocao is null or @cd_promocao = 0              
-    set @cd_promocao = 0              
-              
-  if @cd_funcionario_int = 0              
-  begin              
-    if @cd_promocao > 0              
-    begin              
-      select                                                
-          identity(int,1,1) as id,                                                
-          [key] as campo,                             
-          [value] as valor                                                
-      into                                                 
-          #JsonI              
-      from                                                 
-         openjson(@jsonItens) root;                
-                    
-      CREATE TABLE #ItensSelecionados (                                                
-          cd_produto int,                                                
-          cd_categoria int,               
-          vl_unitario float,              
-          qt_selecionado int                                                
-      );                                                
-                                                      
-      CREATE TABLE #JsonI2 (                                                
-          id      INT IDENTITY(1,1),                                                
-          [key]   NVARCHAR(255),                                                
-          [value] NVARCHAR(MAX)                                                
-      );               
-                    
-      declare @idJson              int = 0                    
-      declare @jsonItem            nvarchar(max) = ''                                                
-      declare @cd_produto_json     int = 0                                             
-      --declare @cd_categoria_json   int = 0               
-      declare @vl_unitario_json    float = 0              
-      declare @qt_selecionado_json int = 0               
-              
-      while exists(select top 1 id from #JsonI)              
-      begin                                                
-       select                                                 
-        top 1                                                 
-        @idJson    = id,                                                    
-        @jsonItem = valor                                                
-       from                                                 
-        #JsonI                                                
-                                                       
-       delete from #JsonI2                                              
-                               
-       insert into #JsonI2 ([key], [value])select [key], [value] from openjson(@jsonItem)              
-                                                       
-       select @cd_produto_json     = [value] from #jsonI2 where [key] = 'cd_produto'              
-       --select @cd_categoria_json   = [value] from #jsonI2 where [key] = 'cd_categoria_produto'              
-       select @vl_unitario_json    = [value] from #jsonI2 where [key] = 'vl_unitario'              
-       select @qt_selecionado_json = [value] from #jsonI2 where [key] = 'qt_selecionado'              
+---------------------------------------------------------------------------------------------------------------------------------------------------------                                      
+-- 06 - Calculo de Promoção                        
+---------------------------------------------------------------------------------------------------------------------------------------------------------                                      
+if @cd_parametro = 6                        
+begin                        
                           
-       insert into #ItensSelecionados               
-       select                                                 
-         @cd_produto_json     as cd_produto,              
-         --@cd_categoria_json   as cd_categoria,              
-         cd_categoria_produto as cd_categoria,              
-         @vl_unitario_json    as vl_unitario,              
-         @qt_selecionado_json as qt_selecionado              
-       from              
-         Produto              
-       where              
-         cd_produto = @cd_produto_json              
-                                                       
-       delete from #JsonI where id = @idJson              
-                                                      
-      end              
-              
-      --select * from #ItensSelecionados              
-      set @qt_produto_promocao = 0          
-          
-      select           
-        @qt_produto_promocao = sum(qt_selecionado)          
-      from          
-        #ItensSelecionados          
-          
-      if exists(select top 1              
-                  pp.cd_produto              
-                from          
-                  Fidelidade_Programa fp          
-                  inner join Promocao_Produto pp on pp.cd_promocao = fp.cd_promocao          
-                  inner join #ItensSelecionados s on s.cd_produto = pp.cd_produto              
-                where              
-                  fp.cd_promocao = @cd_promocao)              
-      begin          
-     --select 'a'    
-        select top 1              
-          @vl_desconto = s.vl_unitario * (pp.pc_promocao_desconto / 100)              
-        from               
-          Promocao_Produto pp              
-          inner join #ItensSelecionados s on s.cd_produto = pp.cd_produto              
-        where              
-          pp.cd_promocao = @cd_promocao              
-       order by              
-          vl_unitario asc              
-                    
-        select top 1              
-          isnull(@vl_sub_total_tela,0)   as vl_sub_total_tela,              
-          isnull(@vl_desconto,0)         as vl_desconto,              
-          isnull(@vl_sub_total_tela,0) -               
-          isnull(@vl_desconto,0)         as vl_total            
-      end          
-      else          
-      if exists(select top 1              
-                  pp.cd_produto              
-                from               
-                  Promocao_Produto pp              
-                  inner join #ItensSelecionados s on s.cd_produto = pp.cd_produto              
-                where              
-           pp.cd_promocao = @cd_promocao)          
-      begin      
-     --select 'b'    
-        select top 1              
-          @vl_desconto = s.vl_unitario * (pp.pc_promocao_desconto / 100)              
-        from               
-          Promocao_Produto pp              
-          inner join #ItensSelecionados s on s.cd_produto = pp.cd_produto              
-        where              
-          pp.cd_promocao = @cd_promocao              
-          and              
-          @qt_produto_promocao > 1              
-        order by              
-          vl_unitario asc              
-                    
-        select top 1              
-          isnull(@vl_sub_total_tela,0)   as vl_sub_total_tela,              
-          isnull(@vl_desconto,0)         as vl_desconto,   
-          isnull(@vl_sub_total_tela,0) -               
-          isnull(@vl_desconto,0)         as vl_total                
-      end              
-      else              
-      begin              
-        select              
-          cd_categoria,              
-          sum(qt_selecionado) as qt_selecionado_categoria              
-        into              
-          #QTDCategoriaPromocao              
-        from              
-          #ItensSelecionados              
-        group by              
-          cd_categoria              
-        order by              
-          cd_categoria              
-                    
-        if exists(select top 1              
-                    pcp.cd_categoria_produto              
-                  from               
-                    Promocao_Categoria_Produto pcp              
-                    inner join #QTDCategoriaPromocao sc on sc.cd_categoria = pcp.cd_categoria_produto              
-                  where              
-                    pcp.cd_promocao = @cd_promocao              
-                    and              
-                    sc.qt_selecionado_categoria >= pcp.qt_venda)              
-        begin       
-    --select 'c'    
-          select              
-            @vl_desconto = sum((s.vl_unitario * s.qt_selecionado) * (pcp.pc_desconto / 100))        
-          from               
-            Promocao_Categoria_Produto pcp              
-            inner join #ItensSelecionados s on s.cd_categoria = pcp.cd_categoria_produto              
-          where              
-            pcp.cd_promocao = @cd_promocao                  
-                    
-          select top 1              
-            isnull(@vl_sub_total_tela,0)   as vl_sub_total_tela,              
-            isnull(@vl_desconto,0)         as vl_desconto,              
-            isnull(@vl_sub_total_tela,0) -               
-            isnull(@vl_desconto,0)         as vl_total               
-                    
-          drop table #QTDCategoriaPromocao              
-        end              
-        else          
-        begin          
-          if exists(select top 1              
-                      p.cd_promocao          
-                    from               
-                      Promocao p              
-                    where              
-                      p.cd_promocao = @cd_promocao)              
-          begin     
-      --select 'd'    
-            select top 1              
-              @vl_sub_total_tela                                    as vl_sub_total_tela,              
-              @vl_sub_total_tela * (c.pc_desconto_promocao/100)     as vl_desconto,              
-              @vl_sub_total_tela * (1-(c.pc_desconto_promocao/100)) as vl_total,          
-              c.pc_desconto_promocao          
-            from              
-              Promocao c           
-            where              
-              c.cd_promocao = @cd_promocao          
-          end          
-          else              
-          begin       
-      --select 'e'    
-            select top 1              
-              @vl_sub_total_tela           as vl_sub_total_tela,              
-              @vl_sub_total_tela * (0)     as vl_desconto,              
-              @vl_sub_total_tela * (1-(0)) as vl_total               
-          end              
-        end          
-      end                 
-    end              
-    else              
-    begin --A        
-   --select 'f'    
-         select top 1              
-           @vl_sub_total_tela           as vl_sub_total_tela,              
-           @vl_sub_total_tela * (0)     as vl_desconto,              
-           @vl_sub_total_tela * (1-(0)) as vl_total                  
-    end              
-  end              
-  else              
-  begin         
-    --select 'g'    
-    select top 1              
-      @vl_sub_total_tela                                       as vl_sub_total_tela,              
-      @vl_sub_total_tela * (c.pc_desconto_funcionario/100)     as vl_desconto,              
-     @vl_sub_total_tela * (1-(c.pc_desconto_funcionario/100)) as vl_total              
-    from              
-      Config_Terminal_Venda c              
-  end              
-              
-end              
+  set @cd_funcionario_int = cast(@cd_funcionario as int)                      
                         
----------------------------------------------------------------------------------------------------------------------------------------------------------                            
--- 07 - Criar Movimento de Caixa e Movimento de Caixa Item                        
----------------------------------------------------------------------------------------------------------------------------------------------------------                            
+  if @cd_funcionario_int is null or @cd_funcionario_int = 0                        
+    set @cd_funcionario_int = 0                        
                         
-if @cd_parametro = 7                        
-begin             
-          
-    select @cd_documento = valor from #json where campo = 'cd_pedido_venda'                                  
-          
-    -- Validações obrigatórias                        
-    if @cd_documento is null or @cd_documento = 0                        
-      raiserror('Número do pedido é obrigatório', 16, 1)                        
-          
-    if @cd_tipo_movimento_caixa is null or @cd_tipo_movimento_caixa = 0          
-      raiserror('Tipo de movimento de caixa é obrigatório', 16, 1)          
-          
-    if @cd_tipo_pagamento is null or @cd_tipo_pagamento = 0          
-      raiserror('Tipo de pagamento é obrigatório', 16, 1)          
-          
-    -- Verificar se pedido existe e está finalizado          
-    if not exists (select 1 from pedido_venda where cd_pedido_venda = @cd_documento)          
-      raiserror('Pedido não encontrado', 16, 1)          
-          
-  if not exists(select top 1 cd_movimento_caixa from Movimento_Caixa_Item where cd_pedido_venda = @cd_documento)          
-  begin          
-      -- Buscar próximo número do movimento de caixa                        
-      select @cd_movimento_caixa = isnull(max(cd_movimento_caixa), 0) + 1 from movimento_caixa with (nolock)                        
+  if @cd_identificacao_promocao is null or @cd_identificacao_promocao = ''                        
+    set @cd_identificacao_promocao = ''                        
+                   
+  select top 1                         
+    @cd_promocao = cd_promocao,
+    @qt_limite_promocao_semana = qt_limite_promocao_semana
+  from                         
+    Promocao                         
+  where                         
+    cd_identificacao_promocao = @cd_identificacao_promocao                   
+    and                  
+    isnull(ic_ativa_promocao,'N') = 'S'                  
+                     
+  if isnull(@qt_limite_promocao_semana,0) > 0
+  begin
+    select
+      @qt_promocao_semana = count(mcp.cd_movimento_caixa)
+    from
+      Movimento_Caixa_Promocao mcp
+      inner join Movimento_Caixa mc on mc.cd_movimento_caixa = mcp.cd_movimento_caixa
+    where
+      mc.dt_cancel_movimento_caixa is null
+      and
+      mc.dt_movimento_caixa between @dt_inicio_semana and @dt_fim_semana
+      and
+      mcp.cd_promocao = @cd_promocao
+      and
+      mcp.cd_funcionario = @cd_funcionario_int
+
+    if isnull(@qt_promocao_semana,0) >= isnull(@qt_limite_promocao_semana,0)
+      set @cd_promocao = 0
+  end
+
+  if @cd_promocao is null or @cd_promocao = 0                        
+    set @cd_promocao = 0  
+
+  -----------------------------------------------------------------------------------------------
+  -----------------------------------------------------------------------------------------------
+
+  select                                                          
+    identity(int,1,1) as id,                                                          
+    [key] as campo,                                       
+    [value] as valor                                                          
+  into                                                           
+    #JsonI                        
+  from                                                           
+    openjson(@jsonItens) root;                          
+                                
+  CREATE TABLE #ItensSelecionados (                                                          
+    cd_produto int,                                                          
+    cd_categoria int,                         
+    vl_unitario float,                        
+    qt_selecionado int                                                          
+    );                                                          
+                                                                  
+  CREATE TABLE #JsonI2 (                                                          
+    id      INT IDENTITY(1,1),                                                                    
+    [key]   NVARCHAR(255),                                                          
+    [value] NVARCHAR(MAX)                                                          
+    );                         
+                                  
+  declare @idJson              int = 0                              
+  declare @jsonItem            nvarchar(max) = ''                                                          
+  declare @cd_produto_json     int = 0                                                       
+  --declare @cd_categoria_json   int = 0                         
+  declare @vl_unitario_json    float = 0                        
+  declare @qt_selecionado_json int = 0                         
                           
-      -- Buscar informações do pedido          
-      declare @vl_total_pedido decimal(25,2)          
-      declare @cd_usuario_pedido int          
-            
-      select          
-        @vl_total_pedido = vl_total_pedido_venda,          
-        @cd_cliente = cd_cliente,          
-        @cd_vendedor = cd_vendedor,          
-        @cd_condicao_pagamento = cd_condicao_pagamento,          
-        @cd_usuario_pedido = cd_usuario,          
-        @cd_tabela_preco = cd_tabela_preco,          
-        @vl_desconto     = vl_desconto_pedido_venda          
-      from pedido_venda                        
-      where cd_pedido_venda = @cd_documento             
-             
-      select                         
-        @cd_cpf_digitado = cd_cpf_informado                      
-      from Pedido_Venda_Caixa                        
-      where cd_pedido_venda = @cd_documento          
+  while exists(select top 1 id from #JsonI)                        
+  begin                                                          
+    select                                            
+      top 1                                                           
+      @idJson    = id,                                                              
+      @jsonItem = valor                                                          
+    from                                                           
+      #JsonI                                                          
+                                                                     
+    delete from #JsonI2                                                        
+                                             
+    insert into #JsonI2 ([key], [value])select [key], [value] from openjson(@jsonItem)                        
+                                                                     
+    select @cd_produto_json     = [value] from #jsonI2 where [key] = 'cd_produto'                        
+    --select @cd_categoria_json   = [value] from #jsonI2 where [key] = 'cd_categoria_produto'                        
+    select @vl_unitario_json    = [value] from #jsonI2 where [key] = 'vl_unitario'                        
+    select @qt_selecionado_json = [value] from #jsonI2 where [key] = 'qt_selecionado'                        
+                                        
+    insert into #ItensSelecionados                         
+    select                                                           
+      @cd_produto_json     as cd_produto,                        
+      --@cd_categoria_json   as cd_categoria,                        
+      cd_categoria_produto as cd_categoria,                        
+      @vl_unitario_json    as vl_unitario,              
+      @qt_selecionado_json as qt_selecionado                        
+    from                        
+      Produto                        
+    where                        
+      cd_produto = @cd_produto_json                        
+                                                                     
+    delete from #JsonI where id = @idJson                        
+                                                                  
+  end                        
                           
-      -- Obter configuração do terminal                        
-      SELECT @ic_atendimento = ic_atendimento                         
-      FROM Config_Terminal_Venda;           
-              
-      IF @ic_atendimento = 'S'                        
-      BEGIN                        
-        SET @cd_terminal = 2;                        
-        SET @cd_operador_caixa = NULL                        
-      END                        
-      ELSE                        
-      BEGIN                        
-          SET @cd_terminal = 1;                        
-      END                        
-            
-  -- Definir valores padrão se não informados                        
-      set @cd_loja = isnull(@cd_loja, @cd_empresa)                       
+  --select * from #ItensSelecionados                        
+  set @qt_produto_promocao = 0                    
+                      
+  select                     
+    @qt_produto_promocao = sum(qt_selecionado)                    
+  from                    
+    #ItensSelecionados
+  -----------------------------------------------------------------------------------------------
+  -----------------------------------------------------------------------------------------------
+                        
+  if @cd_funcionario_int = 0                        
+  begin                        
+    if @cd_promocao > 0                        
+    begin                        
+      if exists(select top 1                        
+                  pp.cd_produto                        
+                from                    
+                  Fidelidade_Programa fp                    
+                  inner join Promocao_Produto pp on pp.cd_promocao = fp.cd_promocao                    
+                  inner join #ItensSelecionados s on s.cd_produto = pp.cd_produto                        
+                where                        
+                  fp.cd_promocao = @cd_promocao)                        
+      begin                    
+     --select 'a'              
+       select top 1                        
+          @vl_desconto = s.vl_unitario * (pp.pc_promocao_desconto / 100)                        
+        from                         
+          Promocao_Produto pp                        
+          inner join #ItensSelecionados s on s.cd_produto = pp.cd_produto                        
+        where                        
+          pp.cd_promocao = @cd_promocao                        
+       order by                        
+          vl_unitario asc                        
+                              
+        select top 1                        
+          isnull(@vl_sub_total_tela,0)   as vl_sub_total_tela,                        
+          isnull(@vl_desconto,0)         as vl_desconto,                        
+          isnull(@vl_sub_total_tela,0) -                         
+          isnull(@vl_desconto,0)         as vl_total                      
+      end                    
+      else                    
+      if exists(select top 1                        
+                  pp.cd_produto                        
+                from                         
+                  Promocao_Produto pp                        
+                  inner join #ItensSelecionados s on s.cd_produto = pp.cd_produto                        
+                where                        
+           pp.cd_promocao = @cd_promocao)                    
+      begin                
+     --select 'b'              
+        select top 1                        
+          @vl_desconto = s.vl_unitario * (pp.pc_promocao_desconto / 100)                        
+        from                         
+          Promocao_Produto pp                        
+          inner join #ItensSelecionados s on s.cd_produto = pp.cd_produto                        
+        where                        
+          pp.cd_promocao = @cd_promocao                        
+          and                        
+          @qt_produto_promocao > 1                        
+        order by                        
+          vl_unitario asc                        
+                              
+        select top 1                        
+          isnull(@vl_sub_total_tela,0)   as vl_sub_total_tela,                        
+          isnull(@vl_desconto,0)         as vl_desconto,             
+          isnull(@vl_sub_total_tela,0) -                         
+          isnull(@vl_desconto,0)         as vl_total                          
+      end                        
+      else                        
+      begin                        
+        select                        
+          cd_categoria,                        
+          sum(qt_selecionado) as qt_selecionado_categoria                        
+        into                        
+          #QTDCategoriaPromocao                        
+        from                        
+          #ItensSelecionados                        
+        group by                        
+          cd_categoria                        
+        order by                        
+          cd_categoria                        
+                              
+        if exists(select top 1                        
+                    pcp.cd_categoria_produto                        
+                  from                         
+                    Promocao_Categoria_Produto pcp                        
+                    inner join #QTDCategoriaPromocao sc on sc.cd_categoria = pcp.cd_categoria_produto                        
+                  where                        
+                    pcp.cd_promocao = @cd_promocao                        
+                    and                        
+                    sc.qt_selecionado_categoria >= pcp.qt_venda)                        
+        begin                 
+          --select 'c'              
+          select                        
+            @vl_desconto = sum((s.vl_unitario * s.qt_selecionado) * (pcp.pc_desconto / 100))                  
+          from                         
+            Promocao_Categoria_Produto pcp      
+            inner join #ItensSelecionados s on s.cd_categoria = pcp.cd_categoria_produto                        
+          where                        
+            pcp.cd_promocao = @cd_promocao                            
+                              
+          select top 1                        
+            isnull(@vl_sub_total_tela,0)   as vl_sub_total_tela,                        
+            isnull(@vl_desconto,0)         as vl_desconto,                        
+            isnull(@vl_sub_total_tela,0) -                         
+            isnull(@vl_desconto,0)         as vl_total                         
+                              
+          drop table #QTDCategoriaPromocao                        
+        end                        
+        else                    
+        begin                    
+          if exists(select top 1                        
+                      p.cd_promocao                    
+                    from                         
+                      Promocao p                        
+                    where                        
+                      p.cd_promocao = @cd_promocao)                        
+          begin               
+            --select 'd'              
+            select top 1                        
+              @vl_sub_total_tela                                    as vl_sub_total_tela,                        
+              @vl_sub_total_tela * (c.pc_desconto_promocao/100)     as vl_desconto,                        
+              @vl_sub_total_tela * (1-(c.pc_desconto_promocao/100)) as vl_total,                    
+              c.pc_desconto_promocao                    
+            from                        
+              Promocao c                     
+            where                        
+              c.cd_promocao = @cd_promocao                    
+          end                    
+          else                        
+          begin                 
+            --select 'e'              
+            select top 1                        
+              @vl_sub_total_tela           as vl_sub_total_tela,                        
+              @vl_sub_total_tela * (0)     as vl_desconto,                        
+              @vl_sub_total_tela * (1-(0)) as vl_total                         
+          end                        
+        end                    
+      end                           
+    end                        
+    else                        
+    begin --A                  
+         --select 'f'              
+         select top 1                        
+           @vl_sub_total_tela           as vl_sub_total_tela,                        
+           @vl_sub_total_tela * (0)     as vl_desconto,                        
+           @vl_sub_total_tela * (1-(0)) as vl_total                            
+    end                        
+  end                        
+  else                        
+  begin
+    if @cd_promocao > 0                        
+    begin                        
+      if exists(select top 1                        
+                  pp.cd_produto                        
+                from                    
+                  Fidelidade_Programa fp                    
+                  inner join Promocao_Produto pp on pp.cd_promocao = fp.cd_promocao                    
+                  inner join #ItensSelecionados s on s.cd_produto = pp.cd_produto                        
+                where                        
+                  fp.cd_promocao = @cd_promocao)                        
+      begin                    
+       --select 'a1'              
+       select top 1                        
+          @vl_desconto = s.vl_unitario * (pp.pc_promocao_desconto / 100)                        
+        from                         
+          Promocao_Produto pp                        
+          inner join #ItensSelecionados s on s.cd_produto = pp.cd_produto                        
+        where                        
+          pp.cd_promocao = @cd_promocao                        
+       order by                        
+          vl_unitario asc                        
+                              
+        select top 1                        
+          isnull(@vl_sub_total_tela,0)   as vl_sub_total_tela,                        
+          isnull(@vl_desconto,0)         as vl_desconto,                        
+          isnull(@vl_sub_total_tela,0) -                         
+          isnull(@vl_desconto,0)         as vl_total                      
+      end                    
+      else                    
+      if exists(select top 1                        
+                  pp.cd_produto                        
+                from                         
+                  Promocao_Produto pp                        
+                  inner join #ItensSelecionados s on s.cd_produto = pp.cd_produto                        
+                where                        
+                  pp.cd_promocao = @cd_promocao)                    
+      begin                
+        --select 'b1'              
+        select top 1                        
+          @vl_desconto = s.vl_unitario * (pp.pc_promocao_desconto / 100)                        
+        from                         
+          Promocao_Produto pp                        
+          inner join #ItensSelecionados s on s.cd_produto = pp.cd_produto                        
+        where                        
+          pp.cd_promocao = @cd_promocao                        
+          --and                        
+          --@qt_produto_promocao > 1                        
+        order by                        
+          vl_unitario asc                        
+                              
+        select top 1                        
+          isnull(@vl_sub_total_tela,0)   as vl_sub_total_tela,                        
+          isnull(@vl_desconto,0)         as vl_desconto,             
+          isnull(@vl_sub_total_tela,0) -                         
+          isnull(@vl_desconto,0)         as vl_total                          
+      end                        
+      else                        
+      begin                        
+        select                        
+          cd_categoria,                        
+          sum(qt_selecionado) as qt_selecionado_categoria                        
+        into                        
+          #QTDCategoriaPromocao1                        
+        from                        
+          #ItensSelecionados                        
+        group by                        
+          cd_categoria                        
+        order by                        
+          cd_categoria                        
+                              
+        if exists(select top 1                        
+                    pcp.cd_categoria_produto                        
+                  from                         
+                    Promocao_Categoria_Produto pcp                        
+                    inner join #QTDCategoriaPromocao1 sc on sc.cd_categoria = pcp.cd_categoria_produto                        
+                  where                        
+                    pcp.cd_promocao = @cd_promocao                        
+                    and                        
+                    sc.qt_selecionado_categoria >= pcp.qt_venda)                        
+        begin                 
+          --select 'c1'              
+          select                        
+            @vl_desconto = sum((s.vl_unitario * s.qt_selecionado) * (pcp.pc_desconto / 100))                  
+          from                         
+            Promocao_Categoria_Produto pcp      
+            inner join #ItensSelecionados s on s.cd_categoria = pcp.cd_categoria_produto                        
+          where                        
+            pcp.cd_promocao = @cd_promocao                            
+                              
+          select top 1                        
+            isnull(@vl_sub_total_tela,0)   as vl_sub_total_tela,                        
+            isnull(@vl_desconto,0)         as vl_desconto,                        
+            isnull(@vl_sub_total_tela,0) -                         
+            isnull(@vl_desconto,0)         as vl_total                         
+                              
+          drop table #QTDCategoriaPromocao1                        
+        end                        
+        else                    
+        begin                    
+          if exists(select top 1                        
+                      p.cd_promocao                    
+                    from                         
+                      Promocao p                        
+                    where                        
+                      p.cd_promocao = @cd_promocao)                        
+          begin               
+            --select 'd1'              
+            select top 1                        
+              @vl_sub_total_tela                                    as vl_sub_total_tela,                        
+              @vl_sub_total_tela * (c.pc_desconto_promocao/100)     as vl_desconto,                        
+              @vl_sub_total_tela * (1-(c.pc_desconto_promocao/100)) as vl_total,                    
+              c.pc_desconto_promocao                    
+            from                        
+              Promocao c                     
+            where                        
+              c.cd_promocao = @cd_promocao                    
+          end                    
+          else                        
+          begin                 
+            --select 'e1'              
+            select top 1                        
+              @vl_sub_total_tela           as vl_sub_total_tela,                        
+              @vl_sub_total_tela * (0)     as vl_desconto,                        
+              @vl_sub_total_tela * (1-(0)) as vl_total                         
+          end                        
+        end                    
+      end                           
+    end                        
+    else                        
+    begin
+      --select 'g'              
+      select top 1                        
+        @vl_sub_total_tela                                       as vl_sub_total_tela,                        
+        @vl_sub_total_tela * (c.pc_desconto_funcionario/100)     as vl_desconto,                        
+        @vl_sub_total_tela * (1-(c.pc_desconto_funcionario/100)) as vl_total                        
+      from                        
+        Config_Terminal_Venda c   
+    end
+  end                        
+                        
+end            
+                        
+---------------------------------------------------------------------------------------------------------------------------------------------------------                                      
+-- 07 - Criar Movimento de Caixa e Movimento de Caixa Item                                  
+---------------------------------------------------------------------------------------------------------------------------------------------------------                                 
+                                  
+if @cd_parametro = 7                  
+begin                       
+                    
+    select @cd_documento = valor from #json where campo = 'cd_pedido_venda'                 
+                    
+    -- Validações obrigatórias                                  
+    if @cd_documento is null or @cd_documento = 0                                  
+      raiserror('Número do pedido é obrigatório', 16, 1)                                  
+                    
+    if @cd_tipo_movimento_caixa is null or @cd_tipo_movimento_caixa = 0                    
+      raiserror('Tipo de movimento de caixa é obrigatório', 16, 1)                    
+                    
+    if @cd_tipo_pagamento is null or @cd_tipo_pagamento = 0                    
+      raiserror('Tipo de pagamento é obrigatório', 16, 1)                    
+                    
+    -- Verificar se pedido existe e está finalizado                    
+    if not exists (select 1 from pedido_venda where cd_pedido_venda = @cd_documento)                    
+      raiserror('Pedido não encontrado', 16, 1)        
+      
+    -- Buscar informações do pedido                    
+    declare @vl_total_pedido decimal(25,2)                    
+    declare @cd_usuario_pedido int                    
+                      
+    select                    
+      @vl_total_pedido = vl_total_pedido_venda,                    
+      @cd_cliente = cd_cliente,                    
+      @cd_vendedor = cd_vendedor,                    
+      @cd_condicao_pagamento = cd_condicao_pagamento,                    
+      @cd_usuario_pedido = cd_usuario,                    
+      @cd_tabela_preco = cd_tabela_preco,                    
+      @vl_desconto     = vl_desconto_pedido_venda                    
+    from pedido_venda                                  
+    where cd_pedido_venda = @cd_documento                       
                        
-      --Abertura do Caixa                    
-      declare @cd_abertura_caixa_mov int                    
-      select @cd_abertura_caixa_mov = ac.cd_abertura_caixa from abertura_caixa ac where ac.cd_operador_caixa = @cd_operador_caixa and dt_ultimo_fechamento is null                    
-         
-      -- Inserir movimento de caixa                        
-      INSERT INTO MOVIMENTO_CAIXA (                        
-        cd_movimento_caixa,                        
-        dt_movimento_caixa,                        
-        vl_movimento_caixa,                        
-        cd_tipo_movimento_caixa,                        
-        nm_obs_movimento_caixa,                        
-        cd_cliente,                        
-        cd_vendedor,                        
-        cd_nota_saida,                        
-        cd_usuario,                        
-        dt_usuario,                        
-        ic_movimento_finalizado,                        
-        vl_total_venda,                        
-        cd_condicao_pagamento,                        
-        cd_loja,                        
-        cd_empresa,                        
-        cd_operador_caixa,                        
-        cd_tabela_preco,                        
-        vl_dinheiro,                        
-        vl_cartao_credito,                        
-        vl_cartao_debito,        
-        vl_voucher,        
-        vl_pix,                        
-        cd_tipo_pagamento,                        
-        cd_terminal_caixa,                    
-        cd_abertura_caixa,            
-        cd_cpf_cliente,          
-        vl_desconto,          
-        vl_troco          
-      )        
-      SELECT                         
-        @cd_movimento_caixa,                        
-        @dt_hoje,                        
-        @vl_total_pedido,                        
-        @cd_tipo_movimento_caixa,                        
-        'Movimento gerado a partir do pedido ' + CAST(@cd_documento AS VARCHAR),                        
-        c.cd_cliente,                        
-        @cd_vendedor,                        
-        NULL,                        
-        @cd_usuario_pedido,                        
-        GETDATE(),                        
-        'S',                        
-        @vl_total_pedido,                        
-        @cd_condicao_pagamento,                        
-        @cd_loja,                        
-        @cd_empresa,                        
-        @cd_operador_caixa,                        
-        @cd_tabela_preco,                        
-        CASE WHEN @cd_tipo_pagamento = 1 THEN @vl_total_pedido ELSE 0 END, --vl_dinheiro                       
-        CASE WHEN @cd_tipo_pagamento = 3 THEN @vl_total_pedido ELSE 0 END, --vl_cartao_credito                       
-        CASE WHEN @cd_tipo_pagamento = 4 THEN @vl_total_pedido ELSE 0 END, --vl_cartao_debito                       
-        CASE WHEN @cd_tipo_pagamento = 6 THEN @vl_total_pedido ELSE 0 END, --vl_voucher        
-        CASE WHEN @cd_tipo_pagamento = 8 THEN @vl_total_pedido ELSE 0 END, --vl_pix        
-        @cd_tipo_pagamento,                        
-        @cd_terminal,                    
-        @cd_abertura_caixa_mov,            
-        @cd_cpf_digitado,          
-        @vl_desconto,          
-        @vl_troco          
-      from            
-        Cliente c            
-      where            
-        c.cd_cliente = @cd_cliente         
-                          
-      if @cd_tipo_pagamento <> 1        
-      begin        
-        if isnull(@cd_nsu_tef,'') = ''        
-          set @cd_maquina_cartao = 2        
-        else        
-          set @cd_maquina_cartao = 1        
-      end
+    select                                   
+      @cd_cpf_digitado = cd_cpf_informado                                
+    from Pedido_Venda_Caixa                                  
+    where cd_pedido_venda = @cd_documento                    
+                                    
+    -- Obter configuração do terminal                                  
+    SELECT @ic_atendimento = ic_atendimento                                   
+    FROM Config_Terminal_Venda;                     
+                        
+    IF @ic_atendimento = 'S'                                  
+    BEGIN                                  
+      SET @cd_terminal = 2;                                  
+      SET @cd_operador_caixa = NULL                                  
+    END                                  
+    ELSE                                  
+    BEGIN                                  
+      SET @cd_terminal = 1;                                  
+    END                                  
+                      
+    -- Definir valores padrão se não informados                                  
+    set @cd_loja = isnull(@cd_loja, @cd_empresa)                                 
+                                 
+    --Abertura do Caixa                              
+    declare @cd_abertura_caixa_mov int                              
+    select @cd_abertura_caixa_mov = ac.cd_abertura_caixa from abertura_caixa ac where ac.cd_operador_caixa = @cd_operador_caixa and dt_ultimo_fechamento is null                              
 
-      select 
-        @cd_bandeira_cartao = cd_bandeira_cartao,
-        @pc_taxa_bandeira = case when @cd_tipo_pagamento = 4
-                              then isnull(pc_taxa_bandeira,0)
-                              else case when @cd_tipo_pagamento = 3
-                                     then isnull(pc_taxa_antecipacao,0)
-                                     else 0
-                                   end
-                            end
-      from
-        Bandeira_Cartao
-      where
-        ltrim(rtrim(@nm_bandeira_cartao)) like '%'+nm_bandeira_cartao+'%'
-
-      if @cd_tipo_pagamento = 8 --PIX
-      begin
-        select 
-          @pc_taxa_bandeira = isnull(pc_taxa_pix,0)
-        from
-          Config_Terminal_Venda
-
-        set @cd_nsu_tef         = @cd_nsu_tef_pix
-        set @cd_autorizacao_tef = @cd_autorizacao_tef_pix
-      end
-
-      if isnull(@pc_taxa_bandeira,0) > 0
-      begin
-        set @vl_taxa_pagamento = round((@vl_total_pedido*@pc_taxa_bandeira)/100,2)
-
-        if @cd_tipo_pagamento = 8 --PIX
-        begin
-          if @vl_taxa_pagamento < 0.12
-            set @vl_taxa_pagamento = 0.12
-        end
-      end
-
-      if not exists(select top 1 cd_movimento_caixa from Movimento_Caixa_Bandeira 
-                    where cd_movimento_caixa = @cd_movimento_caixa and cd_item_divisao = 0)
-      begin
-        INSERT INTO MOVIMENTO_CAIXA_BANDEIRA (
-         cd_movimento_caixa,
-         cd_item_divisao,
-         nm_bandeira_cartao,
-         cd_bandeira_cartao)
-        VALUES (
-         @cd_movimento_caixa,
-         0,
-         @nm_bandeira_cartao,
-         @cd_bandeira_cartao)
-      end
-      else
-      begin
-        UPDATE MOVIMENTO_CAIXA_BANDEIRA
-        set 
-          nm_bandeira_cartao = @nm_bandeira_cartao,
-          cd_bandeira_cartao = @cd_bandeira_cartao
-        where
-          cd_movimento_caixa = @cd_movimento_caixa 
-          and 
-          cd_item_divisao = 0
-      end
-        
-      -- Inserir pagamento no movimento de caixa                              
-      INSERT INTO MOVIMENTO_CAIXA_PAGAMENTO (                              
-          cd_movimento_caixa,                              
-          cd_tipo_pagamento,                              
-          vl_pagamento_caixa,                              
-          nm_obs_pagamento,                              
-          cd_usuario,                              
-          dt_usuario,                              
-          cd_bandeira_cartao,        
-          cd_maquina_cartao,        
-          dt_vencimento_parcela,        
-          cd_nsu_tef,        
-          cd_autorizacao_tef,        
-          vl_taxa_pagamento)        
-      VALUES (        
-          @cd_movimento_caixa,                              
-          @cd_tipo_pagamento,                              
-          @vl_total_pedido,                              
-          'Pagamento gerado a partir do pedido ' + CAST(@cd_movimento_caixa AS VARCHAR),                              
-          @cd_usuario_pedido,                              
-          GETDATE(),                              
-          @cd_bandeira_cartao,                              
-          @cd_maquina_cartao,                              
-          NULL,                
-          @cd_nsu_tef,                
-          @cd_autorizacao_tef,        
-          @vl_taxa_pagamento)            
-            
-      -- Inserir itens do movimento de caixa                        
-      INSERT INTO MOVIMENTO_CAIXA_ITEM (                        
-        cd_movimento_caixa,                        
-        cd_item_movimento_caixa,                        
-        cd_produto,                        
-        qt_item_movimento_caixa,                        
-        vl_item_movimento_caixa,                        
-        vl_produto,                        
-        vl_total_item,                    
-        dt_cancel_item,                    
-        ic_estoque_movimento,                    
-        cd_usuario,                        
-        dt_usuario,                        
-        cd_cupom_fiscal,                        
-        cd_operacao_fiscal,                    
-        dt_entrega,                    
-        cd_pedido_venda,                    
-        ic_sel_fechamento,                    
-        cd_tipo_local_entrega,                    
-        vl_frete,                
-        ic_frete_digitado,                    
-        cd_item_pedido_venda,                    
-        ic_desconto_acima,                    
-        vl_item_desconto,                    
-        cd_tipo_pedido                    
-        )                        
-      SELECT                         
-        @cd_movimento_caixa,                        
-        ROW_NUMBER() OVER (ORDER BY pvi.cd_item_pedido_venda),                        
-        pvi.cd_produto,                        
-        pvi.qt_item_pedido_venda,                        
-        pvi.vl_unitario_item_pedido,                        
-        pvi.vl_lista_item_pedido,                        
-        (pvi.qt_item_pedido_venda * pvi.vl_unitario_item_pedido),                      
-        null,                    
-        p.ic_estoque_caixa_produto,                    
-        @cd_usuario_pedido,                        
-        GETDATE(),                        
-        NULL,                        
-        1, -- cd_operacao_fiscal (ajustar conforme necessário)                      
-        GETDATE(),                    
-        pvi.cd_pedido_venda,                    
-        'S',                    
-        4,                    
-        0.00,                    
-        'N',                    
-        pvi.cd_item_pedido_venda,                    
-        'N',                     
-        0.00,                    
-        pv.cd_tipo_pedido                    
-      FROM                    
-        PEDIDO_VENDA_ITEM pvi       with(nolock)                    
-        inner join Pedido_Venda pv  with(nolock) on pv.cd_pedido_venda = pvi.cd_pedido_venda                     
-        left outer join Produto p   with(nolock) on p.cd_produto       = pvi.cd_produto                    
-      WHERE pvi.cd_pedido_venda = @cd_documento                        
-        AND pvi.dt_cancelamento_item IS NULL                        
-                          
-      update Pedido_Venda_Caixa                
-      set ic_finalizado = 'S'                
-      where                
-        cd_pedido_venda = @cd_documento              
-            
-      ------------------------------------------------------------------------------          
-            
-      declare @qt_item_mov int          
-      declare @vl_total_calc float          
-      declare @pc_desc_calc float          
-      set @vl_total_calc = 0            set @pc_desc_calc = 0          
-            
-      select @vl_total_calc = sum(qt_item_movimento_caixa * vl_item_movimento_caixa)               
-      from Movimento_Caixa_Item               
-      where cd_movimento_caixa = @cd_movimento_caixa           
-            
-      select @pc_desc_calc = (@vl_desconto*100/@vl_total_calc)          
-            
-      ----          
-      update Movimento_Caixa_Item              
-      set vl_item_desconto = round((qt_item_movimento_caixa * vl_item_movimento_caixa)*(@pc_desc_calc/100),2)          
-      where               
-        cd_movimento_caixa = @cd_movimento_caixa           
-            
+    ---------------------------------------------------------------------------------------------------------------------------------------------------------------
+    --VERIFICAÇÃO DOS TIPOS DE PAGAMENTO COM TAXA, BANDEIRA E CÓDIGOS DE AUTORIZAÇÃO-------------------------------------------------------------------------------
+    ---------------------------------------------------------------------------------------------------------------------------------------------------------------
+      if @cd_tipo_pagamento <> 1                  
+      begin                  
+        if isnull(@cd_nsu_tef,'') = ''                  
+          set @cd_maquina_cartao = 2    
+        else                  
+          set @cd_maquina_cartao = 1                  
+      end          
+          
       select           
-        @vl_desconto = sum(vl_item_desconto)          
+        @cd_bandeira_cartao = cd_bandeira_cartao,          
+        @pc_taxa_bandeira = case when @cd_tipo_pagamento in (4,9)          
+                              then isnull(pc_taxa_bandeira,0)          
+                              else case when @cd_tipo_pagamento = 3          
+                                     then isnull(pc_taxa_antecipacao,0)          
+                                     else 0          
+                                   end          
+                            end,    
+        @cd_condicao_pagamento_band = case when @cd_tipo_pagamento in (4,9)          
+                                        then isnull(cd_condicao_pagamento_deb,0)          
+                                        else case when @cd_tipo_pagamento = 3          
+                                               then isnull(cd_condicao_pagamento_cred,0)          
+                                               else 0          
+                                             end          
+                                      end    
       from          
-        Movimento_Caixa_Item              
-      where               
-        cd_movimento_caixa = @cd_movimento_caixa           
-            
-      update Movimento_Caixa          
-      set vl_desconto = @vl_desconto          
-      where               
-        cd_movimento_caixa = @cd_movimento_caixa          
-            
-      ------------------------------------------------------------------------------          
-            
-   declare @qt_total_ponto_fid int          
-   declare @qt_venda_fid int          
-   declare @dt_inicio_fid datetime          
-   declare @dt_fim_fid datetime          
-   declare @cd_categoria_fid int          
-            
-      if exists(select cd_pedido_venda from Pedido_Venda_Caixa           
-                where cd_pedido_venda = @cd_documento           
-                and (isnull(cd_funcionario,0) > 0 or isnull(cd_promocao,0) > 0))          
+        Bandeira_Cartao          
+      where
+        ltrim(rtrim(@nm_bandeira_cartao)) like '%'+nm_bandeira_cartao+'%'          
+          
+      if @cd_tipo_pagamento = 8 --PIX          
       begin          
         select           
-          @cd_funcionario_int = isnull(cd_funcionario,0),          
-          @cd_promocao = isnull(cd_promocao,0)          
-        from           
-          Pedido_Venda_Caixa           
-        where          
-          cd_pedido_venda = @cd_documento          
-            
-        if @cd_funcionario_int > 0          
-        begin          
-          if exists(select cd_movimento_caixa           
-                    from Movimento_Caixa_Funcionario           
-                    where cd_movimento_caixa = @cd_movimento_caixa)          
-          begin          
-            update Movimento_Caixa_Funcionario          
-            set cd_funcionario = @cd_funcionario_int          
-            where cd_movimento_caixa = @cd_movimento_caixa          
-          end          
-          else          
-          begin          
-            insert into Movimento_Caixa_Funcionario          
-            (cd_movimento_caixa, cd_usuario, dt_usuario, cd_funcionario)          
-            values          
-            (@cd_movimento_caixa, @cd_usuario, @dt_hoje, @cd_funcionario_int)          
-          end            
-        end          
-            
-        if exists(select cd_movimento_caixa           
-                  from Movimento_Caixa_Promocao           
-                  where cd_movimento_caixa = @cd_movimento_caixa)          
-        begin          
-          update Movimento_Caixa_Promocao          
-          set cd_promocao = @cd_promocao, cd_funcionario = @cd_funcionario_int          
-          where cd_movimento_caixa = @cd_movimento_caixa          
-        end          
-     else          
-     begin                    insert into Movimento_Caixa_Promocao          
-          (cd_movimento_caixa, cd_promocao, cd_usuario_inclusao,          
-          dt_usuario_inclusao, cd_usuario, dt_usuario, cd_funcionario)          
-          values          
-          (@cd_movimento_caixa, @cd_promocao, @cd_usuario,          
-          @dt_hoje, @cd_usuario, @dt_hoje, @cd_funcionario_int)          
-                    
-     end          
-            
-        if @cd_promocao > 0          
-        begin          
-          select          
-            @cd_cliente = cd_cliente          
-          from           
-            Movimento_Caixa          
-          where          
-            cd_movimento_caixa = @cd_movimento_caixa          
-                    
-          select           
-            @qt_total_ponto_fid = isnull(qt_total_ponto_resgate,0),          
-            @dt_inicio_fid = dt_inicio_vigencia,          
-            @dt_fim_fid = dt_fim_vigencia,          
-            @cd_categoria_fid = cd_categoria_fidelidade          
-          from           
-            fidelidade_programa          
-          where          
-            cd_promocao = @cd_promocao          
-            and          
-            isnull(ic_ativo_fidelidade,'N') = 'S'          
+         @pc_taxa_bandeira = isnull(pc_taxa_pix,0)          
+        from          
+          Config_Terminal_Venda          
           
-          --------------------------------------------------------------------------------------------          
-          select          
-            m.cd_cliente,          
-         m.cd_movimento_caixa,          
-            isnull((select sum(qt_item_movimento_caixa)           
-             from Movimento_caixa_Item i          
-             inner join Produto p on p.cd_produto = i.cd_produto          
-             where i.cd_movimento_caixa = m.cd_movimento_caixa          
-               and p.cd_categoria_produto = @cd_categoria_fid),0) as qt_ponto_fidelidade          
-          into          
-            #Movimento_Fid          
-          from          
-            Movimento_Caixa m          
-            inner join Cliente c on c.cd_cliente = m.cd_cliente          
-          where          
-            m.cd_cliente = @cd_cliente          
-            and          
-            m.dt_cancel_movimento_caixa is null          
-            and          
-            m.dt_movimento_caixa between @dt_inicio_fid and @dt_fim_fid          
-          group by          
-            m.cd_cliente,          
-            m.cd_movimento_caixa          
-          --------------------------------------------------------------------------------------------          
-                    
-          select          
-            @qt_venda_fid = (sum(m.qt_ponto_fidelidade)-sum(isnull(r.qt_ponto_resgate,0)))          
-          from          
-            #Movimento_Fid m          
-            left outer join Movimento_Caixa_Resgate r on r.cd_movimento_caixa = m.cd_movimento_caixa          
-            left outer join Movimento_Caixa_Promocao p on p.cd_movimento_caixa = m.cd_movimento_caixa          
-          where          
-            m.cd_cliente = @cd_cliente          
-            and          
-            isnull(p.cd_promocao,0) <> isnull(@cd_promocao,0)          
-                    
-          if ((isnull(@qt_total_ponto_fid,0)-isnull(@qt_venda_fid,0)) <= 0) and (isnull(@qt_venda_fid,0) > 0)          
-          begin          
-            exec dbo.pr_gera_programa_fidelidade_cliente_caixa  3, 0, @cd_usuario_pedido, @cd_cliente          
-          end          
-        end          
-   end          
-      else          
-   begin          
-        delete from Movimento_Caixa_Promocao where cd_movimento_caixa = @cd_movimento_caixa          
+        set @cd_nsu_tef         = @cd_nsu_tef_pix          
+        set @cd_autorizacao_tef = @cd_autorizacao_tef_pix          
       end          
-  end --end do if not exists          
-  else          
-  begin          
-    select          
-      @cd_movimento_caixa = cd_movimento_caixa          
-    from          
-      Movimento_Caixa_Item          
-    where          
-      cd_pedido_venda = @cd_documento          
-  end          
+          
+      if isnull(@pc_taxa_bandeira,0) > 0          
+      begin          
+        set @vl_taxa_pagamento = round(((@vl_total_pedido-isnull(@vl_desconto,0))*@pc_taxa_bandeira)/100,2)          
+          
+        if @cd_tipo_pagamento = 8 --PIX          
+        begin          
+          if @vl_taxa_pagamento < 0.12          
+            set @vl_taxa_pagamento = 0.12          
+        end          
+      end          
+          
+      if not exists(select top 1 cd_movimento_caixa from Movimento_Caixa_Bandeira           
+                    where cd_movimento_caixa = @cd_movimento_caixa and cd_item_divisao = 0)          
+      begin          
+        INSERT INTO MOVIMENTO_CAIXA_BANDEIRA (          
+         cd_movimento_caixa,          
+         cd_item_divisao,          
+         nm_bandeira_cartao,          
+         cd_bandeira_cartao)          
+        VALUES (          
+         @cd_movimento_caixa,          
+         0,          
+         @nm_bandeira_cartao,          
+         @cd_bandeira_cartao)          
+      end          
+      else          
+      begin          
+        UPDATE MOVIMENTO_CAIXA_BANDEIRA          
+        set           
+          nm_bandeira_cartao = @nm_bandeira_cartao,          
+          cd_bandeira_cartao = @cd_bandeira_cartao          
+        where          
+          cd_movimento_caixa = @cd_movimento_caixa           
+          and           
+          cd_item_divisao = 0          
+      end          
+    ---------------------------------------------------------------------------------------------------------------------------------------------------------------
+    ---------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+                    
+  if not exists(select top 1 cd_movimento_caixa from Movimento_Caixa_Item where cd_pedido_venda = @cd_documento)                    
+  begin                    
+      -- Buscar próximo número do movimento de caixa                                  
+      select @cd_movimento_caixa = isnull(max(cd_movimento_caixa), 0) + 1 from movimento_caixa with (nolock)                                  
+                                                       
+      -- Inserir movimento de caixa                                  
+      INSERT INTO MOVIMENTO_CAIXA (     
+        cd_movimento_caixa,                                  
+        dt_movimento_caixa,                                  
+        vl_movimento_caixa,                                  
+        cd_tipo_movimento_caixa,                                  
+        nm_obs_movimento_caixa,                                  
+        cd_cliente,                                  
+        cd_vendedor,                                  
+        cd_nota_saida,                                  
+        cd_usuario,                                  
+        dt_usuario,                                  
+        ic_movimento_finalizado,                                  
+        vl_total_venda,                                  
+        cd_condicao_pagamento,                                  
+        cd_loja,                                  
+        cd_empresa,                                  
+        cd_operador_caixa,                                  
+        cd_tabela_preco,                                  
+        vl_dinheiro,                                  
+        vl_cartao_credito,                                  
+        vl_cartao_debito,                  
+        vl_voucher,                  
+        vl_pix,                                  
+        cd_tipo_pagamento,                                  
+        cd_terminal_caixa,                              
+        cd_abertura_caixa,                      
+        cd_cpf_cliente,                    
+        vl_desconto,                    
+        vl_troco                    
+      )                  
+      SELECT                                   
+        @cd_movimento_caixa,                                  
+        @dt_hoje,                                  
+        @vl_total_pedido,                                  
+        @cd_tipo_movimento_caixa,                                  
+        'Movimento gerado a partir do pedido ' + CAST(@cd_documento AS VARCHAR),                                  
+        c.cd_cliente,                                  
+        @cd_vendedor,                                  
+        NULL,                                  
+        @cd_usuario_pedido,                    
+        GETDATE(),                                  
+        'S',                                  
+        @vl_total_pedido,                                  
+        @cd_condicao_pagamento,                                  
+        @cd_loja,                                  
+        @cd_empresa,                                  
+        @cd_operador_caixa,                                  
+        @cd_tabela_preco,                                  
+        CASE WHEN @cd_tipo_pagamento in (1,6,10) THEN @vl_total_pedido ELSE 0 END, --vl_dinheiro    
+        --CASE WHEN @cd_tipo_pagamento = 1 THEN @vl_total_pedido ELSE 0 END, --vl_dinheiro    
+        CASE WHEN @cd_tipo_pagamento = 3 THEN @vl_total_pedido ELSE 0 END, --vl_cartao_credito                                 
+        CASE WHEN @cd_tipo_pagamento = 4 THEN @vl_total_pedido ELSE 0 END, --vl_cartao_debito                                 
+        CASE WHEN @cd_tipo_pagamento = 9 THEN @vl_total_pedido ELSE 0 END, --vl_voucher    
+        --CASE WHEN @cd_tipo_pagamento = 6 THEN @vl_total_pedido ELSE 0 END, --vl_voucher    
+        CASE WHEN @cd_tipo_pagamento = 8 THEN @vl_total_pedido ELSE 0 END, --vl_pix                  
+        @cd_tipo_pagamento_tab,                                  
+        @cd_terminal,                              
+        @cd_abertura_caixa_mov,                      
+        @cd_cpf_digitado,                    
+        @vl_desconto,                    
+        @vl_troco                    
+      from                      
+        Cliente c                      
+      where                      
+        c.cd_cliente = @cd_cliente                   
+                                    
+                  
+      -- Inserir pagamento no movimento de caixa                                        
+      INSERT INTO MOVIMENTO_CAIXA_PAGAMENTO (                                        
+          cd_movimento_caixa,                                        
+          cd_tipo_pagamento,                                        
+          vl_pagamento_caixa,                                        
+          nm_obs_pagamento,                                        
+          cd_usuario,                                        
+          dt_usuario,                                        
+          cd_bandeira_cartao,                  
+          cd_maquina_cartao,                  
+          dt_vencimento_parcela,                  
+          cd_nsu_tef,                  
+          cd_autorizacao_tef,                  
+          vl_taxa_pagamento)         
+      VALUES (     
+          @cd_movimento_caixa,                                        
+          @cd_tipo_pagamento_tab,                                        
+          @vl_total_pedido,                                        
+          'Pagamento gerado a partir do pedido ' + CAST(@cd_movimento_caixa AS VARCHAR),                                        
+          @cd_usuario_pedido,                                        
+          GETDATE(),                                        
+          @cd_bandeira_cartao,                                        
+          @cd_maquina_cartao,                                        
+          NULL,                          
+          @cd_nsu_tef,                          
+          @cd_autorizacao_tef,                  
+          @vl_taxa_pagamento)                      
+                      
+      -- Inserir itens do movimento de caixa                                  
+      INSERT INTO MOVIMENTO_CAIXA_ITEM (                                  
+        cd_movimento_caixa,                                  
+        cd_item_movimento_caixa,                                  
+        cd_produto,                                  
+        qt_item_movimento_caixa,                                  
+        vl_item_movimento_caixa,                                  
+        vl_produto,                                  
+        vl_total_item,                              
+        dt_cancel_item,                              
+        ic_estoque_movimento,                              
+        cd_usuario,                                  
+        dt_usuario,                                  
+        cd_cupom_fiscal,                                  
+        cd_operacao_fiscal,                              
+        dt_entrega,                              
+        cd_pedido_venda,
+        ic_sel_fechamento,
+        cd_tipo_local_entrega,
+        vl_frete,
+        ic_frete_digitado,
+        cd_item_pedido_venda,
+        ic_desconto_acima,
+        vl_item_desconto,
+        cd_tipo_pedido
+        )                                  
+      SELECT                                   
+        @cd_movimento_caixa,                                  
+        ROW_NUMBER() OVER (ORDER BY pvi.cd_item_pedido_venda),                                  
+        pvi.cd_produto,                                  
+        pvi.qt_item_pedido_venda,           
+        pvi.vl_unitario_item_pedido,                                  
+        pvi.vl_lista_item_pedido,                                  
+        (pvi.qt_item_pedido_venda * pvi.vl_unitario_item_pedido),                                
+        null,                              
+        p.ic_estoque_caixa_produto,                              
+        @cd_usuario_pedido,                                  
+        GETDATE(),                                  
+        NULL,                                  
+        1, -- cd_operacao_fiscal (ajustar conforme necessário)                                
+        GETDATE(),                              
+        pvi.cd_pedido_venda,                              
+        'S',                              
+        4,                              
+        0.00,                              
+        'N',                              
+        pvi.cd_item_pedido_venda,                              
+        'N',                               
+        0.00,                              
+        pv.cd_tipo_pedido                              
+      FROM                              
+        PEDIDO_VENDA_ITEM pvi       with(nolock)                              
+        inner join Pedido_Venda pv  with(nolock) on pv.cd_pedido_venda = pvi.cd_pedido_venda                               
+        left outer join Produto p   with(nolock) on p.cd_produto       = pvi.cd_produto                              
+      WHERE pvi.cd_pedido_venda = @cd_documento                                  
+        AND pvi.dt_cancelamento_item IS NULL   
+        
+  end --end do if not exists                    
+  else                    
+  begin                    
+    select                    
+      @cd_movimento_caixa = cd_movimento_caixa                    
+    from                    
+      Movimento_Caixa_Item                    
+    where                    
+      cd_pedido_venda = @cd_documento  
+      
+    update Movimento_Caixa
+    set
+      dt_movimento_caixa = @dt_hoje,
+      vl_movimento_caixa = @vl_total_pedido,
+      vl_total_venda     = @vl_total_pedido,
+      vl_dinheiro        = CASE WHEN @cd_tipo_pagamento in (1,6,10) THEN @vl_total_pedido ELSE 0 END, --vl_dinheiro
+      --vl_dinheiro        = CASE WHEN @cd_tipo_pagamento = 1 THEN @vl_total_pedido ELSE 0 END, --vl_dinheiro
+      vl_cartao_credito  = CASE WHEN @cd_tipo_pagamento = 3 THEN @vl_total_pedido ELSE 0 END, --vl_cartao_credito
+      vl_cartao_debito   = CASE WHEN @cd_tipo_pagamento = 4 THEN @vl_total_pedido ELSE 0 END, --vl_cartao_debito 
+      vl_voucher         = CASE WHEN @cd_tipo_pagamento = 9 THEN @vl_total_pedido ELSE 0 END, --vl_voucher
+      --vl_voucher         = CASE WHEN @cd_tipo_pagamento = 6 THEN @vl_total_pedido ELSE 0 END, --vl_voucher
+      vl_pix             = CASE WHEN @cd_tipo_pagamento = 8 THEN @vl_total_pedido ELSE 0 END, --vl_pix
+      cd_tipo_pagamento  = @cd_tipo_pagamento_tab
+    where
+      cd_movimento_caixa = @cd_movimento_caixa
+
+    update Movimento_Caixa_Pagamento
+    set
+      cd_tipo_pagamento  = @cd_tipo_pagamento_tab,
+      vl_pagamento_caixa = @vl_total_pedido,
+      cd_bandeira_cartao = @cd_bandeira_cartao,
+      cd_maquina_cartao  = @cd_maquina_cartao,
+      cd_nsu_tef         = @cd_nsu_tef,
+      cd_autorizacao_tef = @cd_autorizacao_tef,
+      vl_taxa_pagamento  = @vl_taxa_pagamento
+    where
+      cd_movimento_caixa = @cd_movimento_caixa
+  end 
+                                    
+      update Pedido_Venda_Caixa                          
+      set ic_finalizado = 'S'                          
+      where                          
+        cd_pedido_venda = @cd_documento     
             
-    -- Retornar dados do movimento criado                        
-    select                         
-      mc.cd_movimento_caixa,                   
-      mc.dt_movimento_caixa,                     
-      mc.vl_movimento_caixa,                        
-      mc.cd_tipo_movimento_caixa,                        
-      tmc.nm_tipo_movimento_caixa,                        
-      mc.cd_cliente,                        
-      c.nm_fantasia_cliente,                        
-      mc.cd_vendedor,                        
-      v.nm_fantasia_vendedor,                        
-      mc.vl_total_venda,          
-      mc.cd_condicao_pagamento,          
-      mc.vl_dinheiro,          
-      mc.vl_cartao_credito,                        
-      mc.vl_cartao_debito,                        
-      mc.vl_pix,                        
-      cp.nm_condicao_pagamento,                        
-      mc.cd_tipo_pagamento,                        
-      (select count(*) from movimento_caixa_item where cd_movimento_caixa = mc.cd_movimento_caixa) as qt_itens,                        
-      'Movimento de caixa criado com sucesso' as ds_mensagem                        
-    from           
-      MOVIMENTO_CAIXA mc                        
-      left join TIPO_MOVIMENTO_CAIXA tmc on tmc.cd_tipo_movimento_caixa = mc.cd_tipo_movimento_caixa                        
-      left join CLIENTE c on c.cd_cliente = mc.cd_cliente                        
-      left join VENDEDOR v on v.cd_vendedor = mc.cd_vendedor                        
-      left join CONDICAO_PAGAMENTO cp on cp.cd_condicao_pagamento = mc.cd_condicao_pagamento                        
-    where           
-      mc.cd_movimento_caixa = @cd_movimento_caixa                        
-                          
-end                        
+      if isnull(@cd_condicao_pagamento_band,0) > 0    
+      begin    
+        update Pedido_Venda    
+        set cd_condicao_pagamento = @cd_condicao_pagamento_band    
+        where    
+          cd_pedido_venda = @cd_documento    
+    
+        update Movimento_Caixa    
+        set cd_condicao_pagamento = @cd_condicao_pagamento_band    
+        where    
+          cd_movimento_caixa = @cd_movimento_caixa    
+      end    
+                      
+      ------------------------------------------------------------------------------                    
+                      
+      declare @qt_item_mov int                    
+      declare @vl_total_calc float                    
+      declare @pc_desc_calc float                    
+      set @vl_total_calc = 0            set @pc_desc_calc = 0                    
+                      
+      select @vl_total_calc = sum(qt_item_movimento_caixa * vl_item_movimento_caixa)                         
+      from Movimento_Caixa_Item                         
+      where cd_movimento_caixa = @cd_movimento_caixa                     
+                      
+      select @pc_desc_calc = (@vl_desconto*100/@vl_total_calc)                    
+                      
+      ----                    
+      update Movimento_Caixa_Item                        
+      set vl_item_desconto = round((qt_item_movimento_caixa * vl_item_movimento_caixa)*(@pc_desc_calc/100),2)                    
+      where                         
+        cd_movimento_caixa = @cd_movimento_caixa                     
+                      
+      select                     
+        @vl_desconto = sum(vl_item_desconto)                    
+      from                    
+        Movimento_Caixa_Item                        
+      where                         
+        cd_movimento_caixa = @cd_movimento_caixa                     
+                      
+      update Movimento_Caixa                    
+      set vl_desconto = @vl_desconto                    
+      where                         
+        cd_movimento_caixa = @cd_movimento_caixa   
+        
+
+                     
+      ------------------------------------------------------------------------------                                        
+   declare @qt_total_ponto_fid int                    
+   declare @qt_venda_fid int                    
+   declare @dt_inicio_fid datetime                    
+   declare @dt_fim_fid datetime                    
+   declare @cd_categoria_fid int                    
+                      
+      if exists(select cd_pedido_venda from Pedido_Venda_Caixa                     
+                where cd_pedido_venda = @cd_documento                     
+                and (isnull(cd_funcionario,0) > 0 or isnull(cd_promocao,0) > 0))                    
+      begin                    
+        select                     
+          @cd_funcionario_int = isnull(cd_funcionario,0),                    
+          @cd_promocao = isnull(cd_promocao,0)                    
+        from                     
+          Pedido_Venda_Caixa                     
+        where                    
+          cd_pedido_venda = @cd_documento                    
+                      
+        if @cd_funcionario_int > 0                    
+        begin                    
+          if exists(select cd_movimento_caixa                     
+                    from Movimento_Caixa_Funcionario                     
+                    where cd_movimento_caixa = @cd_movimento_caixa)                    
+          begin                    
+            update Movimento_Caixa_Funcionario                    
+            set cd_funcionario = @cd_funcionario_int                    
+            where cd_movimento_caixa = @cd_movimento_caixa                    
+          end                    
+          else                    
+          begin                    
+            insert into Movimento_Caixa_Funcionario                    
+            (cd_movimento_caixa, cd_usuario, dt_usuario, cd_funcionario)                    
+            values                    
+            (@cd_movimento_caixa, @cd_usuario, @dt_hoje, @cd_funcionario_int)                    
+          end                      
+        end                    
+                      
+        if exists(select cd_movimento_caixa                     
+                  from Movimento_Caixa_Promocao                     
+                  where cd_movimento_caixa = @cd_movimento_caixa)                    
+        begin                    
+          update Movimento_Caixa_Promocao                    
+          set cd_promocao = @cd_promocao, cd_funcionario = @cd_funcionario_int                    
+          where cd_movimento_caixa = @cd_movimento_caixa                    
+        end                    
+        else                    
+        begin                    
+          insert into Movimento_Caixa_Promocao                    
+          (cd_movimento_caixa, cd_promocao, cd_usuario_inclusao,                    
+          dt_usuario_inclusao, cd_usuario, dt_usuario, cd_funcionario)                    
+          values                    
+          (@cd_movimento_caixa, @cd_promocao, @cd_usuario,                    
+          @dt_hoje, @cd_usuario, @dt_hoje, @cd_funcionario_int)                    
+                              
+        end                    
+                      
+        if @cd_promocao > 0                    
+        begin                    
+          select                    
+            @cd_cliente = cd_cliente                    
+          from                     
+            Movimento_Caixa                    
+          where                    
+            cd_movimento_caixa = @cd_movimento_caixa                    
+                              
+          select                     
+            @qt_total_ponto_fid = isnull(qt_total_ponto_resgate,0),                    
+            @dt_inicio_fid = dt_inicio_vigencia,                    
+            @dt_fim_fid = dt_fim_vigencia,                    
+            @cd_categoria_fid = cd_categoria_fidelidade                    
+          from                     
+            fidelidade_programa                    
+          where                    
+            cd_promocao = @cd_promocao                    
+            and                    
+            isnull(ic_ativo_fidelidade,'N') = 'S'                    
+                    
+          --------------------------------------------------------------------------------------------                    
+          select                    
+            m.cd_cliente,                    
+            m.cd_movimento_caixa,                    
+            isnull((select sum(qt_item_movimento_caixa)                     
+             from Movimento_caixa_Item i                    
+             inner join Produto p on p.cd_produto = i.cd_produto                    
+             where i.cd_movimento_caixa = m.cd_movimento_caixa                    
+               and p.cd_categoria_produto = @cd_categoria_fid),0) as qt_ponto_fidelidade                    
+          into                    
+            #Movimento_Fid                    
+          from                    
+            Movimento_Caixa m                    
+            inner join Cliente c on c.cd_cliente = m.cd_cliente                    
+          where                    
+            m.cd_cliente = @cd_cliente                    
+            and                    
+            m.dt_cancel_movimento_caixa is null                    
+            and                    
+            m.dt_movimento_caixa between @dt_inicio_fid and @dt_fim_fid                    
+          group by                    
+            m.cd_cliente,                    
+            m.cd_movimento_caixa                    
+          --------------------------------------------------------------------------------------------                    
+                              
+          select                    
+            @qt_venda_fid = (sum(m.qt_ponto_fidelidade)-sum(isnull(r.qt_ponto_resgate,0)))                    
+          from                    
+            #Movimento_Fid m                    
+            left outer join Movimento_Caixa_Resgate r on r.cd_movimento_caixa = m.cd_movimento_caixa                    
+            left outer join Movimento_Caixa_Promocao p on p.cd_movimento_caixa = m.cd_movimento_caixa                    
+          where                    
+            m.cd_cliente = @cd_cliente                    
+            and                    
+            isnull(p.cd_promocao,0) <> isnull(@cd_promocao,0)                    
+                              
+          if ((isnull(@qt_total_ponto_fid,0)-isnull(@qt_venda_fid,0)) <= 0) and (isnull(@qt_venda_fid,0) > 0)                    
+          begin                    
+            exec dbo.pr_gera_programa_fidelidade_cliente_caixa  3, 0, @cd_usuario_pedido, @cd_cliente                    
+          end                    
+        end                    
+      end                    
+      else                    
+      begin                    
+        delete from Movimento_Caixa_Promocao where cd_movimento_caixa = @cd_movimento_caixa                    
+      end                    
+                   
+                      
+    -- Retornar dados do movimento criado                                  
+    select                                   
+      mc.cd_movimento_caixa,                             
+      mc.dt_movimento_caixa,                               
+      mc.vl_movimento_caixa,                                  
+      mc.cd_tipo_movimento_caixa,                                  
+      tmc.nm_tipo_movimento_caixa,                                  
+      mc.cd_cliente,                                  
+      c.nm_fantasia_cliente,                                  
+      mc.cd_vendedor,                                  
+      v.nm_fantasia_vendedor,                                  
+      mc.vl_total_venda,                    
+      mc.cd_condicao_pagamento,                    
+      mc.vl_dinheiro,                    
+      mc.vl_cartao_credito,                                  
+      mc.vl_cartao_debito,                                  
+      mc.vl_pix,                                  
+     cp.nm_condicao_pagamento,                                  
+      mc.cd_tipo_pagamento,        
+      isnull(tpc.ic_padrao_nfce,'N') as ic_padrao_nfce,        
+      isnull(tpc.ic_nfce_tipo,'N') as ic_nfce_tipo,        
+      (select count(*) from movimento_caixa_item where cd_movimento_caixa = mc.cd_movimento_caixa) as qt_itens,        
+      'Movimento de caixa criado com sucesso' as ds_mensagem                                
+    from                   
+      MOVIMENTO_CAIXA mc                                
+      left outer join tipo_movimento_caixa tmc on tmc.cd_tipo_movimento_caixa = mc.cd_tipo_movimento_caixa                                
+      left outer join cliente c on c.cd_cliente = mc.cd_cliente                                
+      left outer join vendedor v on v.cd_vendedor = mc.cd_vendedor                                
+      left outer join condicao_pagamento cp on cp.cd_condicao_pagamento = mc.cd_condicao_pagamento        
+      left outer join Tipo_Pagamento_Caixa tpc on tpc.cd_tipo_pagamento = mc.cd_tipo_pagamento                       
+    where      
+      mc.cd_movimento_caixa = @cd_movimento_caixa                                  
+                                    
+end                       
                         
 ---------------------------------------------------------------------------------------------------------------------------------------------------------                            
 -- 08 - Terminal de Caixa Configuração                        
@@ -1479,12 +1724,18 @@ if @cd_parametro = 8
   order by cd_pedido_venda desc                
                 
   select 
-    ic_atendimento,
-    ic_entrega,
-    ic_funcionario,
-    ic_tef,
-    ic_carteira_digital,
+    isnull(ic_atendimento,'N') as ic_atendimento,
+    isnull(ic_entrega,'N') as ic_entrega,
+    isnull(ic_funcionario,'N') as ic_funcionario,
+    isnull(ic_tef,'N') as ic_tef,
+    isnull(ic_carteira_digital,'N') as ic_carteira_digital,
     isnull(ic_historico_fidelidade,'N') as ic_historico_fidelidade,
+    isnull(ic_mudanca_tipo_cupom,'N') as ic_mudanca_tipo_cupom,
+    isnull(ic_cupom_desconto,'N') as ic_cupom_desconto,
+    isnull(ic_comprovante_sistema,'N') as ic_comprovante_sistema,
+    isnull(ic_voucher_web,'N') as ic_voucher_web,
+    isnull(ic_ifood_web,'N') as ic_ifood_web,
+    isnull(qt_casa_decimal_terminal,0) as qt_casa_decimal_terminal,
     isnull(@cd_pedido_aberto,0) as cd_pedido_aberto
   from 
     Config_Terminal_Venda                
@@ -1863,376 +2114,623 @@ begin
  exec pr_egisnet_operacao_tef @json_param                        
 end                
               
----------------------------------------------------------------------------------------------------------------------------------------------------------                            
--- 16 - Calcula total Pedido com Desconto              
----------------------------------------------------------------------------------------------------------------------------------------------------------                       
-if @cd_parametro = 16              
-begin              
-          
-  declare @vl_total_pedido_venda float          
-  declare @vl_total_ipi          float          
-  declare @vl_icms_st            float          
-  declare @vl_desconto_pedido    float          
-  declare @pc_desconto_pedido    float          
+---------------------------------------------------------------------------------------------------------------------------------------------------------                                      
+-- 16 - Calcula total Pedido com Desconto                        
+---------------------------------------------------------------------------------------------------------------------------------------------------------                                 
+if @cd_parametro = 16                        
+begin                        
+                    
+  declare @vl_total_pedido_venda float                    
+  declare @vl_total_ipi          float                    
+  declare @vl_icms_st            float                    
+  declare @vl_desconto_pedido    float                    
+  declare @pc_desconto_pedido    float                    
+                                        
+  set @vl_total_pedido_venda = 0.00                    
+  set @vl_total_ipi          = 0.00                    
+  set @vl_icms_st            = 0.00                    
+  set @vl_desconto_pedido    = 0.00                    
+  set @pc_desconto_pedido    = 0.00                    
+                    
+  set @cd_funcionario_int = cast(@cd_funcionario as int)                      
+                        
+  if @cd_funcionario_int is null or @cd_funcionario_int = 0                        
+    set @cd_funcionario_int = 0                        
+                        
+  if @cd_identificacao_promocao is null or @cd_identificacao_promocao = ''                        
+    set @cd_identificacao_promocao = ''                        
+                        
+  select top 1                         
+    @cd_promocao = cd_promocao,
+    @qt_limite_promocao_semana = qt_limite_promocao_semana
+  from                         
+    Promocao                         
+  where                         
+    cd_identificacao_promocao = @cd_identificacao_promocao                   
+    and                  
+    isnull(ic_ativa_promocao,'N') = 'S'  
+    
+  if isnull(@qt_limite_promocao_semana,0) > 0
+  begin
+    select
+      @qt_promocao_semana = count(mcp.cd_movimento_caixa)
+    from
+      Movimento_Caixa_Promocao mcp
+      inner join Movimento_Caixa mc on mc.cd_movimento_caixa = mcp.cd_movimento_caixa
+    where
+      mc.dt_cancel_movimento_caixa is null
+      and
+      mc.dt_movimento_caixa between @dt_inicio_semana and @dt_fim_semana
+      and
+      mcp.cd_promocao = @cd_promocao
+      and
+      mcp.cd_funcionario = @cd_funcionario_int
+
+    if isnull(@qt_promocao_semana,0) >= isnull(@qt_limite_promocao_semana,0)
+      set @cd_promocao = 0
+  end
+
+  if @cd_promocao is null or @cd_promocao = 0                        
+    set @cd_promocao = 0   
+
+  -----------------------------------------------------------------------------------------------
+  -----------------------------------------------------------------------------------------------
+  select                     
+    i.cd_produto,                    
+    i.vl_lista_item_pedido as vl_unitario,                    
+    i.qt_item_pedido_venda as qt_selecionado                    
+  into                    
+    #PedidoItem                    
+  from                                            
+    Pedido_Venda_Item i          
+  where                                      
+    i.cd_pedido_venda = @cd_documento                     
+    and                                      
+    i.dt_cancelamento_item is null                     
+            
+  set @qt_produto_promocao = 0                    
+                
+  select                     
+    @qt_produto_promocao = sum(qt_selecionado)                    
+  from                    
+    #PedidoItem                    
+                
+  select                                                         
+    @vl_total_pedido_venda = sum ( cast(isnull(vl_unitario_item_pedido,0) * isnull(qt_item_pedido_venda,0) as float)),                                      
+    @vl_total_ipi          = sum ( round(cast(isnull(vl_unitario_item_pedido,0) * isnull(qt_item_pedido_venda,0) * isnull(pc_ipi,0)/100 as float),2)),                                      
+    @vl_icms_st            = sum ( cast(isnull(vl_item_icms_st,0) as decimal(25,2)) )                                      
+  from                                            
+    Pedido_Venda_Item                                      
+  where                                      
+    cd_pedido_venda = @cd_documento                                      
+    and                             
+    dt_cancelamento_item is null                      
+  group by                                      
+    cd_pedido_venda 
+  -----------------------------------------------------------------------------------------------
+  -----------------------------------------------------------------------------------------------
+                        
+  if @cd_funcionario_int = 0                        
+  begin                        
+    if @cd_promocao > 0                        
+    begin                      
+      update Pedido_Venda_Caixa                    
+      set cd_promocao = @cd_promocao                    
+      where cd_pedido_venda = @cd_documento                      
+                    
+      --select * from #PedidoItem                        
+      if exists(select top 1                        
+                  pp.cd_produto                        
+                from                    
+                  Fidelidade_Programa fp                    
+                  inner join Promocao_Produto pp on pp.cd_promocao = fp.cd_promocao                    
+                  inner join #PedidoItem s on s.cd_produto = pp.cd_produto                        
+                where                        
+                  fp.cd_promocao = @cd_promocao)                        
+      begin                        
+        select top 1                        
+          @vl_desconto = round(s.vl_unitario * (pp.pc_promocao_desconto / 100),2)                        
+        from                         
+          Promocao_Produto pp                        
+          inner join #PedidoItem s on s.cd_produto = pp.cd_produto                        
+        where                
+          pp.cd_promocao = @cd_promocao                         
+        order by                        
+          vl_unitario asc                    
+                    
+        set @pc_desconto_pedido = (100*@vl_desconto)/@vl_total_pedido_venda                    
                               
-  set @vl_total_pedido_venda = 0.00          
-  set @vl_total_ipi          = 0.00          
-  set @vl_icms_st            = 0.00          
-  set @vl_desconto_pedido    = 0.00          
-  set @pc_desconto_pedido    = 0.00          
-          
-  set @cd_funcionario_int = cast(@cd_funcionario as int)            
-              
-  if @cd_funcionario_int is null or @cd_funcionario_int = 0              
-    set @cd_funcionario_int = 0              
-              
-  if @cd_identificacao_promocao is null or @cd_identificacao_promocao = ''              
-    set @cd_identificacao_promocao = ''              
-              
-  select top 1               
-    @cd_promocao = cd_promocao               
-  from               
-    Promocao               
-  where               
-    cd_identificacao_promocao = @cd_identificacao_promocao         
-    and        
-    isnull(ic_ativa_promocao,'N') = 'S'             
-              
-  if @cd_promocao is null or @cd_promocao = 0              
-    set @cd_promocao = 0              
-              
-  if @cd_funcionario_int = 0              
-  begin              
-    if @cd_promocao > 0              
-    begin            
-      update Pedido_Venda_Caixa          
-      set cd_promocao = @cd_promocao          
-      where cd_pedido_venda = @cd_documento            
-          
-      select           
-        i.cd_produto,          
-        i.vl_lista_item_pedido as vl_unitario,          
-        i.qt_item_pedido_venda as qt_selecionado          
-      into          
-        #PedidoItem          
-      from                                  
-        Pedido_Venda_Item i          
-      where                            
-        i.cd_pedido_venda = @cd_documento           
-        and                            
-        i.dt_cancelamento_item is null           
-          
-      set @qt_produto_promocao = 0          
-          
-      select           
-        @qt_produto_promocao = sum(qt_selecionado)          
-      from          
-        #PedidoItem          
-          
-      select                                               
-       @vl_total_pedido_venda = sum ( cast(isnull(vl_unitario_item_pedido,0) * isnull(qt_item_pedido_venda,0) as float)),                            
-       @vl_total_ipi          = sum ( round(cast(isnull(vl_unitario_item_pedido,0) * isnull(qt_item_pedido_venda,0) * isnull(pc_ipi,0)/100 as float),2)),                            
-       @vl_icms_st            = sum ( cast(isnull(vl_item_icms_st,0) as decimal(25,2)) )                            
-      from                                  
-        Pedido_Venda_Item                            
-      where                            
-        cd_pedido_venda = @cd_documento                            
-        and                   
-        dt_cancelamento_item is null            
-      group by                            
-        cd_pedido_venda           
-          
-      --select * from #PedidoItem              
-      if exists(select top 1              
-                  pp.cd_produto              
-                from          
-                  Fidelidade_Programa fp          
-                  inner join Promocao_Produto pp on pp.cd_promocao = fp.cd_promocao          
-                  inner join #PedidoItem s on s.cd_produto = pp.cd_produto              
-                where              
-                  fp.cd_promocao = @cd_promocao)              
-      begin              
-        select top 1              
-          @vl_desconto = s.vl_unitario * (pp.pc_promocao_desconto / 100)              
-        from               
-          Promocao_Produto pp              
-          inner join #PedidoItem s on s.cd_produto = pp.cd_produto              
-        where      
-          pp.cd_promocao = @cd_promocao               
-        order by              
-          vl_unitario asc          
-          
-        set @pc_desconto_pedido = (100*@vl_desconto)/@vl_total_pedido_venda          
+        update                    
+          Pedido_Venda                    
+        set                    
+          vl_total_pedido_venda = @vl_total_pedido_venda,                    
+          vl_desconto_pedido_venda = @vl_desconto,                    
+          pc_desconto_pedido_venda = @pc_desconto_pedido,                    
+          vl_icms_st = @vl_icms_st,                    
+          vl_total_ipi = @vl_total_ipi,                    
+          vl_total_pedido_ipi = (@vl_total_pedido_venda + @vl_total_ipi + @vl_icms_st) - @vl_desconto                    
+        where                    
+          cd_pedido_venda = @cd_documento                    
+                              
+        select top 1                        
+          isnull(@vl_sub_total_tela,0)   as vl_sub_total_tela,                        
+          isnull(@vl_desconto,0)         as vl_desconto,                        
+          isnull(@vl_sub_total_tela,0) -                         
+          isnull(@vl_desconto,0)         as vl_total                          
+      end                        
+      else                    
+      if exists(select top 1                        
+                  pp.cd_produto                        
+                from                         
+                  Promocao_Produto pp                        
+                  inner join #PedidoItem s on s.cd_produto = pp.cd_produto                        
+                where                        
+                  pp.cd_promocao = @cd_promocao)                        
+      begin                        
+        select top 1                        
+          @vl_desconto = round(s.vl_unitario * (pp.pc_promocao_desconto / 100),2)                       
+        from                         
+          Promocao_Produto pp                        
+          inner join #PedidoItem s on s.cd_produto = pp.cd_produto                        
+        where                        
+          pp.cd_promocao = @cd_promocao                        
+          and                        
+          @qt_produto_promocao > 1                        
+        order by                        
+          vl_unitario asc                    
                     
-        update          
-          Pedido_Venda          
-        set          
-          vl_total_pedido_venda = @vl_total_pedido_venda,          
-          vl_desconto_pedido_venda = @vl_desconto,          
-          pc_desconto_pedido_venda = @pc_desconto_pedido,          
-          vl_icms_st = @vl_icms_st,          
-          vl_total_ipi = @vl_total_ipi,          
-          vl_total_pedido_ipi = (@vl_total_pedido_venda + @vl_total_ipi + @vl_icms_st) - @vl_desconto          
-        where          
-          cd_pedido_venda = @cd_documento          
+        set @pc_desconto_pedido = (100*@vl_desconto)/@vl_total_pedido_venda                    
+                              
+        update                    
+          Pedido_Venda                    
+        set                    
+          vl_total_pedido_venda = @vl_total_pedido_venda,                    
+          vl_desconto_pedido_venda = @vl_desconto,                    
+          pc_desconto_pedido_venda = @pc_desconto_pedido,                    
+          vl_icms_st = @vl_icms_st,                    
+          vl_total_ipi = @vl_total_ipi,                    
+          vl_total_pedido_ipi = (@vl_total_pedido_venda + @vl_total_ipi + @vl_icms_st) - @vl_desconto                    
+        where                    
+          cd_pedido_venda = @cd_documento                    
+                              
+        select top 1                        
+          isnull(@vl_sub_total_tela,0)   as vl_sub_total_tela,                        
+          isnull(@vl_desconto,0)         as vl_desconto,                        
+          isnull(@vl_sub_total_tela,0) -                         
+          isnull(@vl_desconto,0)         as vl_total                          
+      end                        
+      else                        
+      begin                        
+        select                        
+          cd_categoria_produto as cd_categoria,                        
+          sum(qt_selecionado)  as qt_selecionado_categoria                        
+        into                        
+          #QTDCategoriaPromocaoPV                        
+        from                        
+          #PedidoItem i                    
+          left outer join Produto p on p.cd_produto = i.cd_produto                    
+        group by                        
+          cd_categoria_produto                        
+        order by                        
+          cd_categoria_produto                        
+                              
+        if exists(select top 1                    
+                    pcp.cd_categoria_produto                    
+                  from                    
+                    Promocao_Categoria_Produto pcp                        
+                    inner join #QTDCategoriaPromocaoPV sc on sc.cd_categoria = pcp.cd_categoria_produto                        
+         where                        
+                    pcp.cd_promocao = @cd_promocao                        
+                    and                        
+                    sc.qt_selecionado_categoria >= pcp.qt_venda)                        
+        begin                        
+          select top 1                        
+            @vl_desconto = round(sum((s.vl_unitario * s.qt_selecionado) * (pcp.pc_desconto / 100)),2)                        
+          from                         
+            Promocao_Categoria_Produto pcp                      
+            left outer join Produto p on p.cd_categoria_produto = pcp.cd_categoria_produto                       
+            inner join #PedidoItem s on s.cd_produto = p.cd_produto                        
+          where                        
+            pcp.cd_promocao = @cd_promocao                        
+                       
+          set @pc_desconto_pedido = (100*@vl_desconto)/@vl_total_pedido_venda                    
+                              
+          update                    
+            Pedido_Venda                    
+          set                    
+            vl_total_pedido_venda = @vl_total_pedido_venda,                    
+            vl_desconto_pedido_venda = @vl_desconto,                    
+            pc_desconto_pedido_venda = @pc_desconto_pedido,                    
+            vl_icms_st = @vl_icms_st,                    
+            vl_total_ipi = @vl_total_ipi,                    
+            vl_total_pedido_ipi = (@vl_total_pedido_venda + @vl_total_ipi + @vl_icms_st) - @vl_desconto                    
+          where                    
+            cd_pedido_venda = @cd_documento                    
                     
-        select top 1              
-          isnull(@vl_sub_total_tela,0)   as vl_sub_total_tela,              
-          isnull(@vl_desconto,0)         as vl_desconto,              
-          isnull(@vl_sub_total_tela,0) -               
-          isnull(@vl_desconto,0)         as vl_total                
-      end              
-      else          
-      if exists(select top 1              
-                  pp.cd_produto              
-                from               
-                  Promocao_Produto pp              
-                  inner join #PedidoItem s on s.cd_produto = pp.cd_produto              
-                where              
-                  pp.cd_promocao = @cd_promocao)              
-      begin              
-        select top 1              
-          @vl_desconto = s.vl_unitario * (pp.pc_promocao_desconto / 100)              
-        from               
-          Promocao_Produto pp              
-          inner join #PedidoItem s on s.cd_produto = pp.cd_produto              
-        where              
-          pp.cd_promocao = @cd_promocao              
-          and              
-          @qt_produto_promocao > 1              
-        order by              
-          vl_unitario asc          
-          
-        set @pc_desconto_pedido = (100*@vl_desconto)/@vl_total_pedido_venda          
+          select top 1                        
+            isnull(@vl_total_pedido_venda,0)   as vl_sub_total_tela,                        
+            isnull(@vl_desconto,0)             as vl_desconto,                        
+            isnull(@vl_total_pedido_venda,0) -                         
+            isnull(@vl_desconto,0)             as vl_total                         
+                              
+          drop table #QTDCategoriaPromocaoPV                        
+        end                        
+        else                    
+        begin                    
+          if exists(select top 1                        
+                      p.cd_promocao                    
+                    from                         
+                      Promocao p                        
+                    where                        
+                      p.cd_promocao = @cd_promocao)                        
+          begin                    
                     
-        update          
-          Pedido_Venda          
-        set          
-          vl_total_pedido_venda = @vl_total_pedido_venda,          
-          vl_desconto_pedido_venda = @vl_desconto,          
-          pc_desconto_pedido_venda = @pc_desconto_pedido,          
-          vl_icms_st = @vl_icms_st,          
-          vl_total_ipi = @vl_total_ipi,          
-          vl_total_pedido_ipi = (@vl_total_pedido_venda + @vl_total_ipi + @vl_icms_st) - @vl_desconto          
-        where          
-          cd_pedido_venda = @cd_documento          
+            select top 1                        
+              @vl_desconto = round(@vl_total_pedido_venda * (c.pc_desconto_promocao / 100),2)                    
+            from                        
+              Promocao c                     
+            where                        
+              c.cd_promocao = @cd_promocao                    
                     
-        select top 1              
-          isnull(@vl_sub_total_tela,0)   as vl_sub_total_tela,              
-          isnull(@vl_desconto,0)         as vl_desconto,              
-          isnull(@vl_sub_total_tela,0) -               
-          isnull(@vl_desconto,0)         as vl_total                
-      end              
-      else              
-      begin              
-        select              
-          cd_categoria_produto as cd_categoria,              
-          sum(qt_selecionado)  as qt_selecionado_categoria              
-        into              
-          #QTDCategoriaPromocaoPV              
-        from              
-          #PedidoItem i          
-          left outer join Produto p on p.cd_produto = i.cd_produto          
-        group by              
-          cd_categoria_produto              
-        order by              
-          cd_categoria_produto              
+            set @pc_desconto_pedido = (100*@vl_desconto)/@vl_total_pedido_venda                    
+                                
+            update                    
+              Pedido_Venda                    
+            set                    
+              vl_total_pedido_venda = @vl_total_pedido_venda,                    
+              vl_desconto_pedido_venda = @vl_desconto,                    
+              pc_desconto_pedido_venda = @pc_desconto_pedido,                    
+              vl_icms_st = @vl_icms_st,                    
+              vl_total_ipi = @vl_total_ipi,                    
+              vl_total_pedido_ipi = (@vl_total_pedido_venda + @vl_total_ipi + @vl_icms_st) - @vl_desconto                    
+            where                    
+              cd_pedido_venda = @cd_documento                    
                     
-        if exists(select top 1          
-                    pcp.cd_categoria_produto          
-                  from          
-                    Promocao_Categoria_Produto pcp              
-                    inner join #QTDCategoriaPromocaoPV sc on sc.cd_categoria = pcp.cd_categoria_produto              
-                  where              
-                    pcp.cd_promocao = @cd_promocao              
-                    and              
-                    sc.qt_selecionado_categoria >= pcp.qt_venda)              
-        begin              
-          select top 1              
-            @vl_desconto = sum((s.vl_unitario * s.qt_selecionado) * (pcp.pc_desconto / 100))              
-          from               
-            Promocao_Categoria_Produto pcp            
-            left outer join Produto p on p.cd_categoria_produto = pcp.cd_categoria_produto             
-            inner join #PedidoItem s on s.cd_produto = p.cd_produto              
-          where              
-            pcp.cd_promocao = @cd_promocao              
-             
-          set @pc_desconto_pedido = (100*@vl_desconto)/@vl_total_pedido_venda          
+            select top 1                        
+              @vl_total_pedido_venda          as vl_sub_total_tela,                        
+              @vl_total_pedido_venda * (c.pc_desconto_promocao/100)     as vl_desconto,                        
+              @vl_total_pedido_venda * (1-(c.pc_desconto_promocao/100)) as vl_total,                    
+              c.pc_desconto_promocao                    
+            from                        
+              Promocao c                    
+            where                        
+              c.cd_promocao = @cd_promocao                    
+          end                    
+          else                        
+          begin                      
+            select                                                         
+             @vl_total_pedido_venda = sum ( cast(isnull(vl_unitario_item_pedido,0) * isnull(qt_item_pedido_venda,0) as float)),                                      
+             @vl_total_ipi          = sum ( round(cast(isnull(vl_unitario_item_pedido,0) * isnull(qt_item_pedido_venda,0) * isnull(pc_ipi,0)/100 as float),2)),                          
+             @vl_icms_st            = sum ( cast(isnull(vl_item_icms_st,0) as decimal(25,2)) )                                      
+            from                                            
+              Pedido_Venda_Item                                      
+            where                                      
+              cd_pedido_venda = @cd_documento                                      
+              and                                      
+              dt_cancelamento_item is null                      
+            group by                                      
+              cd_pedido_venda                    
                     
-          update          
-            Pedido_Venda          
-          set          
-            vl_total_pedido_venda = @vl_total_pedido_venda,          
-            vl_desconto_pedido_venda = @vl_desconto,          
-            pc_desconto_pedido_venda = @pc_desconto_pedido,          
-            vl_icms_st = @vl_icms_st,          
-            vl_total_ipi = @vl_total_ipi,          
-            vl_total_pedido_ipi = (@vl_total_pedido_venda + @vl_total_ipi + @vl_icms_st) - @vl_desconto          
-          where          
-            cd_pedido_venda = @cd_documento          
-          
-          select top 1              
-            isnull(@vl_total_pedido_venda,0)   as vl_sub_total_tela,              
-            isnull(@vl_desconto,0)             as vl_desconto,              
-            isnull(@vl_total_pedido_venda,0) -               
-            isnull(@vl_desconto,0)             as vl_total               
+            update                    
+              Pedido_Venda                    
+            set                    
+              vl_total_pedido_venda = @vl_total_pedido_venda,                    
+              vl_desconto_pedido_venda = @vl_desconto_pedido,                
+              pc_desconto_pedido_venda = @pc_desconto_pedido,                    
+              vl_icms_st = @vl_icms_st,                    
+              vl_total_ipi = @vl_total_ipi,                    
+              vl_total_pedido_ipi = (@vl_total_pedido_venda + @vl_total_ipi + @vl_icms_st) - @vl_desconto_pedido                    
+            where                    
+              cd_pedido_venda = @cd_documento                    
                     
-          drop table #QTDCategoriaPromocaoPV              
-        end              
-        else          
-        begin          
-          if exists(select top 1              
-                      p.cd_promocao          
-                    from               
-                      Promocao p              
-                    where              
-                      p.cd_promocao = @cd_promocao)              
-          begin          
-          
-            select top 1              
-              @vl_desconto = @vl_total_pedido_venda * (c.pc_desconto_promocao / 100)          
-            from              
-              Promocao c           
-            where              
-              c.cd_promocao = @cd_promocao          
-          
-            set @pc_desconto_pedido = (100*@vl_desconto)/@vl_total_pedido_venda          
+            select top 1                        
+              @vl_total_pedido_venda           as vl_sub_total_tela,                        
+              @vl_total_pedido_venda * (0)     as vl_desconto,                        
+              @vl_total_pedido_venda * (1-(0)) as vl_total                         
+          end                    
+        end                    
+      end                           
+    end                   
+    else                        
+    begin --A                      
+      select                                                         
+       @vl_total_pedido_venda = sum ( cast(isnull(vl_unitario_item_pedido,0) * isnull(qt_item_pedido_venda,0) as float)),                                      
+       @vl_total_ipi          = sum ( round(cast(isnull(vl_unitario_item_pedido,0) * isnull(qt_item_pedido_venda,0) * isnull(pc_ipi,0)/100 as float),2)),                                      
+       @vl_icms_st            = sum ( cast(isnull(vl_item_icms_st,0) as decimal(25,2)) )                                      
+      from                                            
+        Pedido_Venda_Item                                      
+      where                                      
+        cd_pedido_venda = @cd_documento                                      
+        and                                      
+        dt_cancelamento_item is null                      
+      group by                                      
+        cd_pedido_venda                    
+                    
+      update                    
+        Pedido_Venda                    
+      set                    
+        vl_total_pedido_venda = @vl_total_pedido_venda,                    
+        vl_desconto_pedido_venda = @vl_desconto_pedido,                    
+        pc_desconto_pedido_venda = @pc_desconto_pedido,                    
+        vl_icms_st = @vl_icms_st,                    
+        vl_total_ipi = @vl_total_ipi,                    
+        vl_total_pedido_ipi = (@vl_total_pedido_venda + @vl_total_ipi + @vl_icms_st) - @vl_desconto_pedido                        where                    
+        cd_pedido_venda = @cd_documento                     
+                    
+      select top 1                        
+        @vl_total_pedido_venda           as vl_sub_total_tela,                        
+        @vl_total_pedido_venda * (0)     as vl_desconto,                        
+        @vl_total_pedido_venda * (1-(0)) as vl_total                            
+    end                        
+  end                        
+  else                        
+  begin                        
+    update Pedido_Venda_Caixa                    
+    set cd_funcionario = @cd_funcionario_int                    
+    where cd_pedido_venda = @cd_documento                     
+
+    if @cd_promocao > 0                        
+    begin                      
+      update Pedido_Venda_Caixa                    
+      set cd_promocao = @cd_promocao                    
+      where cd_pedido_venda = @cd_documento                      
+                    
+      --select * from #PedidoItem                        
+      if exists(select top 1                        
+                  pp.cd_produto                        
+                from                    
+                  Fidelidade_Programa fp                    
+                  inner join Promocao_Produto pp on pp.cd_promocao = fp.cd_promocao                    
+                  inner join #PedidoItem s on s.cd_produto = pp.cd_produto                        
+                where                        
+                  fp.cd_promocao = @cd_promocao)                        
+      begin                        
+        select top 1                        
+          @vl_desconto = round(s.vl_unitario * (pp.pc_promocao_desconto / 100),2)                        
+        from                         
+          Promocao_Produto pp                        
+          inner join #PedidoItem s on s.cd_produto = pp.cd_produto                        
+        where                
+          pp.cd_promocao = @cd_promocao                         
+        order by                        
+          vl_unitario asc                    
+                    
+        set @pc_desconto_pedido = (100*@vl_desconto)/@vl_total_pedido_venda                    
+                              
+        update                    
+          Pedido_Venda                    
+        set                    
+          vl_total_pedido_venda = @vl_total_pedido_venda,                    
+          vl_desconto_pedido_venda = @vl_desconto,                    
+          pc_desconto_pedido_venda = @pc_desconto_pedido,                    
+          vl_icms_st = @vl_icms_st,                    
+          vl_total_ipi = @vl_total_ipi,                    
+          vl_total_pedido_ipi = (@vl_total_pedido_venda + @vl_total_ipi + @vl_icms_st) - @vl_desconto                    
+        where                    
+          cd_pedido_venda = @cd_documento                    
+                              
+        select top 1                        
+          isnull(@vl_sub_total_tela,0)   as vl_sub_total_tela,                        
+          isnull(@vl_desconto,0)         as vl_desconto,                        
+          isnull(@vl_sub_total_tela,0) -                         
+          isnull(@vl_desconto,0)         as vl_total                          
+      end                        
+      else                    
+      if exists(select top 1                        
+                  pp.cd_produto                        
+                from                         
+                  Promocao_Produto pp                        
+                  inner join #PedidoItem s on s.cd_produto = pp.cd_produto                        
+                where                        
+                  pp.cd_promocao = @cd_promocao)                        
+      begin                        
+        select top 1                        
+          @vl_desconto = round(s.vl_unitario * (pp.pc_promocao_desconto / 100),2)                       
+        from                         
+          Promocao_Produto pp                        
+          inner join #PedidoItem s on s.cd_produto = pp.cd_produto                        
+        where                        
+          pp.cd_promocao = @cd_promocao                        
+          --and                        
+          --@qt_produto_promocao > 1                        
+        order by                        
+          vl_unitario asc                    
+                    
+        set @pc_desconto_pedido = (100*@vl_desconto)/@vl_total_pedido_venda                    
+                              
+        update                    
+          Pedido_Venda                    
+        set                    
+          vl_total_pedido_venda = @vl_total_pedido_venda,                    
+          vl_desconto_pedido_venda = @vl_desconto,                    
+          pc_desconto_pedido_venda = @pc_desconto_pedido,                    
+          vl_icms_st = @vl_icms_st,                    
+          vl_total_ipi = @vl_total_ipi,                    
+          vl_total_pedido_ipi = (@vl_total_pedido_venda + @vl_total_ipi + @vl_icms_st) - @vl_desconto                    
+        where                    
+          cd_pedido_venda = @cd_documento                    
+                              
+        select top 1                        
+          isnull(@vl_sub_total_tela,0)   as vl_sub_total_tela,                        
+          isnull(@vl_desconto,0)         as vl_desconto,                        
+          isnull(@vl_sub_total_tela,0) -                         
+          isnull(@vl_desconto,0)         as vl_total                          
+      end                        
+      else                        
+      begin                        
+        select                        
+          cd_categoria_produto as cd_categoria,                        
+          sum(qt_selecionado)  as qt_selecionado_categoria                        
+        into                        
+          #QTDCategoriaPromocaoPV1                        
+        from                        
+          #PedidoItem i                    
+          left outer join Produto p on p.cd_produto = i.cd_produto                    
+        group by                        
+          cd_categoria_produto                        
+        order by                        
+          cd_categoria_produto                        
+                              
+        if exists(select top 1                    
+                    pcp.cd_categoria_produto                    
+                  from                    
+                    Promocao_Categoria_Produto pcp                        
+                    inner join #QTDCategoriaPromocaoPV1 sc on sc.cd_categoria = pcp.cd_categoria_produto                        
+         where                        
+                    pcp.cd_promocao = @cd_promocao                        
+                    and                        
+                    sc.qt_selecionado_categoria >= pcp.qt_venda)                        
+        begin                        
+          select top 1                        
+            @vl_desconto = round(sum((s.vl_unitario * s.qt_selecionado) * (pcp.pc_desconto / 100)),2)                        
+          from                         
+            Promocao_Categoria_Produto pcp                      
+            left outer join Produto p on p.cd_categoria_produto = pcp.cd_categoria_produto                       
+            inner join #PedidoItem s on s.cd_produto = p.cd_produto                        
+          where                        
+            pcp.cd_promocao = @cd_promocao                        
+                       
+          set @pc_desconto_pedido = (100*@vl_desconto)/@vl_total_pedido_venda                    
+                              
+          update                    
+            Pedido_Venda                    
+          set                    
+            vl_total_pedido_venda = @vl_total_pedido_venda,                    
+            vl_desconto_pedido_venda = @vl_desconto,                    
+            pc_desconto_pedido_venda = @pc_desconto_pedido,                    
+            vl_icms_st = @vl_icms_st,                    
+            vl_total_ipi = @vl_total_ipi,                    
+            vl_total_pedido_ipi = (@vl_total_pedido_venda + @vl_total_ipi + @vl_icms_st) - @vl_desconto                    
+          where                    
+            cd_pedido_venda = @cd_documento                    
+                    
+          select top 1                        
+            isnull(@vl_total_pedido_venda,0)   as vl_sub_total_tela,                        
+            isnull(@vl_desconto,0)             as vl_desconto,                        
+            isnull(@vl_total_pedido_venda,0) -                         
+            isnull(@vl_desconto,0)             as vl_total                         
+                              
+          drop table #QTDCategoriaPromocaoPV1                        
+        end                        
+        else                    
+        begin                    
+          if exists(select top 1                        
+                      p.cd_promocao                    
+                    from                         
+                      Promocao p                        
+                    where                        
+                      p.cd_promocao = @cd_promocao)                        
+          begin                    
+                    
+            select top 1                        
+              @vl_desconto = round(@vl_total_pedido_venda * (c.pc_desconto_promocao / 100),2)                    
+            from                        
+              Promocao c                     
+            where                        
+              c.cd_promocao = @cd_promocao                    
+                    
+            set @pc_desconto_pedido = (100*@vl_desconto)/@vl_total_pedido_venda                    
+                                
+            update                    
+              Pedido_Venda                    
+            set                    
+              vl_total_pedido_venda = @vl_total_pedido_venda,                    
+              vl_desconto_pedido_venda = @vl_desconto,                    
+              pc_desconto_pedido_venda = @pc_desconto_pedido,                    
+              vl_icms_st = @vl_icms_st,                    
+              vl_total_ipi = @vl_total_ipi,                    
+              vl_total_pedido_ipi = (@vl_total_pedido_venda + @vl_total_ipi + @vl_icms_st) - @vl_desconto                    
+            where                    
+              cd_pedido_venda = @cd_documento                    
+                    
+            select top 1                        
+              @vl_total_pedido_venda          as vl_sub_total_tela,                        
+              @vl_total_pedido_venda * (c.pc_desconto_promocao/100)     as vl_desconto,                        
+              @vl_total_pedido_venda * (1-(c.pc_desconto_promocao/100)) as vl_total,                    
+              c.pc_desconto_promocao                    
+            from                        
+              Promocao c                    
+            where                        
+              c.cd_promocao = @cd_promocao                    
+          end                    
+          else                        
+          begin                      
+            select                                                         
+             @vl_total_pedido_venda = sum ( cast(isnull(vl_unitario_item_pedido,0) * isnull(qt_item_pedido_venda,0) as float)),                                      
+             @vl_total_ipi          = sum ( round(cast(isnull(vl_unitario_item_pedido,0) * isnull(qt_item_pedido_venda,0) * isnull(pc_ipi,0)/100 as float),2)),                          
+             @vl_icms_st            = sum ( cast(isnull(vl_item_icms_st,0) as decimal(25,2)) )                                      
+            from                                            
+              Pedido_Venda_Item                                      
+            where                                      
+              cd_pedido_venda = @cd_documento                                      
+              and                                      
+              dt_cancelamento_item is null                      
+            group by                                      
+              cd_pedido_venda                    
+                    
+            update                    
+              Pedido_Venda                    
+            set                    
+              vl_total_pedido_venda = @vl_total_pedido_venda,                    
+              vl_desconto_pedido_venda = @vl_desconto_pedido,                
+              pc_desconto_pedido_venda = @pc_desconto_pedido,                    
+              vl_icms_st = @vl_icms_st,                    
+              vl_total_ipi = @vl_total_ipi,                    
+              vl_total_pedido_ipi = (@vl_total_pedido_venda + @vl_total_ipi + @vl_icms_st) - @vl_desconto_pedido                    
+            where                    
+              cd_pedido_venda = @cd_documento                    
+                    
+            select top 1                        
+              @vl_total_pedido_venda           as vl_sub_total_tela,                        
+              @vl_total_pedido_venda * (0)     as vl_desconto,                        
+              @vl_total_pedido_venda * (1-(0)) as vl_total                         
+          end                    
+        end                    
+      end                           
+    end                   
+    else                        
+    begin
+      select                                                         
+       @vl_total_pedido_venda = sum ( cast(isnull(vl_unitario_item_pedido,0) * isnull(qt_item_pedido_venda,0) as float)),                                      
+       @vl_total_ipi          = sum ( round(cast(isnull(vl_unitario_item_pedido,0) * isnull(qt_item_pedido_venda,0) * isnull(pc_ipi,0)/100 as float),2)),                                    
+       @vl_icms_st            = sum ( cast(isnull(vl_item_icms_st,0) as decimal(25,2)) )                                      
+      from                                            
+        Pedido_Venda_Item                                      
+      where                                      
+        cd_pedido_venda = @cd_documento                                      
+        and                                      
+        dt_cancelamento_item is null                      
+      group by                                      
+        cd_pedido_venda  
+      
+      select                      
+        @vl_desconto_pedido = round((@vl_total_pedido_venda+@vl_total_ipi+@vl_icms_st) * (c.pc_desconto_funcionario/100),2),                    
+        @pc_desconto_pedido = c.pc_desconto_funcionario                    
+      from                        
+        Config_Terminal_Venda c         
+        
                       
-            update          
-              Pedido_Venda          
-            set          
-              vl_total_pedido_venda = @vl_total_pedido_venda,          
-              vl_desconto_pedido_venda = @vl_desconto,          
-              pc_desconto_pedido_venda = @pc_desconto_pedido,          
-              vl_icms_st = @vl_icms_st,          
-              vl_total_ipi = @vl_total_ipi,          
-              vl_total_pedido_ipi = (@vl_total_pedido_venda + @vl_total_ipi + @vl_icms_st) - @vl_desconto          
-            where          
-              cd_pedido_venda = @cd_documento          
-          
-            select top 1              
-              @vl_total_pedido_venda                                    as vl_sub_total_tela,              
-              @vl_total_pedido_venda * (c.pc_desconto_promocao/100)     as vl_desconto,              
-              @vl_total_pedido_venda * (1-(c.pc_desconto_promocao/100)) as vl_total,          
-     c.pc_desconto_promocao          
-            from              
-              Promocao c          
-            where              
-              c.cd_promocao = @cd_promocao          
-          end          
-          else              
-          begin            
-            select                                               
-             @vl_total_pedido_venda = sum ( cast(isnull(vl_unitario_item_pedido,0) * isnull(qt_item_pedido_venda,0) as float)),                            
-  @vl_total_ipi          = sum ( round(cast(isnull(vl_unitario_item_pedido,0) * isnull(qt_item_pedido_venda,0) * isnull(pc_ipi,0)/100 as float),2)),                
-    @vl_icms_st            = sum ( cast(isnull(vl_item_icms_st,0) as decimal(25,2)) )                            
-            from                                  
-              Pedido_Venda_Item                            
-            where                            
-              cd_pedido_venda = @cd_documento                            
-              and                            
-              dt_cancelamento_item is null            
-            group by                            
-              cd_pedido_venda          
-          
-            update          
-              Pedido_Venda          
-            set          
-              vl_total_pedido_venda = @vl_total_pedido_venda,          
-              vl_desconto_pedido_venda = @vl_desconto_pedido,          
-              pc_desconto_pedido_venda = @pc_desconto_pedido,          
-              vl_icms_st = @vl_icms_st,          
-              vl_total_ipi = @vl_total_ipi,          
-              vl_total_pedido_ipi = (@vl_total_pedido_venda + @vl_total_ipi + @vl_icms_st) - @vl_desconto_pedido          
-            where          
-              cd_pedido_venda = @cd_documento          
-          
-            select top 1              
-              @vl_total_pedido_venda           as vl_sub_total_tela,              
-              @vl_total_pedido_venda * (0)     as vl_desconto,              
-              @vl_total_pedido_venda * (1-(0)) as vl_total               
-          end          
-        end          
-      end                 
-    end              
-    else              
-    begin --A            
-      select                                               
-       @vl_total_pedido_venda = sum ( cast(isnull(vl_unitario_item_pedido,0) * isnull(qt_item_pedido_venda,0) as float)),                            
-       @vl_total_ipi          = sum ( round(cast(isnull(vl_unitario_item_pedido,0) * isnull(qt_item_pedido_venda,0) * isnull(pc_ipi,0)/100 as float),2)),                            
-       @vl_icms_st            = sum ( cast(isnull(vl_item_icms_st,0) as decimal(25,2)) )                            
-      from                                  
-        Pedido_Venda_Item                            
-      where                            
-        cd_pedido_venda = @cd_documento                            
-        and                            
-        dt_cancelamento_item is null            
-      group by                            
-        cd_pedido_venda          
-          
-      update          
-        Pedido_Venda          
-      set          
-        vl_total_pedido_venda = @vl_total_pedido_venda,          
-        vl_desconto_pedido_venda = @vl_desconto_pedido,          
-        pc_desconto_pedido_venda = @pc_desconto_pedido,          
-        vl_icms_st = @vl_icms_st,          
-        vl_total_ipi = @vl_total_ipi,          
-        vl_total_pedido_ipi = (@vl_total_pedido_venda + @vl_total_ipi + @vl_icms_st) - @vl_desconto_pedido          
-      where          
-        cd_pedido_venda = @cd_documento           
-          
-      select top 1              
-        @vl_total_pedido_venda           as vl_sub_total_tela,              
-        @vl_total_pedido_venda * (0)     as vl_desconto,              
-        @vl_total_pedido_venda * (1-(0)) as vl_total                  
-    end              
-  end              
-  else              
-  begin              
-    update Pedido_Venda_Caixa          
-    set cd_funcionario = @cd_funcionario_int          
-    where cd_pedido_venda = @cd_documento           
-          
-    select                                               
-     @vl_total_pedido_venda = sum ( cast(isnull(vl_unitario_item_pedido,0) * isnull(qt_item_pedido_venda,0) as float)),                            
-     @vl_total_ipi          = sum ( round(cast(isnull(vl_unitario_item_pedido,0) * isnull(qt_item_pedido_venda,0) * isnull(pc_ipi,0)/100 as float),2)),                          
-     @vl_icms_st            = sum ( cast(isnull(vl_item_icms_st,0) as decimal(25,2)) )                            
-    from                                  
-      Pedido_Venda_Item                            
-    where                            
-      cd_pedido_venda = @cd_documento                            
-      and                            
-      dt_cancelamento_item is null            
-    group by                            
-      cd_pedido_venda                 
-    select            
-      @vl_desconto_pedido = (@vl_total_pedido_venda+@vl_total_ipi+@vl_icms_st) * (c.pc_desconto_funcionario/100),          
-@pc_desconto_pedido = c.pc_desconto_funcionario          
-    from              
-      Config_Terminal_Venda c           
-          
-    update          
-      Pedido_Venda          
-    set          
-      vl_total_pedido_venda = @vl_total_pedido_venda,          
-      vl_desconto_pedido_venda = @vl_desconto_pedido,          
-      pc_desconto_pedido_venda = @pc_desconto_pedido,          
-      vl_icms_st = @vl_icms_st,          
-      vl_total_ipi = @vl_total_ipi,          
-      vl_total_pedido_ipi = (@vl_total_pedido_venda + @vl_total_ipi + @vl_icms_st) - @vl_desconto_pedido          
-    where          
-      cd_pedido_venda = @cd_documento          
-          
-    select top 1              
-      @vl_total_pedido_venda                                       as vl_sub_total_tela,              
-      @vl_total_pedido_venda * (c.pc_desconto_funcionario/100)     as vl_desconto,              
-      @vl_total_pedido_venda * (1-(c.pc_desconto_funcionario/100)) as vl_total              
-    from              
-      Config_Terminal_Venda c              
-  end              
-              
-end            
+      update Pedido_Venda
+      set                    
+        vl_total_pedido_venda = @vl_total_pedido_venda,                    
+        vl_desconto_pedido_venda = @vl_desconto_pedido,                    
+        pc_desconto_pedido_venda = @pc_desconto_pedido,                    
+        vl_icms_st = @vl_icms_st,                    
+        vl_total_ipi = @vl_total_ipi,                    
+        vl_total_pedido_ipi = (@vl_total_pedido_venda + @vl_total_ipi + @vl_icms_st) - @vl_desconto_pedido                    
+      where                    
+        cd_pedido_venda = @cd_documento                    
+                      
+      select top 1                        
+        @vl_total_pedido_venda                                       as vl_sub_total_tela,                        
+        @vl_total_pedido_venda * (c.pc_desconto_funcionario/100)     as vl_desconto,
+        @vl_total_pedido_venda * (1-(c.pc_desconto_funcionario/100)) as vl_total                        
+      from                        
+        Config_Terminal_Venda c
+    end
+  end                        
+                        
+end           
           
 ---------------------------------------------------------------------------------------------------------------------------------------------------------                            
 -- 17 - Pesquisa de Cliente          
@@ -2811,17 +3309,32 @@ BEGIN
  ELSE                       
  BEGIN                        
                     
-                        
-  EXEC dbo.pr_gera_nota_saida_oficial                        
-   @cd_movimento_caixa = @cd_movimento_caixa,                        
-   @cd_pedido_venda = 0,                        
-   @cd_usuario = @cd_usuario,                        
-   @dt_nota_saida = null,                        
-   @cd_operacao_fiscal = 0,                        
-   @dt_saida_nota_saida = NULL,                        
-   @ic_tipo_nota = 0,                        
-   @cd_serie_nota = 7,                        
-   @cd_identificacao_nf = NULL;                        
+  if @ic_nfce = 'S'
+  begin
+    EXEC dbo.pr_gera_nota_saida_oficial                          
+     @cd_movimento_caixa = @cd_movimento_caixa,                          
+     @cd_pedido_venda = 0,                          
+     @cd_usuario = @cd_usuario,                          
+     @dt_nota_saida = null,                          
+     @cd_operacao_fiscal = 0,                          
+     @dt_saida_nota_saida = NULL,                          
+     @ic_tipo_nota = 0,
+     @cd_serie_nota = 0,
+     @cd_identificacao_nf = NULL                         
+  end
+  else
+  begin
+    EXEC dbo.pr_gera_nota_saida_oficial                          
+     @cd_movimento_caixa = @cd_movimento_caixa,                          
+     @cd_pedido_venda = 0,                          
+     @cd_usuario = @cd_usuario,                          
+     @dt_nota_saida = null,                          
+     @cd_operacao_fiscal = 0,                          
+     @dt_saida_nota_saida = NULL,                          
+     @ic_tipo_nota = 2,                          
+     @cd_serie_nota = 0,                          
+     @cd_identificacao_nf = NULL                         
+  end                     
                         
   -- Após gerar a nota, executa o código criado                        
   DECLARE @cd_nota_saida_nova int;                        
@@ -3037,7 +3550,7 @@ begin
   begin          
     update Movimento_Caixa_Divisao          
     set          
-      cd_tipo_pagamento = @cd_tipo_pagamento,          
+      cd_tipo_pagamento = @cd_tipo_pagamento_tab,          
       vl_pagamento = @vl_pagamento,          
       nm_obs_divisao = @nm_obs_divisao,          
       cd_usuario = @cd_usuario,          
@@ -3060,7 +3573,7 @@ begin
     (cd_movimento_caixa, cd_item_divisao, cd_tipo_pagamento,          
      vl_pagamento, nm_obs_divisao, cd_usuario, dt_usuario)          
     Values          
-    (@cd_movimento_caixa, @cd_item_divisao, @cd_tipo_pagamento,           
+    (@cd_movimento_caixa, @cd_item_divisao, @cd_tipo_pagamento_tab,           
      @vl_pagamento, @nm_obs_divisao, @cd_usuario, @dt_hoje)          
   end          
 end    
@@ -3089,7 +3602,7 @@ begin
 
       select 
         @cd_bandeira_cartao = cd_bandeira_cartao,
-        @pc_taxa_bandeira = case when @cd_tipo_pagamento = 4
+        @pc_taxa_bandeira = case when @cd_tipo_pagamento in (4,9)
                               then isnull(pc_taxa_bandeira,0)
                               else case when @cd_tipo_pagamento = 3
                                      then isnull(pc_taxa_antecipacao,0)

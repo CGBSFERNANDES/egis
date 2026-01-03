@@ -261,7 +261,7 @@ begin
   update
     documento_pagar
   set
-    vl_saldo_documento_pagar = @vl_saldo_documento
+    vl_saldo_documento_pagar = 0 --@vl_saldo_documento
   where
     cd_documento_pagar = @cd_documento_pagar
 

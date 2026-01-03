@@ -81,6 +81,11 @@ declare @cd_mensagem            int           = 0
 declare @cd_processo            int           = 0
 declare @lookup_formEspecial    nvarchar(max) = ''
 declare @ic_tipo_atributo       int           = 0
+declare @registroJson           nvarchar(max) = ''
+declare @CampoChave             SYSNAME = 'cd_documento_form';  -- ou parâmetro
+DECLARE @Db                     SYSNAME;
+DECLARE @Schema                 SYSNAME;
+DECLARE @Tabela                 SYSNAME;
 
 set @json              = ISNULL(@json,'')
 set @cd_parametro      = 0
@@ -863,9 +868,86 @@ end
   --
   -----------------------------------------------------------------------------------------------------------------------------------------
 
-  select 'Registro Incluído com Sucesso' as Msg, @nm_chave as 'chave'
+  --select 'Registro Incluído com Sucesso' as Msg, @nm_chave as 'chave'
 
   set @cd_documento_form = cast(@nm_chave as int)
+
+  --
+  -- Exemplo: egisadmin.dbo.Contabilizacao_Processo
+  SET @Db     = PARSENAME(@nm_tabela, 3);
+  SET @Schema = PARSENAME(@nm_tabela, 2);
+  SET @Tabela = PARSENAME(@nm_tabela, 1);
+   
+
+  IF @Tabela IS NULL
+      BEGIN
+        SET @Tabela = @nm_tabela;
+        SET @Schema = 'dbo';
+        SET @Db = DB_NAME();
+      END
+      ELSE
+      BEGIN
+        IF @Schema IS NULL SET @Schema = 'dbo';
+        IF @Db IS NULL     SET @Db = DB_NAME();
+      END
+
+
+ 
+SELECT TOP (1) @CampoChave = c.name
+FROM sys.key_constraints kc
+JOIN sys.index_columns ic
+  ON ic.object_id = kc.parent_object_id
+ AND ic.index_id  = kc.unique_index_id
+JOIN sys.columns c
+  ON c.object_id = ic.object_id
+ AND c.column_id = ic.column_id
+WHERE kc.[type] = 'PK'
+  AND kc.parent_object_id = OBJECT_ID(
+        QUOTENAME(@Db) + '.' + QUOTENAME(@Schema) + '.' + QUOTENAME(@Tabela)
+      )
+ORDER BY ic.key_ordinal;
+
+ IF @CampoChave IS NULL
+ BEGIN
+   SELECT
+     'Não foi possível localizar a chave primária (PK) da tabela para retornar o registro.' AS Msg,
+     'I'    AS modo,
+     @chave AS chave,
+     NULL   AS registro;
+   RETURN;
+ END
+ ----------------------------
+ 
+  set @registroJson           =''
+
+  -- monta SQL seguro
+
+SET @sql = N'
+SELECT @registroJson_OUT =
+(
+  SELECT TOP (1) t.*
+  FROM ' 
+    + QUOTENAME(@Db) + N'.'
+    + QUOTENAME(@Schema) + N'.'
+    + QUOTENAME(@Tabela) + N' t
+  WHERE t.' + QUOTENAME(@nm_atributo_chave) + N' = @chave
+  FOR JSON PATH, WITHOUT_ARRAY_WRAPPER
+);';
+
+  EXEC sp_executesql
+    @sql,
+    N'@chave INT, @registroJson_OUT NVARCHAR(MAX) OUTPUT',
+    @chave = @cd_documento_form,
+    @registroJson_OUT = @registroJson OUTPUT;
+  
+  -- Contrato padronizado (para o front não sofrer)
+
+  SELECT
+    'Registro Incluído com Sucesso : '+  @nm_chave AS Msg,
+    'I'                                AS [modo],                 -- 'I' ou 'A' (você já tem isso no fluxo)
+    @cd_documento_form                 AS [chave],
+    @registroJson                      AS [registro];
+
 
   --Gerar um email-----
   if @cd_tipo_email>0
@@ -1156,9 +1238,58 @@ end
    -----------------
    if @nm_chave<>'' or @nm_atributo_chave<>''
    begin
-      select 'Registro Alterado com Sucesso : ' + @nm_chave as Msg
+      --select 'Registro Alterado com Sucesso : ' + @nm_chave as Msg
 
-       set @cd_documento_form = cast(@nm_chave as int)
+      set @cd_documento_form = cast(@nm_chave as int)
+          
+      --select @cd_documento_form, @nm_chave, @nm_atributo_chave
+          
+      SET @Db     = PARSENAME(@nm_tabela, 3);
+      SET @Schema = PARSENAME(@nm_tabela, 2);
+      SET @Tabela = PARSENAME(@nm_tabela, 1);
+
+      --select @db, @Schema, @nm_tabela
+
+      IF @Tabela IS NULL
+      BEGIN
+        SET @Tabela = @nm_tabela;
+        SET @Schema = 'dbo';
+        SET @Db = DB_NAME();
+      END
+      ELSE
+      BEGIN
+        IF @Schema IS NULL SET @Schema = 'dbo';
+        IF @Db IS NULL     SET @Db = DB_NAME();
+      END
+            -- monta SQL seguro
+
+      SET @sql = N'
+      SELECT @registroJson_OUT =
+      (
+        SELECT TOP (1) t.*
+        FROM ' 
+          + QUOTENAME(@Db) + N'.'
+          + QUOTENAME(@Schema) + N'.'
+          + QUOTENAME(@Tabela) + N' t
+        WHERE t.' + QUOTENAME(@nm_atributo_chave) + N' = @chave
+        FOR JSON PATH, WITHOUT_ARRAY_WRAPPER
+      );';
+            
+      --select @sql
+
+      EXEC sp_executesql
+        @sql,
+        N'@chave INT, @registroJson_OUT NVARCHAR(MAX) OUTPUT',
+        @chave = @cd_documento_form,
+        @registroJson_OUT = @registroJson OUTPUT;
+      
+      -- Contrato padronizado (para o front não sofrer)
+      SELECT
+        'Registro Alterado com Sucesso : ' + @nm_chave AS Msg,
+        'A'                                AS [modo],                 -- 'I' ou 'A' (você já tem isso no fluxo)
+        @cd_documento_form                 AS [chave],
+        @registroJson                      AS [registro];
+
    end
    -------------------------------------------------------------------------------------------------------------------------------
    end try
@@ -1169,6 +1300,7 @@ end
   end catch 
 
 end
+  
   ------------------------------------------------------------CHAMADA DE PROCESSO----------------------------------------------------------------
 
   --Carlos Fernandes / Alexandre 24.08.204
@@ -1195,7 +1327,10 @@ end
 
 if @cd_parametro = 3
 begin
+  --select @cd_documento_form, @nm_chave, @nm_atributo_chave
 
+  if isnull(@nm_chave,'') <>'' and @cd_documento_form = 0
+     set @cd_documento_form = cast(@nm_chave as int)
 
   if isnull(@nm_atributo_chave,'') = ''
   begin
@@ -1209,7 +1344,7 @@ begin
 	return
   end
 
-  declare @cd_atributo_chave_pai nvarchar(300) = ''
+  declare @cd_atributo_chave_pai  nvarchar(300) = ''
   declare @cd_atributo_chave_item nvarchar(300) = ''
        SELECT 
 	       value, 
@@ -1234,9 +1369,16 @@ begin
   exec(@sql)	
 
 
-   select 'Registro Excluido com Sucesso : ' + cast(@cd_documento_form as varchar) as Msg
+   --select 'Registro Excluido com Sucesso : ' + cast(@cd_documento_form as varchar) as Msg
+
+   SELECT
+    'Registro Excluido com Sucesso : ' + cast(@cd_documento_form as varchar) AS [Msg],
+    'E' AS [modo],
+    @cd_documento_form AS [chave],
+    NULL AS [registro];
 
 end
+
 --select @json as 'json' into ccfale 
 --drop table #jon
 --select * from Requisicao_Compra_Item where cd_requisicao_compra = 3

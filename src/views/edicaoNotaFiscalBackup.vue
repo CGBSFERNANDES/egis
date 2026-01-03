@@ -25,19 +25,76 @@
           :label="itens.length"
           class="q-ml-sm bg-form"
         ></q-badge>
+       
+       <!-- Origem do XML (NFSE / CTE) -->
+        <div class="row items-center q-gutter-sm q-ml-md">
 
-	        <!-- Tipo do documento (Modelo 55/65 x NFS-e) -->
-	        <q-select
-	          v-model="tipoDoc"
-	          dense
-	          outlined
-	          emit-value
-	          map-options
-	          :options="tipoDocOptions"
-	          style="min-width: 220px"
-	          class="q-ml-md"
-	          label="Tipo"
-	        />
+          <q-select
+            v-model="tipoDoc"
+            dense
+            outlined
+            emit-value
+            map-options
+            :options="tipoDocOptions"
+            style="min-width: 190px"
+            label="Tipo de documento"
+          />
+
+          <q-select
+            v-model="origemDados"
+            dense
+            outlined
+            emit-value
+            map-options
+            :options="origemOptions"
+            style="min-width: 190px"
+            label="Origem dos dados"
+          />
+
+          <q-select
+            v-if="origemDados === 'XML_EXISTENTE'"
+            v-model="xmlSelecionadoId"
+            dense
+            outlined
+            emit-value
+            map-options
+            :options="listaXml"
+            option-value="id"
+            option-label="label"
+            style="min-width: 260px"
+            label="XML"
+            @input="carregarXmlSelecionado"
+          />
+
+          <q-btn
+            v-if="origemDados === 'XML_EXISTENTE'"
+            dense
+            rounded
+            color="deep-purple-7"
+            icon="save"
+            class="q-ml-xs"
+            :disable="!xmlConteudo"
+            :loading="loadingSalvarXml"
+            @click="salvarXmlEditado"
+          >
+            <q-tooltip>Salvar XML</q-tooltip>
+          </q-btn>
+
+          <q-btn
+            v-if="origemDados === 'MANUAL'"
+            dense
+            rounded
+            color="deep-purple-7"
+            icon="save_alt"
+            class="q-ml-xs"
+            :loading="loadingSalvarXml"
+            @click="salvarManual"
+          >
+            <q-tooltip>Salvar (digitação manual)</q-tooltip>
+          </q-btn>
+
+        </div>
+
 
         <q-space></q-space>
 
@@ -92,15 +149,51 @@
         </q-btn>
 
       </h2>
+      
     </div>
+   
 
     <q-card class="q-pa-md">
 
-	      <!-- =========================
-	           NF-e (Modelo 55/65)
-	           ========================= -->
-	      <div v-if="tipoDoc === 'NFE'">
-	      <q-card-section class="row no-wrap items-start q-gutter-md">
+<!-- Painel de XML / Digitação Manual (NFSE / CTE) -->
+      <q-card-section class="q-pt-none">
+        <div v-if="origemDados === 'XML_EXISTENTE'">
+          <q-input
+            v-model="xmlConteudo"
+            type="textarea"
+            autogrow
+            outlined
+            dense
+            label="Conteúdo XML"
+          />
+        </div>
+
+        <div v-else class="row q-col-gutter-sm">
+          <div class="col-12 col-md-3">
+            <q-input v-model="manual.numero" dense outlined label="Número" />
+          </div>
+          <div class="col-12 col-md-3">
+            <q-input v-model="manual.serie" dense outlined label="Série" />
+          </div>
+          <div class="col-12 col-md-3">
+            <q-input v-model="manual.dataEmissao" dense outlined label="Emissão (YYYY-MM-DD)" />
+          </div>
+          <div class="col-12 col-md-3">
+            <q-input v-model.number="manual.valor" type="number" dense outlined label="Valor" />
+          </div>
+
+          <div class="col-12 col-md-6">
+            <q-input v-model="manual.emitenteNome" dense outlined label="Prestador/Emitente" />
+          </div>
+          <div class="col-12 col-md-6">
+            <q-input v-model="manual.destinatarioNome" dense outlined label="Tomador/Destinatário" />
+          </div>
+        </div>
+
+        <q-separator spaced />
+      </q-card-section>
+
+      <q-card-section class="row no-wrap items-start q-gutter-md">
 
         <!-- Identidade visual (estilo modal) -->
         <div class="col-auto flex flex-center bg-deep-purple-1 q-pa-lg" style="border-radius: 80px;">
@@ -1031,155 +1124,7 @@
           </q-tab-panels>
 
         </div>
-	      </q-card-section>
-	      </div>
-
-	      <!-- =========================
-	           NFS-e (Serviço)
-	           ========================= -->
-	      <div v-else-if="tipoDoc === 'NFSE'">
-	        <q-card-section>
-	          <div class="text-subtitle1 text-weight-medium q-mb-sm">Edição NFS-e</div>
-	          <div class="text-caption text-grey-7 q-mb-md">
-	            Dados carregados via <b>pr_nfse_xml_obter</b> (cd_nfse_xml = {{ cdNfseXml || '-' }}).
-	          </div>
-
-              <!-- Buscar / selecionar NFS-e (nfse_xml) -->
-
-              <div class="row q-col-gutter-md items-end q-mb-md">
-                <div class="col-12 col-md-3">
-                  <q-input
-                    v-model="nfseBuscaNumero"
-                    label="Número da NFS-e"
-                    dense
-                    outlined
-                    @keyup.enter="filtrarListaNfsePorNumero"
-                  />
-                </div>
-
-                <div class="col-12 col-md-2">
-                  <q-btn
-                    :loading="nfseLoadingLista"
-                    color="primary"
-                    label="Carregar lista"
-                    class="full-width"
-                    @click="listarNfse"
-                  />
-                </div>
-
-                <div class="col-12 col-md-2">
-                  <q-btn
-                    :disable="!nfseBuscaNumero"
-                    outline
-                    color="primary"
-                    label="Filtrar"
-                    class="full-width"
-                    @click="filtrarListaNfsePorNumero"
-                  />
-                </div>
-
-                <div class="col-12 col-md-5">
-                  <q-select
-                    v-model="nfseSelecionadoId"
-                    :options="nfseListaOptions"
-                    option-value="value"
-                    option-label="label"
-                    emit-value
-                    map-options
-                    dense
-                    outlined
-                    label="Selecionar NFS-e"
-                    :loading="nfseLoadingLista"
-                    @input="carregarNfseSelecionada"
-                  />
-                </div>
-              </div>
-
-
-	          <div class="row q-col-gutter-sm">
-	            <div class="col-12 col-md-3">
-	              <q-input v-model="nfse.nr_nfse" dense outlined label="Número" />
-	            </div>
-	            <div class="col-12 col-md-3">
-	              <q-input v-model="nfse.dt_emissao" 
-                    :model-value="formatDateTime(nfse.dt_emissao)"
-                  dense outlined label="Emissão" />
-	            </div>
-	            <div class="col-12 col-md-3">
-	              <q-input v-model="nfse.cd_verificacao" dense outlined label="Cód. Verificação" />
-	            </div>
-	            <div class="col-12 col-md-3">
-	              <q-input v-model="nfse.ds_layout" dense outlined label="Layout" />
-	            </div>
-
-	            <div class="col-12 col-md-6">
-	              <q-input v-model="nfse.cnpj_prestador" dense outlined label="CNPJ Prestador" />
-	            </div>
-	            <div class="col-12 col-md-6">
-	              <q-input v-model="nfse.im_prestador" dense outlined label="IM Prestador" />
-	            </div>
-
-	            <div class="col-12 col-md-6">
-	              <q-input v-model="nfse.cnpj_tomador" dense outlined label="CNPJ Tomador" />
-	            </div>
-	            <div class="col-12 col-md-3">
-	              <q-input v-model="nfse.vl_servicos" dense outlined label="Vlr Serviços" />
-	            </div>
-	            <div class="col-12 col-md-3">
-	              <q-input v-model="nfse.vl_liquido" dense outlined label="Vlr Líquido" />
-	            </div>
-
-	            <div class="col-12 col-md-3">
-	              <q-input v-model="nfse.base_calculo" dense outlined label="Base Cálculo" />
-	            </div>
-	            <div class="col-12 col-md-3">
-	              <q-input v-model="nfse.aliq_iss" dense outlined label="Alíquota ISS" />
-	            </div>
-	            <div class="col-12 col-md-3">
-	              <q-input v-model="nfse.vl_iss" dense outlined label="Vlr ISS" />
-	            </div>
-	            <div class="col-12 col-md-3">
-	              <q-input v-model="nfse.municipio_prestacao" dense outlined label="Município Prestação" />
-	            </div>
-
-	            <div class="col-12 col-md-6">
-	              <q-input v-model="nfse.item_lista_servico" dense outlined label="Item Lista Serviço" />
-	            </div>
-	            <div class="col-12 col-md-6">
-	              <q-input v-model="nfse.cod_trib_municipio" dense outlined label="Cód. Trib. Município" />
-	            </div>
-
-	            <div class="col-12">
-	              <q-input v-model="nfse.ds_discriminacao" type="textarea" autogrow dense outlined
-	                       label="Discriminação" />
-	            </div>
-
-	            <div class="col-12">
-	              <q-input v-model="nfse.ds_xml" type="textarea" autogrow dense outlined
-	                       label="XML (ds_xml)" />
-	            </div>
-	          </div>
-
-	          <div class="row q-gutter-sm q-mt-md">
-	            <q-btn
-	              color="deep-purple-7"
-	              icon="download"
-	              label="Recarregar"
-	              :loading="loadingNfse"
-	              @click="carregarNfse"
-	            />
-	            <q-btn
-	              color="deep-purple-7"
-	              icon="save"
-	              outline
-	              label="Salvar (próximo passo)"
-	              disable
-	            >
-	              <q-tooltip>Nesta micro-tarefa estamos só exibindo/alternando. O salvar entra no próximo passo.</q-tooltip>
-	            </q-btn>
-	          </div>
-	        </q-card-section>
-	      </div>
+      </q-card-section>
     </q-card>
 
     <!-- Dialog: Entrada XML (igual conceito do entradaXML.vue: arquivo + colar) -->
@@ -1244,16 +1189,12 @@
       </q-card>
     </q-dialog>
 
+    
+
   </div>
 </template>
 
 <script>
-
-import api from "@/boot/axios";
-import { getInfoDoMenu, getPayloadTabela } from "@/services";
-import { mapColumnsFromDB, fetchMapaAtributo  } from '@/services/mapaAtributo';
-import UnicoFormEspecial from '@/views/unicoFormEspecial.vue' // ajuste o caminho se for outro
-
 export default {
   name: 'edicaoNotaFiscal',
   props: {
@@ -1267,40 +1208,6 @@ export default {
   data () {
     return {
       tab: 'nfe',
-
-	    // Alterna entre layout NF-e (55/65) e NFS-e
-	    tipoDoc: 'NFE',
-	    tipoDocOptions: [
-	      { label: 'NF-e (Modelo 55/65)', value: 'NFE' },
-	      { label: 'NFS-e (Serviço)', value: 'NFSE' }
-	    ],
-	    
-      nfseBuscaNumero: '',
-      nfseLoadingLista: false,
-      nfseListaRaw: [],
-      nfseListaOptions: [],
-      nfseSelecionadoId: null,
-loadingNfse: false,
-	    nfse: {
-	      cd_nfse_xml: null,
-	      ds_layout: '',
-	      nr_nfse: '',
-	      cd_verificacao: '',
-	      dt_emissao: '',
-	      cnpj_prestador: '',
-	      im_prestador: '',
-	      cnpj_tomador: '',
-	      vl_servicos: '',
-	      vl_iss: '',
-	      vl_liquido: '',
-	      aliq_iss: '',
-	      base_calculo: '',
-	      item_lista_servico: '',
-	      cod_trib_municipio: '',
-	      municipio_prestacao: '',
-	      ds_discriminacao: '',
-	      ds_xml: ''
-	    },
 
       abrirEntradaXml: false,
       xmlFile: null,
@@ -1494,27 +1401,71 @@ itemSelecionadoId: null,
   extIPI: ''        // Código EX da TIPI
 },
 
+
+// NFSE / CTE (sem XML de entrada)
+      tipoDoc: 'NFSE',               // 'NFSE' | 'CTE'
+      origemDados: 'XML_EXISTENTE',  // 'XML_EXISTENTE' | 'MANUAL'
+      tipoDocOptions: [
+        { label: 'NFe-55', value: 'NFE' },
+        { label: 'NFS-e (Serviço)', value: 'NFSE' },
+        { label: 'CT-e', value: 'CTE' },
+        { label: 'NFe-65 (Consumidor)', value: 'NFC' },
+
+      ],
+      origemOptions: [
+        { label: 'XML existente', value: 'XML_EXISTENTE' },
+        { label: 'Digitação manual', value: 'MANUAL' }
+      ],
+      
+      listaXml: [],
+      xmlSelecionadoId: null,
+      xmlConteudo: '',
+      loadingSalvarXml: false,
+      // Modelo manual (ajuste conforme necessidade)
+      manual: {
+        numero: '',
+        serie: '',
+        dataEmissao: '',
+        valor: 0,
+        emitenteNome: '',
+        destinatarioNome: ''
+      },
+
+      // contexto (id da nota/lançamento/etc)
+      // ajuste para o que seu projeto já usa:
+      idRegistro: null,
+      chave: null
+    }   
+
+    
+  },
+
+   watch: {
+    tipoDoc() {
+      // ao trocar tipo, recarrega lista se estiver em XML
+      if (this.origemDados === 'XML_EXISTENTE') this.carregarListaXml()
+      // e limpa seleções
+      this.xmlSelecionadoId = null
+      this.xmlConteudo = ''
+    },
+    origemDados() {
+      // se alternar para XML, carrega lista; se alternar para manual, limpa
+      if (this.origemDados === 'XML_EXISTENTE') {
+        this.carregarListaXml()
+      } else {
+        this.xmlSelecionadoId = null
+        this.xmlConteudo = ''
+      }
     }
   },
+
   computed: {
-	  cdNfseXml () {
-	    const n = Number(this.cd_parametro_procedimento || 0)
-	    return Number.isFinite(n) && n > 0 ? n : null
-	  },
       itemSelecionado () {
     return (this.itens || []).find(i => i.__id === this.itemSelecionadoId) || null
   },
     titleComputed () {
       return localStorage.nm_menu_titulo|| 'Nota Fiscal'
     },
-
-    formatCurrency (value) {
-  if (value == null) return 'R$ 0,00'
-  return Number(value).toLocaleString('pt-BR', {
-    style: 'currency',
-    currency: 'BRL'
-  })
-},
 
     valorNfFormatado () {
       const v = this.toNumber(this.totais.vNF || this.nfe.vNF)
@@ -1523,11 +1474,14 @@ itemSelecionadoId: null,
     }
   },
 
-	watch: {
-	  tipoDoc (val) {
-	    if (val === 'NFSE') this.carregarNfse()
-	  }
-	},
+   mounted() {
+    // pegue id/chave conforme sua rota
+    this.idRegistro = this.$route.params.id || null
+    this.chave = this.$route.query.chave || null
+
+    if (this.origemDados === 'XML_EXISTENTE') this.carregarListaXml()
+  },
+
 
   methods: {
 
@@ -1535,146 +1489,6 @@ itemSelecionadoId: null,
       if (this.$router) this.$router.back()
     },
 
-	    // Igual ao entradaXML.vue
-	    resolveRows (data) {
-	      if (Array.isArray(data)) return data
-	      if (data && data.recordset) return data.recordset
-	      if (data && data.rows) return data.rows
-	      if (data && data.data) return data.data
-	      return []
-	    },
-
-	    
-    buildNfseLabel (row) {
-      const num = row.nr_nfse || row.nu_nfse || row.numero || row.nr_nota || row.nr || ''
-      const dt = row.dt_emissao || row.dh_emissao || row.dt || ''
-      const prest = row.nm_prestador || row.nm_emitente || row.prestador || ''
-      const cnpj = row.cnpj_prestador || row.cnpj || ''
-      const parts = [num && `Nº ${num}`, dt && ` ${this.formatDateTime(dt)}`, prest && `${prest}`, cnpj && `${cnpj}`].filter(Boolean)
-      return parts.join(' - ') || `ID ${row.cd_nfse_xml || row.id || ''}`
-    },
-
-    async listarNfse () {
-      this.nfseLoadingLista = true
-      try {
-
-        const cfg = this.headerBanco ? { headers: { 'x-banco': this.headerBanco } } : undefined
-
-        // Mesmo padrão do EntradaXML.vue (NFSE): array com ic_json_parametro = 'S'
-        // Aqui não temos filtro de período na edição, então puxamos um período amplo.
-        const hoje = new Date()
-        const dtIni = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate() - 60)
-        const yyyymmdd = (d) => {
-          const yyyy = d.getFullYear()
-          const mm = String(d.getMonth() + 1).padStart(2, '0')
-          const dd = String(d.getDate()).padStart(2, '0')
-          return `${yyyy}${mm}${dd}`
-        }
-
-        const body = [{
-          ic_json_parametro: 'S',
-          cd_empresa: this.cd_empresa || null,
-          dt_inicial: yyyymmdd(dtIni),
-          dt_final: yyyymmdd(hoje)
-        }]
-
-        const resp = await api.post('/exec/pr_nfse_xml_listar', body, cfg)
-        const rows = this.resolveRows(resp && resp.data)
-        this.nfseListaRaw = Array.isArray(rows) ? rows : []
-        this.nfseListaOptions = this.nfseListaRaw.map(r => ({
-          value: r.cd_nfse_xml || r.id,
-          label: this.buildNfseLabel(r),
-          nr_nfse: r.nr_nfse,
-          row: r
-        }))
-      } catch (e) {
-        const r = e && e.response
-        const msg = (r && r.data && (r.data.Msg || r.data.message || r.data.error)) || e.message || 'Erro ao listar NFS-e.'
-        this.$q?.notify?.({ type: 'negative', position: 'center', message: msg })
-      } finally {
-        this.nfseLoadingLista = false
-      }
-    },
-
-    filtrarListaNfsePorNumero () {
-     
-      const alvo = String(this.nfseBuscaNumero || '').trim()
-      if (!alvo) {
-        this.nfseListaOptions = (this.nfseListaRaw || []).map(r => ({
-          value: r.cd_nfse_xml || r.id,
-          label: this.buildNfseLabel(r),
-          row: r
-        }))
-        return
-      }
-
-      const filtradas = (this.nfseListaRaw || []).filter(r => {
-        const num = String(r.nr_nfse || r.nu_nfse || r.numero || r.nr_nota || r.nr || '').trim()
-        return num === alvo
-      })
-
-      this.nfseListaOptions = filtradas.map(r => ({
-        value: r.cd_nfse_xml || r.id,
-        label: this.buildNfseLabel(r),
-        row: r
-      }))
-
-      if (this.nfseListaOptions.length === 1) {
-        this.nfseSelecionadoId = this.nfseListaOptions[0].value
-        this.carregarNfseSelecionada()
-      } else if (this.nfseListaOptions.length === 0) {
-        this.$q?.notify?.({ type: 'warning', position: 'center', message: 'Nenhuma NFS-e encontrada com esse número (na lista carregada).' })
-      }
-    },
-
-    async carregarNfseSelecionada () {
-      // carrega os dados da nfse_xml selecionada (via pr_nfse_xml_obter)
-      await this.carregarNfse()
-    },
-
-async carregarNfse (cd_nfse_xml) {
-
-
-      this.loadingNfse = true
-
-
-        //  if (!this.cdNfseXml) {
-	    //    this.notify('cd_nfse_xml não informado (use cd_parametro_procedimento).', 'warning')
-	        //return
-	    //  }
-
-	    //  this.loadingNfse = true
-
-	      try {
-	        const cfg = this.headerBanco
-	          ? { headers: { 'x-banco': this.headerBanco } }
-	          : undefined
-
-	        const body = [{
-	          ic_json_parametro: 'S',
-	          cd_nfse_xml, //: this.cdNfseXml
-	        }]
-
-	        const resp = await api.post('/exec/pr_nfse_xml_obter', body, cfg)
-	        const rows = this.resolveRows(resp && resp.data)
-	        const dados = Array.isArray(rows) ? rows[0] : null
-
-            console.log('dados ->', body, cfg, dados)
-
-	        if (!dados) {
-	          this.notify('NFS-e não encontrada.', 'warning')
-	          return
-	        }
-
-	        // mantém binding
-	        this.nfse = Object.assign({}, this.nfse, dados)
-
-	      } catch (e) {
-	        this.notify('Erro ao obter NFS-e: ' + this.errMsg(e), 'negative')
-	      } finally {
-	        this.loadingNfse = false
-	      }
-	    },
 
      toNumber (v) {
        if (v === null || v === undefined || v === '') return null
@@ -1682,18 +1496,6 @@ async carregarNfse (cd_nfse_xml) {
           const n = Number(s)
           return Number.isFinite(n) ? n : null
     },
-
-    formatDateTime (value) {
-  if (!value) return ''
-  const d = new Date(value)
-  return d.toLocaleString('pt-BR', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit'
-  })
-},
 
 
     limparTudo () {
@@ -2363,7 +2165,6 @@ parseCOFINS (cofinsNode, ns) {
 },
 
     // 2) Envia XML pro backend -> grava em Nota_XML -> chama pr_gera_nfe_entrada_xml
-    
     async processarXmlNoBanco () {
   const xml = (this.xmlText || '').trim()
   if (!xml) {
@@ -2401,7 +2202,7 @@ parseCOFINS (cofinsNode, ns) {
     }
 
     // ✅ exatamente como o modal:
-    const resp = await api.post(`/exec/${this.nm_procedimento}`, body, cfg)
+    const resp = await this.$axios.post(`/exec/${this.nm_procedimento}`, body, cfg)
     const data = resp ? resp.data : null
 
     this.notify('Procedure executada com sucesso.', 'positive')
@@ -2429,7 +2230,7 @@ parseCOFINS (cofinsNode, ns) {
           infAdic: this.infAdic,
           itens: this.itens
         }
-        await api.post('/api/nfe/edicao/salvar', payload)
+        await this.$axios.post('/api/nfe/edicao/salvar', payload)
         this.notify('Edição salva.', 'positive')
       } catch (e) {
         this.notify('Erro ao salvar: ' + this.errMsg(e), 'negative')
@@ -2443,9 +2244,122 @@ parseCOFINS (cofinsNode, ns) {
     },
 
     notify (message, type) {
-      if (this.$q && this.$q.notify) this.$q.notify({ type: type || 'info',  position: 'center', message })
+      if (this.$q && this.$q.notify) this.$q.notify({ type: type || 'info', message })
       else console.log(type, message)
+    },
+
+    async carregarListaXml() {
+      // endpoint sugerido (ajuste pro seu backend)
+      const url = this.tipoDoc === 'NFSE'
+        ? '/api/nfse/xml/listar'
+        : '/api/cte/xml/listar'
+
+      const resp = await this.$http.get(url, {
+        params: { idRegistro: this.idRegistro, chave: this.chave }
+      })
+
+      // formato: [{ id, label }]
+      this.listaXml = resp.data || []
+    },
+
+
+    async carregarXmlSelecionado() {
+      if (!this.xmlSelecionadoId) return
+
+      const url = this.tipoDoc === 'NFSE'
+        ? '/api/nfse/xml/obter'
+        : '/api/cte/xml/obter'
+
+      const resp = await this.$http.get(url, {
+        params: { id: this.xmlSelecionadoId }
+      })
+
+      this.xmlConteudo = resp.data?.xml || ''
+    },
+
+    async salvarXmlEditado() {
+      if (!this.xmlConteudo) {
+        this.$toast?.error?.('XML vazio.')
+        return
+      }
+
+      const url = this.tipoDoc === 'NFSE'
+        ? '/api/nfse/xml/salvar'
+        : '/api/cte/xml/salvar'
+
+      await this.$http.post(url, {
+        id: this.xmlSelecionadoId,    // se null, cria novo
+        idRegistro: this.idRegistro,
+        chave: this.chave,
+        xml: this.xmlConteudo
+      })
+
+      this.$toast?.success?.('XML salvo!')
+      await this.carregarListaXml()
+    },
+
+ montarXmlMinimoNFSE() {
+      // XML mínimo “placeholder” só pra persistir.
+      // Ideal: montar o XML do seu padrão municipal, mas isso já resolve o fluxo.
+      return `
+<NFSE>
+  <Identificacao>
+    <Numero>${this.manual.numero}</Numero>
+    <Serie>${this.manual.serie}</Serie>
+    <DataEmissao>${this.manual.dataEmissao}</DataEmissao>
+  </Identificacao>
+  <Partes>
+    <Emitente>${this.manual.emitenteNome}</Emitente>
+    <Destinatario>${this.manual.destinatarioNome}</Destinatario>
+  </Partes>
+  <Valores>
+    <ValorServicos>${Number(this.manual.valor || 0).toFixed(2)}</ValorServicos>
+  </Valores>
+</NFSE>`.trim()
+    },
+
+     montarXmlMinimoCTE() {
+      return `
+<CTE>
+  <Ide>
+    <nCT>${this.manual.numero}</nCT>
+    <serie>${this.manual.serie}</serie>
+    <dhEmi>${this.manual.dataEmissao}</dhEmi>
+  </Ide>
+  <Partes>
+    <Emitente>${this.manual.emitenteNome}</Emitente>
+    <Destinatario>${this.manual.destinatarioNome}</Destinatario>
+  </Partes>
+  <VPrest>
+    <vTPrest>${Number(this.manual.valor || 0).toFixed(2)}</vTPrest>
+  </VPrest>
+</CTE>`.trim()
+    },
+
+ async salvarManual() {
+      // converte manual → xml e salva na tabela correta
+      const xml = this.tipoDoc === 'NFSE'
+        ? this.montarXmlMinimoNFSE()
+        : this.montarXmlMinimoCTE()
+
+      const url = this.tipoDoc === 'NFSE'
+        ? '/api/nfse/xml/salvar'
+        : '/api/cte/xml/salvar'
+
+      await this.$http.post(url, {
+        id: null,                 // manual geralmente cria registro novo
+        idRegistro: this.idRegistro,
+        chave: this.chave,
+        xml,
+        origem: 'MANUAL'
+      })
+
+      this.$toast?.success?.('Salvo com digitação manual!')
+      // opcional: mudar para XML_EXISTENTE e carregar o novo
+      this.origemDados = 'XML_EXISTENTE'
+      await this.carregarListaXml()
     }
+    
   }
 }
 </script>

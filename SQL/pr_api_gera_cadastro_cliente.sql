@@ -81,34 +81,35 @@ as
           '"]',']') 
 
 
-declare @cd_empresa           int
-declare @cd_parametro         int
-declare @cd_documento         int = 0
-declare @cd_item_documento    int
-declare @cd_usuario           int 
-declare @dt_hoje              datetime
-declare @dt_inicial           datetime 
-declare @dt_final             datetime
-declare @cd_ano               int = 0
-declare @cd_mes               int = 0
-declare @cd_modelo            int = 0
-declare @cd_cliente           int = 0  
-declare @cd_tipo_pessoa       int = 0
-declare @cd_destinatario      int = 0
-declare @name                 varchar(60)   = ''
-declare @email                varchar(150)  = ''
-declare @phone                varchar(15)   = ''
-declare @cnpj                 varchar(18)   = ''
-declare @endereco             nvarchar(max) = ''
-declare @cd_cep               varchar(8)    = ''
-declare @nm_endereco          varchar(60)   = ''
-declare @cd_numero            varchar(10)   = ''
-declare @nm_cidade            varchar(60)   = ''
-declare @sg_estado            varchar(2)    = ''
-declare @nm_bairro            varchar(20)   = ''
-declare @cd_cidade            int           = 0
-declare @cd_estado            int           = 0
-declare @cd_vendedor          int           = 0
+declare @cd_empresa            int
+declare @cd_parametro          int
+declare @cd_documento          int = 0
+declare @cd_item_documento     int
+declare @cd_usuario            int 
+declare @dt_hoje               datetime
+declare @dt_inicial            datetime 
+declare @dt_final              datetime
+declare @cd_ano                int = 0
+declare @cd_mes                int = 0
+declare @cd_modelo             int = 0
+declare @cd_cliente            int = 0  
+declare @cd_tipo_pessoa        int = 0
+declare @cd_destinatario       int = 0
+declare @name                  varchar(255)  = ''
+declare @email                 varchar(150)  = ''
+declare @phone                 varchar(15)   = ''
+declare @cnpj                  varchar(18)   = ''
+declare @endereco              nvarchar(max) = ''
+declare @cd_cep                varchar(8)    = ''
+declare @nm_endereco           varchar(60)   = ''
+declare @cd_numero             varchar(10)   = ''
+declare @nm_cidade             varchar(60)   = ''
+declare @sg_estado             varchar(2)    = ''
+declare @nm_bairro             varchar(20)   = ''
+declare @cd_cidade             int           = 0
+declare @cd_estado             int           = 0
+declare @cd_vendedor           int           = 0
+declare @cd_inscricao_estadual varchar(18)   = ''
 
 
 --cliente
@@ -158,8 +159,7 @@ FROM #json j
 CROSS APPLY OPENJSON(j.valor) v
 WHERE j.campo = 'address';
 
- 
---select * from #json
+
 --select * from #Endereco
 --return
 
@@ -176,7 +176,7 @@ select @email                  = valor from #json where campo = 'email'
 select @phone                  = valor from #json where campo = 'phone'
 select @cnpj                   = valor from #json where campo = 'cnpj'
 select @cd_vendedor            = valor from #json where campo = 'cd_vendedor'
-
+select @cd_inscricao_estadual  = valor from #json where campo = 'ie'
 
 --------------------------------------------------------------------------------------
 --Endereco
@@ -203,6 +203,21 @@ if @cd_empresa = 0
 set @cd_destinatario = isnull(@cd_destinatario,0)
 set @cd_usuario      = isnull(@cd_usuario,0)
 
+if exists(select top 1 cd_cliente from Cliente where cd_cnpj_cliente = @cnpj)
+begin
+  if @cd_parametro = 9 
+  begin
+  
+    select @cd_cliente = cd_cliente from Cliente where cd_cnpj_cliente = @cnpj
+  
+    select 
+      'error'                 as 'status',
+      'Cliente Já Cadastrado' as 'message',
+      @cd_cliente             as 'clientId'
+    return
+  end
+end
+
 select top 0 * into #Destinatario from NFE_Destinatario
 insert into #Destinatario ( cd_destinatario, cd_tipo_destinatario ) values ( 1,1 ) 
 -----------------------------------------------------------------
@@ -227,7 +242,7 @@ update
 set
   cd_destinatario          = 1,
   cd_tipo_destinatario     = 1,
-  nm_destinatario          = @name,
+  nm_destinatario          = cast(@name as varchar(60)),
   nm_fantasia_destinatario = cast(@name as varchar(60)),
   cd_cnpj                  = @cnpj,
   cd_telefone              = replace(ltrim(rtrim(replace(@phone,'-',''))),'+',''),
@@ -240,7 +255,8 @@ set
   nm_bairro                = @nm_bairro,
   cd_cidade                = @cd_cidade,
   cd_estado                = @cd_estado,
-  cd_pais                  = 1
+  cd_pais                  = 1,
+  cd_inscricao_estadual    = @cd_inscricao_estadual
   
 from
   #Destinatario d
@@ -307,7 +323,7 @@ select
   case when (isnull(e.cd_inscricao_estadual,'') = '') or (e.cd_inscricao_estadual = 'ISENTO') 
     then 'ISENTO' 
     else e.cd_inscricao_estadual  
-  end                               as cd_inscestadual,
+  end                                   as cd_inscestadual,
   e.cd_cep                       		as cd_cep,
   e.nm_endereco                  		as nm_endereco_cliente,
   e.cd_numero                    		as cd_numero_endereco,
@@ -737,7 +753,7 @@ set @cd_parametro         = ISNULL(@cd_parametro,0)
 IF ISNULL(@cd_parametro,0) = 0
 BEGIN
   select 
-    'Sucesso' as Msg,
+    'Sucesso'     as Msg,
      @cd_modelo   AS cd_modelo,
      @cd_empresa  AS cd_empresa,
      @dt_inicial  AS dt_inicial,

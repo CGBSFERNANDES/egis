@@ -526,6 +526,7 @@ const dataGridRef = "dataGrid";
 export default {
   data() {
     return {
+      cdMenu: localStorage.cd_menu,
       tituloMenu: "",
       menu: "",
       dt_inicial: "",

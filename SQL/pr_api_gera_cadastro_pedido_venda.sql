@@ -110,7 +110,7 @@ declare @cd_cidade            int           = 0
 declare @cd_estado            int           = 0
 declare @cd_vendedor          int           = 0
 declare @cd_pedido_venda      int           = 0
-declare @orderId              int           = 0
+declare @orderId              varchar(40)   = ''
 declare @clienteId            int           = 0
 declare @cd_produto           int           = 0
 declare @vl_unitario          decimal(25,2) = 0.00
@@ -175,7 +175,6 @@ WHERE j.campo = 'items';
 
  
 --select * from #json
---select * from #ItemProduto
 
 --------------------------------------------------------------------------------------------
 
@@ -210,6 +209,136 @@ if @cd_cliente = 0 and @clienteId>0
 if @cd_empresa = 0
    set @cd_empresa = dbo.fn_empresa()
 
+--Verificação Cliente Já Cadastro--
+if exists(select top 1 cd_pedido_venda from Pedido_Venda where nm_referencia_consulta = @orderId)
+begin
+   if @cd_parametro = 9
+   begin
+     
+     select top 1 @cd_pedido_venda = cd_pedido_venda from Pedido_Venda where nm_referencia_consulta = @orderId
+
+     select 
+       'error'                as 'status',
+       'Pedido Já Cadastrado' as 'message',
+       @cd_pedido_venda       as 'orderId'
+   
+     return
+   end
+end
+
+
+--Verifica se Todos os Produtos Existem Cadastro---
+if exists(select top 1 id_registro 
+            from 
+              #ItemProduto i
+            where
+              i.productId not in (select cd_mascara_produto from Produto))
+begin
+   if @cd_parametro = 9
+   begin
+     
+      select
+        *
+      into
+        #ValidacaoProduto
+      from 
+        #ItemProduto i
+      where
+        i.productId not in (select cd_mascara_produto from Produto)
+      
+      declare @Id int                  = 0
+      declare @Produtos varchar(8000)  = ''
+      declare @NProdutos varchar(8000) = ''
+
+      while exists (select top 1 id_registro from #ValidacaoProduto)
+      begin
+        
+        select 
+          top 1
+          @Id       = id_registro,
+          @Produtos = productId
+        from
+          #ValidacaoProduto
+
+        set @NProdutos = case when @NProdutos <> '' then @NProdutos + ', ' + @Produtos else @Produtos end
+
+        delete from #ValidacaoProduto where id_registro = @Id
+      end
+        drop table #ValidacaoProduto
+
+     select 
+       'error'                                                as 'status',
+       'Os Seguintes Produtos não encontrados: ' + @NProdutos as 'message',
+       0                                                      as 'orderId'
+   
+     return
+   end
+end
+
+--Verifica se Todos os Produtos Existem Saldo em Estoque--
+if exists(select top 1 i.id_registro 
+            from 
+              #ItemProduto i
+              inner join Produto p        on p.cd_mascara_produto = i.productId
+              inner join Produto_Saldo ps on ps.cd_produto        = p.cd_produto and
+                                             ps.cd_fase_produto   = p.cd_fase_produto_baixa
+             where
+               i.quantity > ps.qt_saldo_reserva_produto)
+begin
+   if @cd_parametro = 9
+   begin
+     
+      select
+        i.cd_controle,
+        i.id_registro,
+        i.productId,
+        i.quantity,
+        ps.qt_saldo_reserva_produto as Saldo
+      into
+        #ValidacaoEstoque
+      from 
+        #ItemProduto i
+        inner join Produto p        on p.cd_mascara_produto = i.productId
+        inner join Produto_Saldo ps on ps.cd_produto        = p.cd_produto and
+                                       ps.cd_fase_produto   = p.cd_fase_produto_baixa
+      where
+        i.quantity > ps.qt_saldo_reserva_produto
+      
+      declare @Id_e        int           = 0
+      declare @Produtos_e  varchar(8000) = ''
+      declare @Qtde_e      varchar(8000) = ''
+      declare @NProdutos_e varchar(8000) = ''
+
+      while exists (select top 1 id_registro from #ValidacaoEstoque)
+      begin
+        
+        select 
+          top 1
+          @Id_e       = cd_controle,
+          @Produtos_e = productId,
+          @Qtde_e     = Saldo
+        from
+          #ValidacaoEstoque
+
+        set @NProdutos_e = case when @NProdutos_e <> '' then @NProdutos_e + ', ' + @Produtos_e + ' - Saldo:' + @Qtde_e else @Produtos_e + ' - Saldo:' + @Qtde_e end
+
+        delete from #ValidacaoEstoque where cd_controle = @Id_e
+
+      end
+        drop table #ValidacaoEstoque
+
+     select 
+       'error'                                                            as 'status',
+       'Produtos com Saldo Insuficiente: ' + @NProdutos_e as 'message',
+       0                                                                  as 'orderId'
+   
+     return
+   end
+end
+
+
+
+
 
 --select @cd_cliente, @clienteId
 --return
@@ -223,15 +352,15 @@ if @cd_empresa = 0
 -----------------------------------------------------------------
 
 
-  declare @ic_atraso   char(1)
-  declare @cd_clientei int
-  declare @vl_saldo    float
-  declare @vl_pedido   float
+declare @ic_atraso   char(1)
+declare @cd_clientei int
+declare @vl_saldo    float
+declare @vl_pedido   float
 
-  set @cd_empresa = dbo.fn_empresa()
-  set @ic_atraso = 'N'
-  set @vl_saldo  = 0.00
-  set @vl_pedido = 0.00
+set @cd_empresa = dbo.fn_empresa()
+set @ic_atraso = 'N'
+set @vl_saldo  = 0.00
+set @vl_pedido = 0.00
 
 
 declare @cd_pedido_venda_ref      int
@@ -757,7 +886,7 @@ begin
 	  @nm_produto         = p.nm_produto,
 	  @cd_unidade_medida  = p.cd_unidade_medida,
 	  @cd_mascara_produto = p.cd_mascara_produto,
-      @vl_unitario_digitado = isnull(i.price,0)
+      @vl_unitario_digitado = isnull(i.vl_produto,0)
 
     from
       #Itens i
