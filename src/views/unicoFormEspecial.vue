@@ -2769,106 +2769,99 @@ export default {
 
 dashboardAtributos() {
   const cols = Array.isArray(this.columns) ? this.columns : [];
-  return cols.filter(c => {
-    const f1 = String(c && c.ic_dashboard_atributo || "N").toUpperCase();
-    const f2 = String(c && c.ic_ic_dashboard_atributo || "N").toUpperCase(); // caso venha com esse nome
-    return (f1 === "S" || f2 === "S");
+  return cols.filter((c) => {
+    const flag = String(
+      (c && c.ic_dashboard_atributo) || (c && c.ic_ic_dashboard_atributo) || "N"
+    ).toUpperCase();
+    return flag === "S";
   });
 },
 
 dashboardCards() {
-  const rows = Array.isArray(this.rows) ? this.rows : [];   // <-- FIX 1
+  const rows = Array.isArray(this.rowsParaDashboard) ? this.rowsParaDashboard : [];
   const attrs = this.dashboardAtributos || [];
   if (!rows.length || !attrs.length) return [];
 
-  const row0 = rows[0] || {};
+  const sampleRow = rows.find((r) => r && typeof r === "object") || {};
 
-  return attrs.map((a) => {
-    // escolhe a chave certa conforme o que existe no row (caption / nm_atributo_consulta / nm_atributo / dataField)
-    const candidatos = [
-      (a && a.caption),
-      (a && a.nm_atributo_consulta),
-      (a && a.nm_edit_label),
-      (a && a.nm_atributo),
-      (a && a.dataField),
-    ].filter(Boolean).map(s => String(s).trim());
+  return attrs
+    .map((a) => {
+      const candidatos = [
+        a?.nm_dashboard_campo,
+        a?.nm_atributo_consulta,
+        a?.nm_edit_label,
+        a?.nm_atributo,
+        a?.dataField,
+        a?.caption,
+      ]
+        .filter(Boolean)
+        .map((s) => String(s).trim());
 
-    const key =
-      candidatos.find(k => Object.prototype.hasOwnProperty.call(row0, k)) ||
-      candidatos[0];
+      const key =
+        candidatos.find((k) => Object.prototype.hasOwnProperty.call(sampleRow, k)) ||
+        candidatos.find((k) =>
+          rows.some((r) => r && Object.prototype.hasOwnProperty.call(r, k))
+        ) ||
+        candidatos[0];
 
-    const titulo = (a && (a.nm_edit_label || a.caption || a.nm_atributo_consulta)) ? String(a.nm_edit_label || a.caption || a.nm_atributo_consulta).trim() : key;
+      if (!key) return null;
 
-    const agg = (a && a.nm_dashboard_agregacao) ? String(a.nm_dashboard_agregacao).toUpperCase() : "SUM";
+      const titulo = String(
+        a?.nm_dashboard_titulo ||
+          a?.nm_edit_label ||
+          a?.caption ||
+          a?.nm_atributo_consulta ||
+          a?.nm_atributo ||
+          key ||
+          "Indicador"
+      ).trim();
 
-    let valor = null;
+      const aggRaw = String(a?.nm_dashboard_agregacao || "").toUpperCase();
+      const agg = ["COUNT", "DISTINCT_COUNT", "AVG", "MAX", "MIN", "SUM"].includes(aggRaw)
+        ? aggRaw
+        : "SUM";
 
-    if (agg === "COUNT") {
-      valor = rows.length;
-    } else if (agg === "DISTINCT_COUNT") {
-      const set = new Set(rows.map(r => r && r[key]).filter(v => v !== null && v !== undefined));
-      valor = set.size;
-    } else {
-      const nums = rows
-        .map(r => Number(r && r[key]))
-        .filter(v => !Number.isNaN(v));
+      const valores = rows.map((r) => (r ? r[key] : undefined));
+      const nums = valores.map((v) => Number(v)).filter((v) => !Number.isNaN(v));
 
-      if (agg === "AVG") valor = nums.length ? (nums.reduce((s,v)=>s+v,0) / nums.length) : 0;
-      else if (agg === "MAX") valor = nums.length ? Math.max(...nums) : 0;
-      else if (agg === "MIN") valor = nums.length ? Math.min(...nums) : 0;
-      else /* SUM */ valor = nums.reduce((s,v)=>s+v,0);
-    }
+      const temNumeros = nums.length > 0;
+      const soma = temNumeros ? nums.reduce((s, v) => s + v, 0) : 0;
 
-    return {
-      field: key,
-      titulo,
-      valor,
-      subtitulo: a.nm_dashboard_subtitulo || "",
-      formato: a.nm_dashboard_formato || a.nm_formato || a.format || "",   // <-- FIX 2 (pega formato real)
-    };
-  });
-},
+      let valor = 0;
 
-  dashboardCols () {
-    const cols = Array.isArray(this.columns) ? this.columns : [];
-    return cols.filter(c => {
-      const flag = String(c.ic_ic_dashboard_atributo || c.ic_dashboard_atributo || "N").toUpperCase();
-      return flag === "S";
-    });
-  },
-
-  
-  dashboardCards () {
-    const rows = Array.isArray(this.rows) ? this.rows : [];
-    const cols = Array.isArray(this.columns) ? this.columns : [];
-    if (!rows.length || !cols.length) return [];
-
-    const dashCols = cols.filter(c => String(c.ic_ic_dashboard_atributo || "N").toUpperCase() === "S");
-
-    return dashCols.map(c => {
-      const titulo = c.caption || c.nm_atributo_consulta || c.dataField || "—";
-
-      // seus rows vêm com chave = caption ("Total R$", "(%) ", etc)
-      const key = c.nm_atributo_consulta || titulo;
-
-      const nums = rows
-        .map(r => Number(r && r[key]))
-        .filter(v => !Number.isNaN(v));
-
-      const isPercent = String(titulo).includes("%") || String(c.format || "").includes("%");
-
-      const valor = isPercent
-        ? (nums.length ? (nums.reduce((s,v)=>s+v,0) / nums.length) : 0)
-        : nums.reduce((s,v)=>s+v,0);
+      if (agg === "COUNT") {
+        valor = rows.length;
+      } else if (agg === "DISTINCT_COUNT") {
+        const set = new Set(valores.filter((v) => v !== null && v !== undefined));
+        valor = set.size;
+      } else if (agg === "AVG") {
+        valor = temNumeros ? soma / nums.length : 0;
+      } else if (agg === "MAX") {
+        valor = temNumeros ? Math.max(...nums) : 0;
+      } else if (agg === "MIN") {
+        valor = temNumeros ? Math.min(...nums) : 0;
+      } else {
+        valor = temNumeros ? soma : rows.length;
+      }
 
       return {
+        field: key,
         titulo,
         valor,
-        formato: c.format,
-        subtitulo: isPercent ? "média no período" : "total no período"
+        subtitulo:
+          a?.nm_dashboard_subtitulo ||
+          (agg === "COUNT"
+            ? "total de registros"
+            : agg === "DISTINCT_COUNT"
+            ? "valores únicos"
+            : agg === "AVG"
+            ? "média"
+            : "total"),
+        formato: a?.nm_dashboard_formato || a?.nm_formato || a?.format || "",
       };
-    });
-  },
+    })
+    .filter(Boolean);
+},
 
 
 
@@ -12994,6 +12987,7 @@ if (this.ic_modal_pesquisa === 'S') {
   grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
   gap: 18px;
   margin-left: 15px;
+  padding-right: 15px;
   align-items: stretch;
 }
 
@@ -13002,12 +12996,35 @@ if (this.ic_modal_pesquisa === 'S') {
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
+  position: relative;
   border-radius: 18px;
-  background: #fff;
-  border: 1px solid rgba(0,0,0,.08);
-  box-shadow: 0 8px 18px rgba(0,0,0,.06);
+  background: linear-gradient(145deg, rgba(91,42,165,0.12), rgba(239,239,255,0.65));
+  border: 1px solid rgba(91,42,165,0.16);
+  box-shadow: 0 16px 38px rgba(44,19,90,.12);
   overflow: hidden;
   min-height: 260px;
+  transition: transform .22s ease, box-shadow .22s ease, border-color .22s ease;
+}
+
+.cards-wrapper >>> .card-unico::after{
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(circle at 20% 20%, rgba(255,255,255,.45), transparent 35%),
+              radial-gradient(circle at 80% 0%, rgba(255,255,255,.28), transparent 40%);
+  opacity: .9;
+  transition: opacity .22s ease;
+}
+
+.cards-wrapper >>> .card-unico:hover{
+  transform: translateY(-6px);
+  box-shadow: 0 22px 46px rgba(44,19,90,.16);
+  border-color: rgba(91,42,165,0.35);
+}
+
+.cards-wrapper >>> .card-unico:hover::after{
+  opacity: 1;
 }
 
 /* topo central */
@@ -13030,6 +13047,7 @@ if (this.ic_modal_pesquisa === 'S') {
   margin: 0 auto 6px auto;
   border: 1px solid rgba(91,42,165,.20);
   background: radial-gradient(circle at 30% 30%, rgba(128,90,213,.18), rgba(128,90,213,.06));
+  box-shadow: 0 10px 24px rgba(91,42,165,.18);
 }
 .cards-wrapper >>> .logo-letter{
   font-weight: 900;
@@ -13037,11 +13055,27 @@ if (this.ic_modal_pesquisa === 'S') {
   color: #5b2aa5;
 }
 
+.cards-wrapper >>> .card-unico-body{
+  position: relative;
+  padding: 18px 18px 20px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  z-index: 1;
+}
+
+.cards-wrapper >>> .card-unico-body .text-subtitle1{
+  font-weight: 800;
+  text-align: center;
+  color: #2e1957;
+}
+
 /* corpo (campos) */
 .cards-wrapper >>> .card-campos{
   padding: 8px 22px 10px 22px;
   line-height: 1.65;
   font-size: 13px;
+  color: #3d3552;
 }
 .cards-wrapper >>> .card-campos b{
   font-weight: 900;
@@ -13053,6 +13087,11 @@ if (this.ic_modal_pesquisa === 'S') {
   padding: 10px 12px 14px 12px;
   display: flex;
   justify-content: center;
+}
+
+.cards-wrapper >>> .card-actions .q-btn{
+  min-width: 120px;
+  box-shadow: 0 10px 22px rgba(91,42,165,.25);
 }
 
 </style>
