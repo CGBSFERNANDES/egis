@@ -1162,6 +1162,7 @@ if (existentes.length > 0) {
     //await this.buscarCabecalhosPorMenuId(Number(this.menuId));
 
     alert(data?.message || 'Cabeçalhos gerados e gravados com sucesso!');
+    
   } catch (e) {
     console.error('executarESalvar()', e?.response?.status, e?.response?.data || e);
     alert('Falha ao executar/gravar cabeçalhos.');

@@ -2863,8 +2863,6 @@ dashboardCards() {
     .filter(Boolean);
 },
 
-
-
     cardsFiltrados () {
       //const lista = Array.isArray(this.rows) ? this.rows : []
       const lista =
@@ -5194,23 +5192,43 @@ selecionarERetornarOld(rows) {
        // captura mudanças de sort
 
       if (e.fullName.includes('sortOrder') || e.fullName.includes('sortIndex')) {
-        this.$nextTick(() => {
-          const grid = this.$refs.grid && this.$refs.grid.instance
-          if (!grid) return
+  this.$nextTick(() => {
+    const grid = this.$refs.grid && this.$refs.grid.instance
+    if (!grid) return
 
-          // vai para o topo
-          grid.navigateToRow(0)        // às vezes não funciona dependendo do keyExpr
-          grid.getScrollable()?.scrollTo({ top: 0 })
+    const scrollable = grid.getScrollable && grid.getScrollable()
 
-          // se preferir ir ao 1º registro real (mais confiável):
-          const first = grid.getVisibleRows?.()[0]
-          if (first && first.key != null) {
-            grid.navigateToRow(first.key)
-            grid.scrollToRow(first.key)
-          }
-        })
+    // vai para o topo (isso funciona em qualquer versão)
+    if (scrollable && scrollable.scrollTo) {
+      scrollable.scrollTo({ top: 0 })
+    }
+
+    // opcional: “foca” no primeiro registro visível sem quebrar
+    const first = grid.getVisibleRows && grid.getVisibleRows()[0]
+    if (first && first.key != null && grid.navigateToRow) {
+      grid.navigateToRow(first.key)
+
+      // só chama se existir (evita o TypeError)
+      if (typeof grid.scrollToRow === 'function') {
+        grid.scrollToRow(first.key)
+      } else if (
+        scrollable &&
+        typeof scrollable.scrollToElement === 'function' &&
+        typeof grid.getRowIndexByKey === 'function' &&
+        typeof grid.getRowElement === 'function'
+      ) {
+        const idx = grid.getRowIndexByKey(first.key)
+        const el = grid.getRowElement(idx)
+        // getRowElement pode vir como array (jQuery-like)
+        const node = Array.isArray(el) ? el[0] : (el && el[0]) ? el[0] : el
+        if (node) scrollable.scrollToElement(node)
       }
+    }
+  })
+}
+
       
+
       if (e.name === "columns") {
         this.saveGridConfig();
       }
@@ -11596,8 +11614,11 @@ if (
         //
         this.ic_pesquisa_banco = 'S';
         //
-
+        //Dados do Retorno do Back-End procedure pr_egis_pesquisa_dados ou pr do Menu
         this.rows = (dados || []).map((it, idx) => ({ id: it.id || idx + 1, ...it }));
+        //
+        //Chave-pk--
+        this.garantirPkNoRows();
 
         //
         this.sortRowsForTreeAndGrid()
@@ -11737,6 +11758,41 @@ if (this.ic_modal_pesquisa === 'S') {
         this.loading = false;
       }
     },
+
+    garantirPkNoRows() {
+  const meta = Array.isArray(this.gridMeta) ? this.gridMeta : [];
+  const rows = Array.isArray(this.rows) ? this.rows : [];
+
+  if (!meta.length || !rows.length) return;
+
+  // pega PK do meta (nome de banco)
+  const pkMeta = meta.find(m => String(m.ic_atributo_chave || "").toUpperCase() === "S");
+  if (!pkMeta) return;
+
+  const pk = (pkMeta.nm_atributo || "").trim(); // ex.: cd_tabela_preco
+  if (!pk) return;
+
+  // qual chave "existe" no row hoje? (caption / consulta)
+  const candidatos = [
+    pkMeta.nm_atributo_consulta,
+    pkMeta.nm_edit_label,
+    pkMeta.nm_filtro,
+    pkMeta.caption
+  ].filter(Boolean).map(s => String(s).trim());
+
+  const row0 = rows[0] || {};
+  const chaveExistenteNoRow =
+    candidatos.find(k => Object.prototype.hasOwnProperty.call(row0, k));
+
+  if (!chaveExistenteNoRow) return;
+
+  // injeta pk (nome de banco) usando o valor que já existe no row (caption)
+  rows.forEach(r => {
+    if (r && (r[pk] === undefined || r[pk] === null)) {
+      r[pk] = r[chaveExistenteNoRow];
+    }
+  });
+},
 
 
     async getRowsFullFromSession() {
