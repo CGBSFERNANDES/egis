@@ -56,14 +56,22 @@ BEGIN
 
         DECLARE @style NVARCHAR(MAX) = N'
 <style>
-  .declaracao { width: 100%; max-width: 680px; font-family: Arial, sans-serif; font-size: 12px; color: #000; }
-  .cabecalho { text-align: center; margin-bottom: 10px; }
-  .secao { margin-bottom: 10px; border: 1px solid #000; padding: 8px; }
-  .secao-titulo { font-weight: bold; text-transform: uppercase; margin-bottom: 6px; }
-  .linha { margin-bottom: 4px; }
-  .label { font-weight: bold; }
-  .itens { width: 100%; border-collapse: collapse; }
-  .itens th, .itens td { border: 1px solid #000; padding: 4px; text-align: left; }
+  .declaracao { width: 100%; max-width: 720px; font-family: Arial, sans-serif; font-size: 12px; color: #000; margin: 0 auto; }
+  .titulo { text-align: center; font-size: 16px; font-weight: bold; letter-spacing: 1px; border: 1px solid #000; padding: 6px 0; }
+  .tabela { width: 100%; border-collapse: collapse; border: 1px solid #000; margin-top: 4px; }
+  .tabela th, .tabela td { border: 1px solid #000; padding: 4px; vertical-align: top; }
+  .secao-cabecalho th { text-transform: uppercase; font-weight: bold; }
+  .subtitulo { font-weight: bold; text-transform: uppercase; text-align: center; border: 1px solid #000; padding: 4px 0; margin-top: 6px; }
+  .itens thead th { text-align: center; font-weight: bold; }
+  .itens td { font-size: 11px; }
+  .totais td { font-weight: bold; }
+  .peso-row td { font-weight: bold; }
+  .declaracao-bloco { border: 1px solid #000; padding: 8px; margin-top: 6px; }
+  .declaracao-titulo { text-align: center; font-weight: bold; letter-spacing: 1px; margin-bottom: 6px; }
+  .assinatura { width: 100%; text-align: center; margin-top: 14px; }
+  .assinatura td { border-top: 1px solid #000; padding-top: 6px; }
+  .observacao { border: 1px solid #000; padding: 6px; margin-top: 6px; font-weight: bold; }
+  .observacao-texto { font-weight: normal; }
   .page-break { page-break-after: always; }
 </style>';
 
@@ -138,23 +146,45 @@ BEGIN
                 ORDER BY vd.cd_identificacao_nota_saida
             ) AS d
         ),
-        itens AS (
+        itens_detalhe AS (
             SELECT
-                n.cd_nota_saida,
+                p.cd_nota_saida,
+                ROW_NUMBER() OVER (PARTITION BY p.cd_nota_saida ORDER BY p.nItem) AS nr_item,
+                ISNULL(p.cProd, '') AS cProd,
+                ISNULL(p.xprod, '') AS xprod,
+                ISNULL(p.qCom, '') AS qCom,
+                ISNULL(p.uCom, '') AS uCom,
+                ISNULL(p.vProd, '') AS vProd
+            FROM vw_nfe_produto_servico_nota_fiscal_api AS p
+            INNER JOIN @notas AS n ON n.cd_nota_saida = p.cd_nota_saida
+        ),
+        itens_html AS (
+            SELECT
+                d.cd_nota_saida,
                 (
                     SELECT
                         '<tr>' +
-                        '<td>' + ISNULL(p.cProd, '') + '</td>' +
-                        '<td>' + ISNULL(p.xprod, '') + '</td>' +
-                        '<td>' + ISNULL(p.qCom, '') + ' ' + ISNULL(p.uCom, '') + '</td>' +
-                        '<td>' + ISNULL(p.vProd, '') + '</td>' +
+                        '<td style="text-align:center;">' + CAST(d2.nr_item AS NVARCHAR(10)) + '</td>' +
+                        '<td>' + d2.xprod + '</td>' +
+                        '<td style="text-align:center;">' + d2.qCom + ' ' + d2.uCom + '</td>' +
+                        '<td style="text-align:right;">' + d2.vProd + '</td>' +
                         '</tr>'
-                    FROM vw_nfe_produto_servico_nota_fiscal_api AS p
-                    WHERE p.cd_nota_saida = n.cd_nota_saida
-                    ORDER BY p.nItem
+                    FROM itens_detalhe AS d2
+                    WHERE d2.cd_nota_saida = d.cd_nota_saida
+                    ORDER BY d2.nr_item
                     FOR XML PATH(''), TYPE
                 ).value('.', 'NVARCHAR(MAX)') AS itens_html
-            FROM @notas AS n
+            FROM itens_detalhe AS d
+            GROUP BY d.cd_nota_saida
+        ),
+        itens_totais AS (
+            SELECT
+                p.cd_nota_saida,
+                SUM(TRY_CONVERT(DECIMAL(18, 3), REPLACE(REPLACE(p.qCom, '.', ''), ',', '.'))) AS qt_total,
+                SUM(TRY_CONVERT(DECIMAL(18, 2), REPLACE(REPLACE(p.vProd, '.', ''), ',', '.'))) AS vl_total,
+                NULL AS peso_total -- TODO: mapear coluna de peso total (kg) na view vw_nfe_produto_servico_nota_fiscal_api
+            FROM itens_detalhe AS p
+            GROUP BY p.cd_nota_saida
         ),
         base AS (
             SELECT
@@ -184,48 +214,91 @@ BEGIN
                 de.UF AS uf_destinatario,
                 de.CEP AS cep_destinatario,
                 de.fone AS fone_destinatario,
-                it.itens_html
+                ih.itens_html,
+                ISNULL(tt.qt_total, 0) AS qt_total,
+                ISNULL(tt.vl_total, 0) AS vl_total,
+                tt.peso_total
             FROM @notas AS n
             LEFT JOIN emitente AS em ON em.cd_nota_saida = n.cd_nota_saida
             LEFT JOIN destinatario AS de ON de.cd_nota_saida = n.cd_nota_saida
-            LEFT JOIN itens AS it ON it.cd_nota_saida = n.cd_nota_saida
+            LEFT JOIN itens_html AS ih ON ih.cd_nota_saida = n.cd_nota_saida
+            LEFT JOIN itens_totais AS tt ON tt.cd_nota_saida = n.cd_nota_saida
         )
         SELECT
             @html = @html +
                 '<div class="declaracao">' +
-                    '<div class="cabecalho"><h2>Declaração de Conteúdo</h2></div>' +
-                    '<div class="secao">' +
-                        '<div class="secao-titulo">Remetente</div>' +
-                        '<div class="linha"><span class="label">Nome/Razão Social:</span> ' + ISNULL(nm_emitente, '') + '</div>' +
-                        '<div class="linha"><span class="label">Nome Fantasia:</span> ' + ISNULL(nm_fantasia_emitente, '') + '</div>' +
-                        '<div class="linha"><span class="label">CNPJ:</span> ' + ISNULL(cnpj_emitente, '') + ' <span class="label">IE:</span> ' + ISNULL(ie_emitente, '') + '</div>' +
-                        '<div class="linha"><span class="label">Endereço:</span> ' + ISNULL(logradouro_emitente, '') +
-                            CASE WHEN ISNULL(complemento_emitente, '') <> '' THEN ' - ' + complemento_emitente ELSE '' END +
-                            ', ' + ISNULL(numero_emitente, '') + ' - ' + ISNULL(bairro_emitente, '') + '</div>' +
-                        '<div class="linha"><span class="label">Cidade/UF:</span> ' + ISNULL(cidade_emitente, '') + '/' + ISNULL(uf_emitente, '') +
-                            ' <span class="label">CEP:</span> ' + ISNULL(cep_emitente, '') +
-                            CASE WHEN ISNULL(fone_emitente, '') <> '' THEN ' <span class="label">Fone:</span> ' + fone_emitente ELSE '' END +
+                    '<div class="titulo">DECLARAÇÃO DE CONTEÚDO</div>' +
+                    '<table class="tabela secao-cabecalho">' +
+                        '<tr><th colspan="2">REMETENTE</th><th colspan="2">DESTINATÁRIO</th></tr>' +
+                        '<tr>' +
+                            '<td colspan="2"><strong>Nome:</strong> ' + ISNULL(nm_emitente, '') + '</td>' +
+                            '<td colspan="2"><strong>Nome:</strong> ' + ISNULL(nm_destinatario, '') + '</td>' +
+                        '</tr>' +
+                        '<tr>' +
+                            '<td colspan="2"><strong>Endereço:</strong> ' + ISNULL(logradouro_emitente, '') +
+                                CASE WHEN ISNULL(complemento_emitente, '') <> '' THEN ' - ' + complemento_emitente ELSE '' END +
+                                ', ' + ISNULL(numero_emitente, '') + ' - ' + ISNULL(bairro_emitente, '') + '</td>' +
+                            '<td colspan="2"><strong>Endereço:</strong> ' + ISNULL(logradouro_destinatario, '') +
+                                CASE WHEN ISNULL(complemento_destinatario, '') <> '' THEN ' - ' + complemento_destinatario ELSE '' END +
+                                ', ' + ISNULL(numero_destinatario, '') + ' - ' + ISNULL(bairro_destinatario, '') + '</td>' +
+                        '</tr>' +
+                        '<tr>' +
+                            '<td><strong>Cidade:</strong> ' + ISNULL(cidade_emitente, '') + '</td>' +
+                            '<td><strong>UF:</strong> ' + ISNULL(uf_emitente, '') + '</td>' +
+                            '<td><strong>Cidade:</strong> ' + ISNULL(cidade_destinatario, '') + '</td>' +
+                            '<td><strong>UF:</strong> ' + ISNULL(uf_destinatario, '') + '</td>' +
+                        '</tr>' +
+                        '<tr>' +
+                            '<td><strong>CEP:</strong> ' + ISNULL(cep_emitente, '') + '</td>' +
+                            '<td><strong>CPF/CNPJ:</strong> ' + ISNULL(cnpj_emitente, '') + '</td>' +
+                            '<td><strong>CEP:</strong> ' + ISNULL(cep_destinatario, '') + '</td>' +
+                            '<td><strong>CPF/CNPJ:</strong> ' + ISNULL(doc_destinatario, '') + '</td>' +
+                        '</tr>' +
+                    '</table>' +
+                    '<div class="subtitulo">IDENTIFICAÇÃO DOS BENS</div>' +
+                    '<table class="tabela itens">' +
+                        '<thead>' +
+                            '<tr>' +
+                                '<th style="width:10%;">ITEM</th>' +
+                                '<th style="width:55%;">CONTEÚDO</th>' +
+                                '<th style="width:15%;">QUANT.</th>' +
+                                '<th style="width:20%;">VALOR</th>' +
+                            '</tr>' +
+                        '</thead>' +
+                        '<tbody>' + ISNULL(itens_html, '<tr><td colspan="4">Nenhum item encontrado</td></tr>') + '</tbody>' +
+                        '<tr class="totais">' +
+                            '<td colspan="2" style="text-align:right;">TOTAIS</td>' +
+                            '<td style="text-align:center;">' + CONVERT(NVARCHAR(30), qt_total) + '</td>' +
+                            '<td style="text-align:right;">' + CONVERT(NVARCHAR(30), vl_total) + '</td>' +
+                        '</tr>' +
+                        '<tr class="peso-row">' +
+                            '<td colspan="4"><strong>PESO TOTAL (kg):</strong> ' + ISNULL(CONVERT(NVARCHAR(30), peso_total), 'TODO: informar peso total (kg) via coluna da view vw_nfe_produto_servico_nota_fiscal_api') + '</td>' +
+                        '</tr>' +
+                    '</table>' +
+                    '<div class="declaracao-bloco">' +
+                        '<div class="declaracao-titulo">DECLARAÇÃO</div>' +
+                        '<div>' +
+                            'Declaro que não me enquadro no conceito de contribuinte previsto no art. 4º da Lei Complementar nº 87/1996, ' +
+                            'uma vez que não realizo, com habitualidade ou em volume que caracterize intuito comercial, operações de circulação de mercadoria, ' +
+                            'ainda que se iniciem no exterior, ou estou dispensado da emissão da nota fiscal por força da legislação tributária vigente, ' +
+                            'responsabilizando-me, nos termos da lei e a quem de direito, por informações inverídicas.<br/>' +
+                            'Declaro que não envio objeto que ponha em risco o transporte aéreo, nem objeto proibido no fluxo postal, ' +
+                            'assumindo responsabilidade pela informação prestada, e ciente de que o descumprimento pode configurar crime, ' +
+                            'conforme artigo 261 do Código Penal Brasileiro.<br/>' +
+                            'Declaro, ainda, estar ciente da lista de proibições e restrições, disponível no site dos Correios: ' +
+                            '<a href=\"https://www.correios.com.br/enviar/proibicoes-e-restricoes/proibicoes-e-restricoes\" target=\"_blank\">https://www.correios.com.br/enviar/proibicoes-e-restricoes/proibicoes-e-restricoes</a>.' +
                         '</div>' +
-                    '</div>' +
-                    '<div class="secao">' +
-                        '<div class="secao-titulo">Destinatário</div>' +
-                        '<div class="linha"><span class="label">Nome/Razão Social:</span> ' + ISNULL(nm_destinatario, '') + '</div>' +
-                        '<div class="linha"><span class="label">Nome Fantasia:</span> ' + ISNULL(nm_fantasia_destinatario, '') + '</div>' +
-                        '<div class="linha"><span class="label">Documento:</span> ' + ISNULL(doc_destinatario, '') + '</div>' +
-                        '<div class="linha"><span class="label">Endereço:</span> ' + ISNULL(logradouro_destinatario, '') +
-                            CASE WHEN ISNULL(complemento_destinatario, '') <> '' THEN ' - ' + complemento_destinatario ELSE '' END +
-                            ', ' + ISNULL(numero_destinatario, '') + ' - ' + ISNULL(bairro_destinatario, '') + '</div>' +
-                        '<div class="linha"><span class="label">Cidade/UF:</span> ' + ISNULL(cidade_destinatario, '') + '/' + ISNULL(uf_destinatario, '') +
-                            ' <span class="label">CEP:</span> ' + ISNULL(cep_destinatario, '') +
-                            CASE WHEN ISNULL(fone_destinatario, '') <> '' THEN ' <span class="label">Fone:</span> ' + fone_destinatario ELSE '' END +
-                        '</div>' +
-                    '</div>' +
-                    '<div class="secao">' +
-                        '<div class="secao-titulo">Identificação dos Bens</div>' +
-                        '<table class="itens">' +
-                            '<thead><tr><th>Código</th><th>Descrição</th><th>Quantidade</th><th>Valor</th></tr></thead>' +
-                            '<tbody>' + ISNULL(itens_html, '<tr><td colspan="4">Nenhum item encontrado</td></tr>') + '</tbody>' +
+                        '<table class="assinatura">' +
+                            '<tr>' +
+                                '<td style="border:0;">______/______/______ de ________________________ de ________/______/______</td>' +
+                            '</tr>' +
+                            '<tr>' +
+                                '<td>Assinatura do Declarante/Remetente</td>' +
+                            '</tr>' +
                         '</table>' +
+                    '</div>' +
+                    '<div class="observacao">' +
+                        'OBSERVAÇÃO:<br/><span class="observacao-texto">Constitui crime contra a ordem tributária suprimir ou reduzir tributo, ou contribuição social e qualquer acessório (Lei 8.137/90 Art. 1º, V).</span>' +
                     '</div>' +
                 '</div>' +
                 CASE WHEN rn < total_notas THEN '<div class="page-break"></div>' ELSE '' END
