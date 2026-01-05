@@ -173,6 +173,13 @@ begin
 	return
 end
 
+--Balancete de Verificação------------------------------------------------------------------------------------------
+if @cd_relatorio = 410
+begin 
+	exec pr_egis_relatorio_balancete_verificacao @json
+	return
+end
+
 
 --Diario Contabil------------------------------------------------------------------------------------------
 
