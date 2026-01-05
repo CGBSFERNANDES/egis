@@ -173,6 +173,13 @@ begin
 	return
 end
 
+--Balanço Patrimonial------------------------------------------------------------------------------------------
+if @cd_relatorio = 412
+begin
+	exec pr_egis_relatorio_balanco_patrimonial @json
+	return
+end
+
 --Balancete de Verificação------------------------------------------------------------------------------------------
 if @cd_relatorio = 410
 begin 
