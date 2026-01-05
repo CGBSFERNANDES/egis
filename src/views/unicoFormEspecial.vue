@@ -8415,7 +8415,78 @@ async syncLookupsFromFormData() {
         ////
         ///pr_egis_api_crud_dados_especial
         ///
+       
         
+        let response = null
+
+try {
+  response = await api.post("/api-dados-form", payload, {
+    headers: { "Content-Type": "application/json" },
+  })
+
+  console.log("registro do response --> ", response)
+
+  // 🔎 1) tenta achar um retorno padrão do banco (se vier ok/mensagem)
+  const data = response && response.data ? response.data : null
+  const row0 = Array.isArray(data) ? data[0] : data
+
+  // Caso sua PR devolva algo tipo: { ok: 0, mensagem: 'Registro já existe.' }
+  if (row0 && (row0.ok === 0 || row0.ok === "0")) {
+    const msg = row0.mensagem || row0.message || "Não foi possível gravar."
+    // se for duplicidade:
+    const errNum = String(row0.erro_numero || row0.error_number || "")
+    const errSql = String(row0.erro_sql || row0.error_message || row0.erro || "")
+
+    if (
+      errNum === "2627" ||
+      errNum === "2601" ||
+      errSql.includes("Cannot insert duplicate key") ||
+      errSql.includes("Violation of PRIMARY KEY") ||
+      errSql.includes("duplicate key")
+    ) {
+      this.$q.notify({ type: "warning", message: msg || "Registro já existe." })
+      return
+    }
+
+    this.$q.notify({ type: "negative", message: msg })
+    return
+  }
+
+  // ✅ sucesso (mantém seu fluxo)
+  this.notifyOk(
+    this.formMode === "I"
+      ? "Registro atualizado com sucesso."
+      : "Registro atualizado com sucesso."
+  )
+
+  await this.runHook("afterSave", { modo, registro, response })
+
+} catch (err) {
+  // 🔥 2) fallback: quando o backend estoura erro (não vem ok/mensagem)
+  const raw =
+    (err && err.response && err.response.data && (err.response.data.message || err.response.data.error)) ||
+    (err && err.message) ||
+    ""
+
+  const msg = String(raw)
+
+  if (
+    msg.includes("2627") ||
+    msg.includes("2601") ||
+    msg.includes("Cannot insert duplicate key") ||
+    msg.includes("Violation of PRIMARY KEY") ||
+    msg.includes("duplicate key")
+  ) {
+    this.$q.notify({ type: "warning", message: "Registro já existe." })
+    return
+  }
+
+  // seu tratamento genérico de erro (se já tiver um, mantenha)
+  this.$q.notify({ type: "negative", message: msg || "Erro ao gravar." })
+  // ou: throw err; (se você quiser propagar)
+}
+
+        /*
         let response = null
 
         response = await api.post("/api-dados-form", payload, {
@@ -8434,6 +8505,7 @@ async syncLookupsFromFormData() {
         //
         await this.runHook("afterSave", { modo, registro, response })
         //
+        */
 
         //
         //Fechar o Modal

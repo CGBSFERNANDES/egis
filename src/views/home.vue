@@ -510,7 +510,7 @@ export default {
     //this.$router.push(this.$route.query.redirect || "/home",  { clearHistory: true });
 
     this.dt_nascimento_usuario = localStorage.dt_nascimento_usuario;
-    this.dt_base = localStorage.dt_base;
+    this.dt_base               = localStorage.dt_base;
 
     if (this.cd_modulo == 220 && this.cd_empresa == 240) {
       //Educalibras
@@ -529,6 +529,17 @@ export default {
     var diaAniv = dataAniv.getDate().toString();
     var mesAniv = dataAniv.getMonth() + 1;
     var hoje = localStorage.dt_base;
+    if (!hoje) {
+      // padrão dd/mm/yyyy
+      const d = new Date()
+      const dd = String(d.getDate()).padStart(2, '0')
+      const mm = String(d.getMonth() + 1).padStart(2, '0')
+      const yyyy = d.getFullYear()
+      hoje = `${dd}/${mm}/${yyyy}`
+      localStorage.dt_base = hoje
+    }
+
+
     var diaHoje = hoje.slice(0, 2);
     var mesHoje = hoje.slice(3, 5);
 

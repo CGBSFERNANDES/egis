@@ -61,6 +61,13 @@ export default {
     if (!localStorage.nm_destinatario === "") {
       this.mdestinatario = localStorage.nm_destinatario;
     }
+
+    const vimagem = this.$store._mutations.SET_Usuario.nm_caminho_imagem = localStorage.nm_caminho_imagem
+    
+    if ( vimagem != this.imagem) {
+      this.imagem = vimagem
+    }
+      
   },
   components: {
     DxContextMenu,

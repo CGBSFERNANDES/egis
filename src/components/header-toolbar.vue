@@ -54,7 +54,7 @@
 
         <dx-item location="after" v-show="qt_suporte > 0">
           <div slot-scope="_">
-            <q-btn
+            <q-btn            
               v-show="qt_suporte > 0"
               flat
               dense
@@ -68,7 +68,7 @@
             </q-btn>
 
             <q-btn-dropdown
-              v-if="avisoModulo && avisoModulo.length > 0"
+              v-if="avisoModulo && avisoModulo.length > 0 && false"
               color="primary"
               rounded
               flat
@@ -195,6 +195,7 @@
               styling-mode="text"
             >
               <user-panel :menu-items="userMenuItems" menu-mode="context" />
+              
             </dx-button>
           </div>
         </dx-item>
