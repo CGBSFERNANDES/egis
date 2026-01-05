@@ -180,6 +180,13 @@ begin
 	return
 end
 
+--Etiqueta do Remetente------------------------------------------------------------------------------------------
+if @cd_relatorio = 417
+begin
+    exec pr_egis_relatorio_etiqueta_remetente @json
+    return
+end
+
 --Balanço Patrimonial------------------------------------------------------------------------------------------
 if @cd_relatorio = 412
 begin
