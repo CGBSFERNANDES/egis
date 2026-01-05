@@ -312,3 +312,9 @@ BEGIN
     END CATCH;
 END;
 GO
+--use egissql_springs
+--go
+--qt_peso_bruto_nota_saida
+--select top 10 * from nota_saida order by dt_nota_saida desc
+
+--exec pr_egis_declaracao_conteudo '[{"cd_nota_saida": 13706 }]'
