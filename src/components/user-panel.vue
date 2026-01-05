@@ -64,7 +64,7 @@ export default {
 
     const vimagem = this.$store._mutations.SET_Usuario.nm_caminho_imagem = localStorage.nm_caminho_imagem
     
-    if ( vimagem != this.imagem) {
+    if ( vimagem != this.imagem  && vimagem != '')  {
       this.imagem = vimagem
     }
       
@@ -82,7 +82,10 @@ export default {
         return busca_img;
       } catch {
         var imagem = "";
-        imagem =
+        
+        imagem = this.vimagem ||
+
+        //imagem =
           "data:image/jpeg;base64," +
           localStorage.vb_imagem64.replace('[{"i":"', "").replace('"}]', "");
         return imagem;
