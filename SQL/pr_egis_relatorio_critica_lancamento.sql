@@ -20,12 +20,14 @@ GO
 -------------------------------------------------------------------------------
 */
 CREATE PROCEDURE dbo.pr_egis_relatorio_critica_lancamento
-    @cd_relatorio INT = 407,                 -- Código do relatório cadastrado em egisadmin.dbo.relatorio
+
     @json         NVARCHAR(MAX) = NULL       -- Parâmetros vindos do front-end (datas e filtros opcionais)
 AS
 BEGIN
     SET NOCOUNT ON;
 
+    declare  @cd_relatorio INT = 407                 -- Código do relatório cadastrado em egisadmin.dbo.relatorio
+    
     DECLARE
         @cd_empresa            INT          = NULL,
         @cd_usuario            INT          = NULL,
@@ -158,7 +160,9 @@ BEGIN
             ERROR_LINE()
         );
 
-        THROW ERROR_NUMBER(), @errMsg, ERROR_STATE();
+        --THROW ERROR_NUMBER(), @errMsg, ERROR_STATE();
     END CATCH
 END
 GO
+
+--exec pr_egis_relatorio_critica_lancamento '[{"dt_inicial": "01/01/2023", "dt_final": "12/31/2023"}]'
