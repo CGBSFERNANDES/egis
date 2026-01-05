@@ -174,6 +174,14 @@ begin
 end
 
 
+--Diario Contabil------------------------------------------------------------------------------------------
+
+if @cd_relatorio = 408
+begin 
+	exec pr_egis_relatorio_diario_contabil @cd_relatorio,@cd_parametro,@json
+	return
+end
+
 --Solicitação Beneficimaneto------------------------------------------------------------------------------------------
 
 if @cd_relatorio = 401
