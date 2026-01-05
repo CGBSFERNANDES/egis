@@ -166,6 +166,13 @@ if isnull(@cd_relatorio_form,0)>0
 
 --select * from egisadmin.dbo.relatorio order by cd_relatorio desc
 
+--Crítica de Lançamento Contábil------------------------------------------------------------------------------------------
+if @cd_relatorio = 407
+begin 
+	exec pr_egis_relatorio_critica_lancamento @cd_relatorio,@json
+	return
+end
+
 
 --Diario Contabil------------------------------------------------------------------------------------------
 
