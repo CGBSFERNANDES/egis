@@ -169,7 +169,7 @@ if isnull(@cd_relatorio_form,0)>0
 --Crítica de Lançamento Contábil------------------------------------------------------------------------------------------
 if @cd_relatorio = 407
 begin 
-	exec pr_egis_relatorio_critica_lancamento @cd_relatorio,@json
+	exec pr_egis_relatorio_critica_lancamento @cd_relatorio = @cd_relatorio, @json = @json
 	return
 end
 
