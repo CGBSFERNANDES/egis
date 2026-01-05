@@ -180,6 +180,13 @@ begin
 	return
 end
 
+--Contabilização de Estoques-------------------------------------------------------------------------------------------
+if @cd_relatorio = 415
+begin
+	exec pr_egis_relatorio_contabil_estoque @json
+	return
+end
+
 --Balancete de Verificação------------------------------------------------------------------------------------------
 if @cd_relatorio = 410
 begin 
