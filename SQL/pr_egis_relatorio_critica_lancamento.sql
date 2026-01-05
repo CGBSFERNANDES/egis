@@ -20,14 +20,13 @@ GO
 -------------------------------------------------------------------------------
 */
 CREATE PROCEDURE dbo.pr_egis_relatorio_critica_lancamento
-
-    @json         NVARCHAR(MAX) = NULL       -- Parâmetros vindos do front-end (datas e filtros opcionais)
+    @cd_relatorio INT           = 407,        -- Código do relatório cadastrado em egisadmin.dbo.relatorio
+    @json         NVARCHAR(MAX) = NULL        -- Parâmetros vindos do front-end (datas e filtros opcionais)
 AS
 BEGIN
     SET NOCOUNT ON;
+    SET XACT_ABORT ON;
 
-    declare  @cd_relatorio INT = 407                 -- Código do relatório cadastrado em egisadmin.dbo.relatorio
-    
     DECLARE
         @cd_empresa            INT          = NULL,
         @cd_usuario            INT          = NULL,
@@ -36,7 +35,26 @@ BEGIN
         @cd_lancamento_inicial INT          = NULL,
         @cd_lancamento_final   INT          = NULL,
         @cd_lote_inicial       INT          = NULL,
-        @cd_lote_final         INT          = NULL;
+        @cd_lote_final         INT          = NULL,
+        @nm_titulo_relatorio   VARCHAR(200) = NULL,
+        @ds_relatorio          VARCHAR(8000) = '',
+        @logo                  VARCHAR(400)  = 'logo_gbstec_sistema.jpg',
+        @nm_fantasia_empresa   VARCHAR(200)  = '',
+        @nm_endereco_empresa   VARCHAR(200)  = '',
+        @cd_numero_endereco    VARCHAR(20)   = '',
+        @cd_cep_empresa        VARCHAR(20)   = '',
+        @nm_cidade             VARCHAR(200)  = '',
+        @sg_estado             VARCHAR(10)   = '',
+        @cd_telefone_empresa   VARCHAR(200)  = '',
+        @nm_email_internet     VARCHAR(200)  = '',
+        @nm_pais               VARCHAR(20)   = '',
+        @cor_empresa           VARCHAR(20)   = '#1976D2',
+        @data_hora_atual       VARCHAR(50)   = CONVERT(VARCHAR, GETDATE(), 103) + ' ' + CONVERT(VARCHAR, GETDATE(), 108),
+        @html_rows             NVARCHAR(MAX) = '',
+        @html_table            NVARCHAR(MAX) = '',
+        @html_header           NVARCHAR(MAX) = '',
+        @html_footer           NVARCHAR(MAX) = '',
+        @html                  NVARCHAR(MAX) = '';
 
     BEGIN TRY
         /*
@@ -122,20 +140,17 @@ BEGIN
               AND a.dt_lancamento_contabil BETWEEN @dt_inicial_exercicio AND @dt_final_exercicio
               AND a.cd_lancamento_contabil BETWEEN @cd_lancamento_inicial AND @cd_lancamento_final
               AND a.cd_lote BETWEEN @cd_lote_inicial AND @cd_lote_final
-        )
-        SELECT
-            b.dt_lancamento_contabil AS [Data],
-            b.cd_lancamento_contabil AS Lancamento,
-            b.cd_reduzido_debito     AS Debito,
-            b.cd_reduzido_credito    AS Credito,
-            b.vl_lancamento_contabil AS ValorLancamento,
-            b.cd_historico_contabil  AS CodHis,
-            b.ds_historico_contabil  AS Historico,
-            b.cd_lote                AS Lote,
-            crit.ds_critica          AS Critica
-        FROM BaseLancamento AS b
-        CROSS APPLY (
+        ),
+        BaseCritica AS (
             SELECT
+                b.dt_lancamento_contabil AS [Data],
+                b.cd_lancamento_contabil AS Lancamento,
+                b.cd_reduzido_debito     AS Debito,
+                b.cd_reduzido_credito    AS Credito,
+                b.vl_lancamento_contabil AS ValorLancamento,
+                b.cd_historico_contabil  AS CodHis,
+                b.ds_historico_contabil  AS Historico,
+                b.cd_lote                AS Lote,
                 LTRIM(STUFF(
                     CONCAT(
                         CASE WHEN b.ic_falta_valor    = 1 THEN '; Falta valor' ELSE '' END,
@@ -148,10 +163,114 @@ BEGIN
                     1,
                     2,
                     ''
-                )) AS ds_critica
-        ) AS crit
-        WHERE crit.ds_critica IS NOT NULL AND LTRIM(RTRIM(crit.ds_critica)) <> ''
-        ORDER BY b.dt_lancamento_contabil, b.cd_lancamento_contabil;
+                )) AS Critica
+            FROM BaseLancamento AS b
+        )
+        SELECT
+            *
+        INTO #resultado
+        FROM BaseCritica
+        WHERE Critica IS NOT NULL AND LTRIM(RTRIM(Critica)) <> '';
+
+        /* 5) Cabeçalho e informações da empresa para o HTML */
+        SELECT
+            @nm_titulo_relatorio = NULLIF(r.nm_titulo_relatorio, ''),
+            @ds_relatorio        = ISNULL(r.ds_relatorio, '')
+        FROM egisadmin.dbo.relatorio AS r
+        WHERE r.cd_relatorio = @cd_relatorio;
+
+        SELECT TOP (1)
+            @logo                = ISNULL('https://egisnet.com.br/img/' + e.nm_caminho_logo_empresa, @logo),
+            @cor_empresa         = ISNULL(e.nm_cor_empresa, @cor_empresa),
+            @nm_fantasia_empresa = ISNULL(e.nm_fantasia_empresa, ''),
+            @nm_endereco_empresa = ISNULL(e.nm_endereco_empresa, ''),
+            @cd_numero_endereco  = LTRIM(RTRIM(ISNULL(e.cd_numero, ''))),
+            @cd_cep_empresa      = ISNULL(dbo.fn_formata_cep(e.cd_cep_empresa), ''),
+            @nm_cidade           = ISNULL(c.nm_cidade, ''),
+            @sg_estado           = ISNULL(es.sg_estado, ''),
+            @cd_telefone_empresa = ISNULL(e.cd_telefone_empresa, ''),
+            @nm_email_internet   = ISNULL(e.nm_email_internet, ''),
+            @nm_pais             = ISNULL(p.sg_pais, '')
+        FROM Empresa AS e
+        LEFT JOIN Cidade AS c   ON c.cd_cidade  = e.cd_cidade
+        LEFT JOIN Estado AS es  ON es.cd_estado = c.cd_estado
+        LEFT JOIN Pais   AS p   ON p.cd_pais    = es.cd_pais
+        WHERE e.cd_empresa = @cd_empresa;
+
+        /* 6) Montagem das linhas HTML (sem STRING_AGG para compatibilidade 2016) */
+        SET @html_rows = (
+            SELECT
+                '<tr>' +
+                '<td>' + CONVERT(CHAR(10), r.[Data], 103) + '</td>' +
+                '<td>' + CAST(ISNULL(r.Lancamento, 0) AS VARCHAR(20)) + '</td>' +
+                '<td>' + ISNULL(CAST(r.Debito AS VARCHAR(20)), '') + '</td>' +
+                '<td>' + ISNULL(CAST(r.Credito AS VARCHAR(20)), '') + '</td>' +
+                '<td style="text-align:right">' + FORMAT(ISNULL(r.ValorLancamento, 0), 'N2') + '</td>' +
+                '<td>' + ISNULL(CAST(r.CodHis AS VARCHAR(20)), '') + '</td>' +
+                '<td>' + ISNULL(r.Historico, '') + '</td>' +
+                '<td>' + ISNULL(CAST(r.Lote AS VARCHAR(20)), '') + '</td>' +
+                '<td>' + ISNULL(r.Critica, '') + '</td>' +
+                '</tr>'
+            FROM #resultado AS r
+            ORDER BY r.[Data], r.Lancamento
+            FOR XML PATH(''), TYPE
+        ).value('.', 'NVARCHAR(MAX)');
+
+        IF @html_rows IS NULL OR LTRIM(RTRIM(@html_rows)) = ''
+        BEGIN
+            SET @html_rows = '<tr><td colspan="9" style="text-align:center">Nenhuma crítica encontrada para o período informado.</td></tr>';
+        END
+
+        /* 7) Estrutura completa do HTML */
+        DECLARE @titulo_exibir VARCHAR(200) = ISNULL(@nm_titulo_relatorio, 'Crítica do Lançamento Contábil');
+
+        SET @html_table =
+            '<table style="width:100%; border-collapse: collapse; margin-top: 15px;">' +
+            '  <thead>' +
+            '    <tr>' +
+            '      <th style="border:1px solid #ddd; padding:8px; text-align:left; background:#f2f2f2;">Data</th>' +
+            '      <th style="border:1px solid #ddd; padding:8px; text-align:left; background:#f2f2f2;">Lançamento</th>' +
+            '      <th style="border:1px solid #ddd; padding:8px; text-align:left; background:#f2f2f2;">Débito</th>' +
+            '      <th style="border:1px solid #ddd; padding:8px; text-align:left; background:#f2f2f2;">Crédito</th>' +
+            '      <th style="border:1px solid #ddd; padding:8px; text-align:right; background:#f2f2f2;">Valor</th>' +
+            '      <th style="border:1px solid #ddd; padding:8px; text-align:left; background:#f2f2f2;">Cod. Histórico</th>' +
+            '      <th style="border:1px solid #ddd; padding:8px; text-align:left; background:#f2f2f2;">Histórico</th>' +
+            '      <th style="border:1px solid #ddd; padding:8px; text-align:left; background:#f2f2f2;">Lote</th>' +
+            '      <th style="border:1px solid #ddd; padding:8px; text-align:left; background:#f2f2f2;">Crítica</th>' +
+            '    </tr>' +
+            '  </thead>' +
+            '  <tbody>' + ISNULL(@html_rows, '') + '</tbody>' +
+            '</table>';
+
+        SET @html_header =
+            '<html>' +
+            '<head>' +
+            '  <meta charset=\"UTF-8\">' +
+            '  <title>' + @titulo_exibir + '</title>' +
+            '  <style>' +
+            '    body { font-family: Arial, sans-serif; color: #333; padding: 20px; }' +
+            '    h1 { color: ' + @cor_empresa + '; margin-bottom: 5px; }' +
+            '    p { margin: 2px 0; }' +
+            '  </style>' +
+            '</head>' +
+            '<body>' +
+            '  <div style=\"display:flex; justify-content: space-between; align-items: center;\">' +
+            '    <div style=\"width:30%; padding-right:20px;\"><img src=\"' + @logo + '\" alt=\"Logo\" style=\"max-width: 200px;\"></div>' +
+            '    <div style=\"width:70%; padding-left:10px;\">' +
+            '      <h1>' + @titulo_exibir + '</h1>' +
+            '      <p><strong>' + @nm_fantasia_empresa + '</strong></p>' +
+            '      <p>' + @nm_endereco_empresa + ', ' + @cd_numero_endereco + ' - ' + @cd_cep_empresa + ' - ' + @nm_cidade + '/' + @sg_estado + ' - ' + @nm_pais + '</p>' +
+            '      <p><strong>Fone: </strong>' + @cd_telefone_empresa + ' | <strong>Email: </strong>' + @nm_email_internet + '</p>' +
+            '      <p><strong>Período: </strong>' + CONVERT(CHAR(10), @dt_inicial_exercicio, 103) + ' a ' + CONVERT(CHAR(10), @dt_final_exercicio, 103) + '</p>' +
+            '    </div>' +
+            '  </div>' +
+            '  <div style=\"margin-top:10px;\">' + ISNULL(@ds_relatorio, '') + '</div>' +
+            '  <div style=\"text-align:right; font-size:11px; margin-top:10px;\">Gerado em: ' + @data_hora_atual + '</div>';
+
+        SET @html_footer = '  </body></html>';
+        SET @html        = @html_header + @html_table + @html_footer;
+
+        SELECT ISNULL(@html, '') AS RelatorioHTML;
     END TRY
     BEGIN CATCH
         DECLARE @errMsg NVARCHAR(2048) = FORMATMESSAGE(
@@ -160,7 +279,7 @@ BEGIN
             ERROR_LINE()
         );
 
-        --THROW ERROR_NUMBER(), @errMsg, ERROR_STATE();
+        THROW ERROR_NUMBER(), @errMsg, ERROR_STATE();
     END CATCH
 END
 GO
