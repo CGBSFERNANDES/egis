@@ -179,12 +179,14 @@ BEGIN
         ),
         itens_totais AS (
             SELECT
-                p.cd_nota_saida,
+                n.cd_nota_saida,
                 SUM(TRY_CONVERT(DECIMAL(18, 3), REPLACE(REPLACE(p.qCom, '.', ''), ',', '.'))) AS qt_total,
                 SUM(TRY_CONVERT(DECIMAL(18, 2), REPLACE(REPLACE(p.vProd, '.', ''), ',', '.'))) AS vl_total,
-                NULL AS peso_total -- TODO: mapear coluna de peso total (kg) na view vw_nfe_produto_servico_nota_fiscal_api
-            FROM itens_detalhe AS p
-            GROUP BY p.cd_nota_saida
+                TRY_CONVERT(DECIMAL(18, 3), ns.qt_peso_bruto_nota_saida) AS peso_total
+            FROM @notas AS n
+            LEFT JOIN itens_detalhe AS p ON p.cd_nota_saida = n.cd_nota_saida
+            LEFT JOIN nota_saida AS ns ON ns.cd_nota_saida = n.cd_nota_saida
+            GROUP BY n.cd_nota_saida, ns.qt_peso_bruto_nota_saida
         ),
         base AS (
             SELECT
@@ -272,7 +274,7 @@ BEGIN
                             '<td style="text-align:right;">' + CONVERT(NVARCHAR(30), vl_total) + '</td>' +
                         '</tr>' +
                         '<tr class="peso-row">' +
-                            '<td colspan="4"><strong>PESO TOTAL (kg):</strong> ' + ISNULL(CONVERT(NVARCHAR(30), peso_total), 'TODO: informar peso total (kg) via coluna da view vw_nfe_produto_servico_nota_fiscal_api') + '</td>' +
+                            '<td colspan="4"><strong>PESO TOTAL (kg):</strong> ' + CONVERT(NVARCHAR(30), ISNULL(peso_total, 0)) + '</td>' +
                         '</tr>' +
                     '</table>' +
                     '<div class="declaracao-bloco">' +
