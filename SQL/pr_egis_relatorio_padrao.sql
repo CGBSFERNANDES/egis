@@ -166,6 +166,13 @@ if isnull(@cd_relatorio_form,0)>0
 
 --select * from egisadmin.dbo.relatorio order by cd_relatorio desc
 
+--Etiqueta Produto Nota-------------------------------------------------------------------------------------------------
+if @cd_relatorio = 418
+begin 
+	exec pr_egis_relatorio_etiqueta_produto_nota @json = @json
+	return
+end
+
 --Crítica de Lançamento Contábil------------------------------------------------------------------------------------------
 if @cd_relatorio = 407
 begin 
