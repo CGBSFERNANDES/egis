@@ -91,16 +91,19 @@ export default {
     cd_empresa: { type: Number, required: true },
     cd_segmento: { type: Number, required: true }
   },
+
   data() {
     const hoje = new Date();
     const dtFim = hoje.toISOString().slice(0,10);
     const dtIni = new Date(hoje.getFullYear(), hoje.getMonth(), 1).toISOString().slice(0,10);
-
+   
     return {
       dtIni,
       dtFim,
       rows: [],
-      loading: false
+      loading: false,
+      headerBanco: localStorage.nm_banco_empresa || ''
+
     };
   },
   computed: {
@@ -126,13 +129,18 @@ export default {
   methods: {
     async carregar() {
       this.loading = true;
+      this.headerBanco = localStorage.nm_banco_empresa || this.headerBanco;
+      const cfg = this.headerBanco ? { headers: { 'x-banco': this.headerBanco } } : undefined;
+
       try {
         this.rows = await loadBi("pr_bi_fato_vendas", {
           cd_empresa: this.cd_empresa,
           cd_segmento: this.cd_segmento,
           dtIni: new Date(this.dtIni),
           dtFim: new Date(this.dtFim),
-        });
+        },
+        cfg
+      );
       } finally {
         this.loading = false;
       }

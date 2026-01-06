@@ -504,9 +504,12 @@ export default {
 
       api = "";
       dados = await Menu.montarMenu(this.cd_empresa, 0, 99); //'titulo'; Procedimento 938 -- pr_atualiza_modulo_acesso_usuario_empresa
+      
       api = dados.nm_identificacao_api;
 
       let sParametroApi = dados.nm_api_parametro;
+
+      //console.log(api)
 
       dados = await Procedimento.montarProcedimento(
         this.cd_empresa,
@@ -514,12 +517,17 @@ export default {
         api,
         sParametroApi
       );
+
+      //console.log('Selecao de Módulo --> ', dados)
+
       var dados_u;
       dados_u = await validaLogin.validar({
         nm_fantasia_usuario: localStorage.login,
         cd_senha_usuario: localStorage.password,
       });
+
       localStorage.cd_home = dados_u.cd_api;
+      
       this.$store._mutations.SET_Usuario = dados_u[0];
 
       this.$router.push({ name: "home" });

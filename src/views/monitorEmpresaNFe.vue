@@ -1,735 +1,651 @@
 <template>
-  <div class="monitor-nfe q-pa-sm">
-    <q-card flat bordered class="q-mb-md">
-      <q-card-section>
-        <div class="row items-center q-col-gutter-md">
-          <div class="col">
-            <div class="text-h6">Monitor de Notas Fiscais de Empresa</div>
-            <div class="text-caption text-grey-7">
-              Entrada em cards para selecionar a empresa e consulta via engine.
-            </div>
+  <div class="q-pa-md">
+    <!-- Topo / Título -->
+    <div class="row items-center q-col-gutter-sm">
+      <div class="col">
+        <div class="row items-center no-wrap">
+
+          <!-- seta voltar (igual unicoFormEspecial) -->
+      <q-btn
+        flat
+        round
+        dense
+        icon="arrow_back"
+        class="q-mr-sm seta-form"
+        aria-label="Voltar"
+        @click="onVoltar"
+      />
+
+          <div class="text-h6 text-weight-bold q-mr-sm">
+            Monitor de Notas Fiscais de Empresa
           </div>
 
-          <div class="col-auto row items-center q-gutter-sm">
-            <q-chip
-              dense
-              rounded
-              color="deep-purple-7"
-              text-color="white"
-              class="q-mt-xs"
-              icon="apps"
-              :label="`Menu ${MENU_ID}`"
-            >
-              <q-tooltip>identificação</q-tooltip>
-            </q-chip>
-
-            <q-toggle
-              v-model="entradaComoCards"
-              color="deep-purple-7"
-              checked-icon="view_module"
-              unchecked-icon="list"
-              label="Entrada em cards"
-              keep-color
-            />
-          </div>
-        </div>
-      </q-card-section>
-
-      <q-separator />
-
-      <q-card-section>
-        <div v-if="entradaComoCards" class="row q-col-gutter-md">
-          <div
-            v-for="empresa in empresas"
-            :key="empresa.cd_empresa || empresa.id || empresa.nm_fantasia_empresa"
-            class="col-12 col-sm-6 col-md-4 col-lg-3"
-          >
-            <q-card
-              flat
-              bordered
-              class="empresa-card"
-              :class="{ 'empresa-card--ativa': isEmpresaSelecionada(empresa) }"
-              @click="selecionarEmpresa(empresa)"
-            >
-              <q-card-section>
-                <div class="text-subtitle2 text-weight-medium">
-                  {{ empresa.nm_fantasia_empresa || empresa.nm_empresa || 'Empresa' }}
-                </div>
-                <div class="text-caption text-grey-7">
-                  Código: {{ empresa.cd_empresa || '-' }}
-                </div>
-                <div v-if="empresa.nm_empresa" class="text-caption text-grey-6 q-mt-xs">
-                  {{ empresa.nm_empresa }}
-                </div>
-              </q-card-section>
-              <q-separator />
-              <q-card-actions align="between">
-                <div class="text-caption text-grey-7">Selecionar</div>
-                <q-icon
-                  :name="isEmpresaSelecionada(empresa) ? 'check_circle' : 'radio_button_unchecked'"
-                  color="deep-purple-7"
-                />
-              </q-card-actions>
-            </q-card>
-          </div>
-          <div v-if="!empresas.length" class="col-12 text-caption text-grey-7">
-            Nenhuma empresa encontrada para seleção.
-          </div>
-        </div>
-
-        <div v-else class="row q-col-gutter-md">
-          <div class="col-12 col-md-4">
-            <q-select
-              v-model="filtros.empresa"
-              :options="empresas"
-              option-value="cd_empresa"
-              option-label="nm_fantasia_empresa"
-              map-options
-              dense
-              outlined
-              clearable
-              :loading="loadingCombos"
-              label="Empresa"
-            />
-          </div>
-        </div>
-
-        <div class="row q-col-gutter-md q-mt-md">
-          <div class="col-12 col-md-3">
-            <q-select
-              v-model="filtros.modelo"
-              :options="modelos"
-              option-label="label"
-              map-options
-              dense
-              outlined
-              clearable
-              :loading="loadingCombos"
-              label="Modelo"
-            />
-          </div>
-
-          <div class="col-12 col-md-3">
-            <q-select
-              v-model="filtros.tipo"
-              :options="tiposOperacao"
-              option-label="label"
-              map-options
-              dense
-              outlined
-              clearable
-              :loading="loadingCombos"
-              label="Tipo de Operação"
-            />
-          </div>
-
-          <div class="col-12 col-md-3">
-            <q-select
-              v-model="filtros.serie"
-              :options="seriesFiltradas"
-              :option-label="serieLabel"
-              map-options
-              dense
-              outlined
-              clearable
-              :loading="loadingCombos"
-              label="Série"
-            />
-          </div>
-
-          <div class="col-12 col-md-3">
-            <q-input
-              v-model="filtros.dt_inicial"
-              dense
-              outlined
-              type="date"
-              label="Data inicial"
-            />
-          </div>
-          <div class="col-12 col-md-3">
-            <q-input
-              v-model="filtros.dt_final"
-              dense
-              outlined
-              type="date"
-              label="Data final"
-            />
-          </div>
-
-          <div class="col-12 col-md-3">
-            <q-btn-toggle
-              v-model="visao"
-              dense
-              rounded
-              toggle-color="deep-purple-7"
-              unelevated
-              :options="[
-                { label: 'Resumo', value: 'resumo' },
-                { label: 'Analítico', value: 'analitico' },
-              ]"
-            />
-          </div>
-        </div>
-
-        <div class="row items-center q-col-gutter-sm q-mt-md">
-          <q-btn
+          <q-chip
+            dense
             color="deep-purple-7"
-            rounded
-            icon="refresh"
-            label="Atualizar"
-            :loading="loadingConsulta"
-            @click="atualizarConsulta"
-          />
-          <q-btn
-            flat
-            rounded
-            color="grey-8"
-            icon="restart_alt"
-            label="Limpar"
-            class="q-ml-sm"
-            @click="resetarFiltros"
-          />
-          <q-space />
-          <div class="text-caption text-grey-7">
-            Fonte: pr_egis_nfe_monitor_processo (parâmetro {{ parametroAtual }})
-          </div>
-        </div>
-      </q-card-section>
-    </q-card>
+            text-color="white"
+            icon="menu"
+            v-if="cd_menu"
+          >
+            {{ cd_menu }}
+          </q-chip>
 
-    <div v-if="cards.length" class="row q-col-gutter-md q-mb-md">
-      <div
-        v-for="card in cards"
-        :key="card.key"
-        class="col-12 col-sm-6 col-md-3"
-      >
-        <q-card flat bordered class="bg-grey-1">
-          <q-card-section>
-            <div class="text-caption text-grey-7">{{ card.titulo }}</div>
-            <div class="text-h6 text-weight-bold">{{ card.valor }}</div>
-            <div class="text-caption text-grey-6" v-if="card.subtitulo">
-              {{ card.subtitulo }}
-            </div>
-          </q-card-section>
-        </q-card>
+       <!-- Empresa selecionada -->
+
+<div v-if="cardSelecionado" class="row items-center q-col-gutter-sm q-mt-sm">
+  <div class="col-auto">
+
+ <q-avatar size="56px" class="logo-destaque" v-if="cardSelecionado">
+  <img
+    v-if="cardSelecionado.logo"
+    :src="cardSelecionado.logo"
+    :alt="cardSelecionado.nm_fantasia_empresa || 'Logo'"
+  />
+  <q-icon v-else name="business" />
+</q-avatar>
+
+  </div>
+
+  <div class="col">
+    <div class="text-subtitle1 text-weight-bold">
+      {{ cardSelecionado.nm_fantasia_empresa || cardSelecionado.nm_empresa }}
+    </div>
+    <div class="text-caption text-grey-7">
+      <span v-if="cardSelecionado.cd_empresa">Empresa: {{ cardSelecionado.cd_empresa }}</span>
+      <span v-if="cardSelecionado.nm_banco_empresa"> • Banco: {{ cardSelecionado.nm_banco_empresa }}</span>
+      <span v-if="cardSelecionado.nm_versao_esquema_nfc"> • Versão: {{ cardSelecionado.nm_versao_esquema_nfc }}</span>
+    </div>
+  </div>
+
+  <div class="col-auto">
+  <div class="row q-col-gutter-lg items-end">
+    <div class="col-auto">
+      <div class="text-caption text-grey-7">Qtd. Notas (Hoje)</div>
+      <div class="text-subtitle2 text-weight-bold text-deep-orange-6">
+        {{ formatarInteiro(cardSelecionado.QtdNotasHoje) }}
       </div>
     </div>
 
-    <unico-form-especial
-      ref="engine"
-      :cd_menu_entrada="MENU_ID"
-      :cd_acesso_entrada="cdAcesso"
-      :modo_inicial="modoInicial"
-      :embedMode="embedMode"
-      :registro_pai="registroPai"
-      :cd_chave_registro="cdChaveRegistro"
-      :overrides="overrides"
-      :hooks="engineHooks"
-      :services="services"
-      @voltar="onVoltar"
-      @fechar="onFechar"
-    >
-      <template #toolbar-right="{ engine }">
-        <q-btn
-          dense
-          rounded
-          color="deep-purple-7"
-          class="q-mt-sm q-ml-sm"
-          icon="download"
-          size="lg"
-          :disable="visao !== 'analitico' || !temXmlDisponivel"
-          @click="baixarZipXml()"
-        >
-          <q-tooltip>Download XML (parâmetro 20)</q-tooltip>
-        </q-btn>
+    <div class="col-auto text-right">
+      <div class="text-caption text-grey-7">Valor Total (Hoje)</div>
+      <div class="text-subtitle2 text-weight-bold text-cyan-7 valor-direita">
+        {{ formatarMoeda(cardSelecionado.VlTotalHoje) }}
+      </div>
+    </div>
+  </div>
+</div>
 
-        <q-btn
-          dense
-          rounded
-          color="deep-purple-7"
-          class="q-mt-sm q-ml-sm"
-          icon="article"
-          size="lg"
-          :disable="visao !== 'analitico'"
-          @click="visualizarXml(engine)"
-        >
-          <q-tooltip>Visualizar XML</q-tooltip>
-        </q-btn>
-      </template>
-    </unico-form-especial>
+</div>
 
-    <q-dialog v-model="dialogoXml" maximized content-class="dlg-form-branco">
-      <q-card class="q-pa-md" style="min-height: 60vh">
-        <q-card-section class="row items-center q-pb-none">
-          <div class="text-h6">{{ xmlTitulo }}</div>
+
+        </div>
+
+       </div>
+
+      <div class="col-auto">
+        <q-btn
+          rounded
+          dense
+          color="deep-purple-7"
+          icon="refresh"
+          label="Atualizar"
+          :loading="loading"
+          @click="carregarTudo"
+        />
+      </div>
+    </div>
+
+    <!-- Filtros mínimos (baseado no exemplo do backend com dt_inicial/dt_final) -->
+    <div class="row q-col-gutter-md q-mt-md">
+      <div class="col-12 col-sm-4">
+        <q-input
+          dense
+          outlined
+          v-model="dt_inicial"
+          label="Data inicial"
+          fill-mask
+          placeholder="dd/mm/aaaa"
+        />
+      </div>
+      <div class="col-12 col-sm-4">
+        <q-input
+          dense
+          outlined
+          v-model="dt_final"
+          label="Data final"
+          mask="##/##/####"
+          fill-mask
+          placeholder="dd/mm/aaaa"
+        />
+      </div>
+      <div class="col-12 col-sm-4 flex items-center">
+        <q-toggle
+          v-model="exibirComoCards"
+          color="deep-purple-7"
+          checked-icon="view_module"
+          unchecked-icon="view_list"
+          :label="exibirComoCards ? 'cards' : 'grid'"
+          keep-color
+        />
+      </div>
+    </div>
+
+    <!-- CARDS (entrada) -->
+    <div class="q-mt-lg">
+      <div v-if="exibirComoCards" class="cards-wrapper">
+        <div
+          v-for="(item, idx) in cards"
+          :key="idx"
+          class="monitor-card cursor-pointer"
+          @click="selecionarCard(item)"
+        >
+          <!-- Sem inventar campos: mostra um resumo baseado nas chaves existentes -->
+         <div class="row items-center no-wrap q-col-gutter-sm">
+  <div class="col-auto">
+  
+  <q-avatar size="54px" class="logo-destaque">
+  <img
+    v-if="item && item.logo"
+    :src="item.logo"
+    :alt="item.nm_fantasia_empresa || 'Logo'"
+  />
+  <q-icon v-else name="business" />
+</q-avatar>
+
+  </div>
+
+  <div class="col">
+    <div class="text-weight-bold text-subtitle1 ellipsis">
+      {{ item.nm_fantasia_empresa || item.nm_empresa || obterTituloCard(item) }}
+    </div>
+
+    <div class="text-caption text-grey-7 ellipsis">
+      {{ item.nm_empresa || obterSubtituloCard(item) }}
+    </div>
+  </div>
+</div>
+
+<div class="row q-col-gutter-sm q-mt-sm items-end">
+  <div class="col-6">
+    <div class="text-caption text-grey-7">Qtd. Notas (Hoje)</div>
+    <div class="text-subtitle2 text-weight-bold text-deep-orange-6">
+      {{ formatarInteiro(item.QtdNotasHoje) }}
+    </div>
+  </div>
+
+  <div class="col-6 text-right">
+    <div class="text-caption text-grey-7">Valor Total (Hoje)</div>
+    <div class="text-subtitle2 text-weight-bold text-cyan-7 valor-direita">
+      {{ formatarMoeda(item.VlTotalHoje) }}
+    </div>
+  </div>
+</div>
+
+        </div>
+
+        <div v-if="!loading && cards.length === 0" class="text-grey-7 q-mt-md">
+          Nenhum dado para exibir.
+        </div>
+      </div>
+
+      <!-- Opção: Grid único para os cards (quando toggle em grid) -->
+      <div v-else>
+        <dx-data-grid
+          class="dx-card wide-card"
+          :data-source="cards"
+          :columns="columnsCards"
+          :show-borders="true"
+          :column-auto-width="true"
+          :row-alternation-enabled="true"
+          :allow-column-resizing="true"
+          :allow-column-reordering="true"
+          :word-wrap-enabled="false"
+          @row-dbl-click="onDblClickCard"
+        >
+          <DxGroupPanel :visible="true" empty-panel-text="Colunas para agrupar..." />
+          <DxGrouping :auto-expand-all="true" />
+          <DxPaging :enabled="true" :page-size="10" />
+          <DxPager
+            :show-page-size-selector="true"
+            :allowed-page-sizes="pageSizes"
+            :show-info="true"
+          />
+          <DxHeaderFilter :visible="true" :allow-search="true" />
+          <DxColumnChooser :enabled="true" mode="select" />
+          <DxColumnFixing :enabled="true" />
+        </dx-data-grid>
+      </div>
+    </div>
+
+    <!-- GRIDS (logo abaixo dos cards) -->
+    <div class="q-mt-xl">
+      <div class="text-subtitle1 text-weight-bold q-mb-sm">
+        Grids
+      </div>
+
+      <div v-if="loading" class="text-grey-7">Carregando...</div>
+
+      <div v-if="!loading && grids.length === 0" class="text-grey-7">
+        Nenhuma grid retornada.
+      </div>
+
+      <div v-for="(g, i) in grids" :key="'grid-' + i" class="q-mb-xl">
+        <div class="row items-center q-mb-sm">
+          <div class="text-weight-bold">
+            {{ g.titulo || ('Grid ' + (i + 1)) }}
+          </div>
           <q-space />
-          <q-btn dense flat icon="close" v-close-popup />
-        </q-card-section>
+          <q-badge rounded color="deep-purple-7" :label="g.rows.length" />
+        </div>
 
-        <q-separator />
-
-        <q-card-section>
-          <pre class="xml-viewer">{{ xmlConteudo }}</pre>
-        </q-card-section>
-      </q-card>
-    </q-dialog>
+        <dx-data-grid
+          class="dx-card wide-card"
+          :data-source="g.rows"
+          :columns="g.columns"
+          :show-borders="true"
+          :column-auto-width="true"
+          :row-alternation-enabled="true"
+          :allow-column-resizing="true"
+          :allow-column-reordering="true"
+          :word-wrap-enabled="false"
+        >
+          <DxGroupPanel :visible="true" empty-panel-text="Colunas para agrupar..." />
+          <DxGrouping :auto-expand-all="true" />
+          <DxPaging :enabled="true" :page-size="10" />
+          <DxPager
+            :show-page-size-selector="true"
+            :allowed-page-sizes="pageSizes"
+            :show-info="true"
+          />
+          <DxHeaderFilter :visible="true" :allow-search="true" />
+          <DxSearchPanel :visible="true" :width="300" placeholder="Procurar..." />
+          <DxColumnChooser :enabled="true" mode="select" />
+          <DxColumnFixing :enabled="true" />
+        </dx-data-grid>
+      </div>
+    </div>
   </div>
 </template>
 
 <script>
-import UnicoFormEspecial from "@/views/unicoFormEspecial.vue"
-import api from "@/boot/axios"
-import { saveAs } from "file-saver"
-import PizZip from "pizzip"
+import api from "@/boot/axios";
 
-const MENU_ID = 8842
-const PROC = "/exec/pr_egis_nfe_monitor_processo"
-const MAPA_PROC = "/exec/pr_egis_pesquisa_mapa_atributo"
+import {
+  DxDataGrid,
+  DxGroupPanel,
+  DxGrouping,
+  DxPaging,
+  DxPager,
+  DxHeaderFilter,
+  DxColumnChooser,
+  DxColumnFixing,
+  DxSearchPanel,
+} from "devextreme-vue/data-grid";
+
+const PROC = "/exec/pr_egis_nfe_monitor_processo";
+const MAPA_PROC = "/exec/pr_egis_pesquisa_mapa_atributo";
 
 export default {
   name: "monitorEmpresaNFe",
-  components: { UnicoFormEspecial },
-
-  props: {
-    embedMode: { type: Boolean, default: false },
-    registroPai: { type: Object, default: null },
-    cdChaveRegistro: { type: Number, default: 0 },
+  components: {
+    DxDataGrid,
+    DxGroupPanel,
+    DxGrouping,
+    DxPaging,
+    DxPager,
+    DxHeaderFilter,
+    DxColumnChooser,
+    DxColumnFixing,
+    DxSearchPanel,
   },
-
   data() {
-    const hoje = new Date()
-    const inicioMes = new Date(hoje.getFullYear(), hoje.getMonth(), 1)
-
     return {
-      MENU_ID,
-      cdAcesso: Number(localStorage.cd_chave_pesquisa || 0),
-      modoInicial: "GRID",
-      visao: "resumo",
-      entradaComoCards: true,
-      filtros: {
-        modelo: null,
-        tipo: null,
-        serie: null,
-        empresa: null,
-        dt_inicial: this.formatarData(inicioMes),
-        dt_final: this.formatarData(hoje),
-      },
-      modelos: [],
-      tiposOperacao: [],
-      series: [],
-      empresas: [],
-      loadingCombos: false,
-      loadingConsulta: false,
+      loading: false,
+      exibirComoCards: true,
+
+      // datas mínimas (conforme exemplo do exec no documento)
+      dt_inicial: "01/01/2025",
+      dt_final: "12/31/2026",
+
+      cd_menu: 0,
+
+      pageSizes: [10, 20, 50, 100],
+
+      // dados
       cards: [],
-      resumoRows: [],
-      analiticoRows: [],
-      mapaCaption: {},
-      dialogoXml: false,
-      xmlTitulo: "",
-      xmlConteudo: "",
-      overrides: {
-        title: "[MENU] Monitor de Notas de Empresa",
-        gridPageSize: 200,
-        hideButtons: {
-          novo: true,
-        },
-      },
-      services: {
-        api,
-      },
-    }
+      columnsCards: [],
+      grids: [], // [{ titulo, rows, columns }]
+      cardSelecionado: null,
+    };
   },
+  created() {
+    this.cd_menu =
+      Number(this.$route?.meta?.cd_menu || this.$route?.params?.cd_menu || 0) || 0;
 
-  computed: {
-    engineHooks() {
-      return {
-        beforeFetchRows: this.beforeFetchRowsHook,
-        mapPayload: this.mapPayloadHook,
-        afterFetchRows: this.afterFetchRowsHook,
-        onError: this.onHookError,
-      }
-    },
+    this.carregarTudo();
 
-    parametroAtual() {
-      return this.visao === "analitico" ? 20 : 500
-    },
-
-    seriesFiltradas() {
-      const modelo = this.filtros.modelo?.cd_modelo
-      if (!modelo) return this.series
-      return this.series.filter((s) => {
-        const cdModelo = s.cd_modelo_serie_nota || s.cd_modelo
-        return !cdModelo || cdModelo === modelo
-      })
-    },
-
-    temXmlDisponivel() {
-      return this.analiticoRows.some((r) => r?.ds_xml_nota || r?.ds_nota_xml_retorno)
-    },
   },
-
   methods: {
+
     onVoltar() {
-      this.$router.back()
-    },
-    onFechar() {
-      this.$router.back()
-    },
+  // padrão mais seguro: volta uma página
+  if (this.$router) this.$router.back();
+},
 
-    selecionarEmpresa(empresa) {
-      if (this.isEmpresaSelecionada(empresa)) return
-      this.filtros.empresa = empresa
-      this.atualizarConsulta()
-    },
+    formatarInteiro(valor) {
+  const n = Number(valor);
+  if (!Number.isFinite(n)) return "-";
+  return new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 0 }).format(n);
+},
 
-    isEmpresaSelecionada(empresa) {
-      const selecionada = this.filtros.empresa
-      if (!selecionada || !empresa) return false
-      return (
-        selecionada === empresa ||
-        (selecionada.cd_empresa && selecionada.cd_empresa === empresa.cd_empresa)
-      )
-    },
+formatarMoeda(valor) {
+  // Seu backend pode mandar "462013,76" (string com vírgula) ou número.
+  if (valor === null || valor === undefined || valor === "") return "-";
 
-    serieLabel(serie) {
-      if (!serie) return ""
-      const sigla = serie.sg_serie_nota_fiscal || serie.nm_serie_nota_fiscal
-      const empresa = serie.nm_fantasia_empresa
-      return [sigla, empresa].filter(Boolean).join(" – ")
-    },
+  let n;
+  if (typeof valor === "string") {
+    // troca milhar "." e decimal "," -> padrão JS
+    const v = valor.replace(/\./g, "").replace(",", ".");
+    n = Number(v);
+  } else {
+    n = Number(valor);
+  }
 
-    formatarData(dateObj) {
-      if (!(dateObj instanceof Date)) return ""
-      const ano = dateObj.getFullYear()
-      const mes = String(dateObj.getMonth() + 1).padStart(2, "0")
-      const dia = String(dateObj.getDate()).padStart(2, "0")
-      return `${ano}-${mes}-${dia}`
-    },
+  if (!Number.isFinite(n)) return "-";
 
+  return new Intl.NumberFormat("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+  }).format(n);
+},
+
+    // -------- Helpers mínimos (sem depender de lógica externa) --------
     stripStatusRows(rows) {
-      if (!Array.isArray(rows)) return []
-      const clone = rows.slice()
-      const last = clone[clone.length - 1]
-      const statusKeys = ["sucesso", "codigo", "mensagem"]
-      const isOnlyStatus =
-        last &&
-        Object.keys(last).length &&
-        Object.keys(last).every((k) => statusKeys.includes(k.toLowerCase()))
+      // remove linhas que parecem ser "status" (quando vier um recordset com 1 coluna de status, etc.)
+      if (!Array.isArray(rows)) return [];
+      return rows.filter((r) => {
+        if (!r || typeof r !== "object") return false;
+        const keys = Object.keys(r);
+        if (keys.length === 0) return false;
 
-      if (isOnlyStatus) clone.pop()
-      return clone
+        // se for uma linha com 1 chave contendo "status", removemos
+        if (keys.length === 1) {
+          const k = keys[0].toLowerCase();
+          if (k.includes("status")) return false;
+        }
+        return true;
+      });
     },
 
-    async mountedFetch() {
-      await this.carregarCombos()
-      this.definirEmpresaPadrao()
-      await this.atualizarConsulta()
+    montarColumnsPorChaves(rows, mapaCaption) {
+      const first = Array.isArray(rows) && rows.length ? rows[0] : null;
+      if (!first || typeof first !== "object") return [];
+
+      return Object.keys(first).map((k) => ({
+        dataField: k,
+        caption: (mapaCaption && mapaCaption[k]) ? mapaCaption[k] : k,
+      }));
     },
 
-    definirEmpresaPadrao() {
-      if (this.filtros.empresa || !this.empresas.length) return
-      const localEmpresa = Number(localStorage.cd_empresa || 0)
-      const encontrada = this.empresas.find((e) => Number(e.cd_empresa) === localEmpresa)
-      this.filtros.empresa = encontrada || this.empresas[0]
-    },
+    async obterMapaCaption(atributos) {
+  // atributos: ["nm_grupo_conta", "dt_usuario", ...]
+  if (!Array.isArray(atributos) || atributos.length === 0) return {};
 
-    async carregarCombos() {
-      this.loadingCombos = true
-      try {
-        const [modelos, tipos, series, empresas] = await Promise.all([
-          this.executarParametro(1),
-          this.executarParametro(2),
-          this.executarParametro(3),
-          this.executarParametro(4),
-        ])
-
-        this.modelos = modelos
-        this.tiposOperacao = tipos
-        this.series = series
-        this.empresas = empresas
-      } catch (err) {
-        console.error("Falha ao carregar listas do monitor NFe", err)
-        this.$q?.notify?.({
-          type: "negative",
-          message: "Erro ao carregar listas iniciais",
-        })
-      } finally {
-        this.loadingCombos = false
-      }
-    },
-
-    async executarParametro(cd_parametro) {
-      const payload = [
-        {
-          ic_json_parametro: "S",
-          cd_parametro,
-          cd_usuario: Number(localStorage.cd_usuario || 0),
-          cd_empresa: Number(localStorage.cd_empresa || 0),
-        },
-      ]
-
-      const resp = await api.post(PROC, payload)
-      const data = resp?.data ?? resp
-      console.log("dados : ", resp, data, cd_parametro)
-      return this.stripStatusRows(Array.isArray(data) ? data : data?.recordset || data?.rows || [])
-    },
-
-    async atualizarConsulta() {
-      const engine = this.$refs.engine
-      if (!engine || typeof engine.onRefreshConsulta !== "function") return
-
-      this.loadingConsulta = true
-      await this.$nextTick()
-      engine.onRefreshConsulta()
-    },
-
-    resetarFiltros() {
-      const hoje = new Date()
-      const inicioMes = new Date(hoje.getFullYear(), hoje.getMonth(), 1)
-
-      this.filtros = {
-        modelo: null,
-        tipo: null,
-        serie: null,
-        empresa: null,
-        dt_inicial: this.formatarData(inicioMes),
-        dt_final: this.formatarData(hoje),
-      }
-      this.visao = "resumo"
-      this.entradaComoCards = true
-      this.definirEmpresaPadrao()
-      this.atualizarConsulta()
-    },
-
-    beforeFetchRowsHook({ filtros }) {
-      if (filtros) {
-        filtros.cd_empresa = this.filtros.empresa?.cd_empresa || Number(localStorage.cd_empresa || 0)
-      }
-      this.loadingConsulta = true
-    },
-
-    mapPayloadHook({ payload = {} }) {
-      const cdEmpresa = Number(this.filtros.empresa?.cd_empresa || localStorage.cd_empresa || 0)
-      const cdUsuario = Number(localStorage.cd_usuario || 0)
-
-      return {
-        ...payload,
+  try {
+    const payload = [
+      {
         ic_json_parametro: "S",
-        cd_parametro: this.parametroAtual,
-        cd_empresa: cdEmpresa,
-        cd_usuario: cdUsuario,
-        cd_modelo: this.filtros.modelo?.cd_modelo || null,
-        cd_serie_nota: this.filtros.serie?.cd_serie_nota_fiscal || null,
-        cd_tipo_operacao: this.filtros.tipo?.cd_tipo_operacao || this.filtros.tipo?.cd_tipo || null,
-        cd_empresa_faturamento: this.filtros.empresa?.cd_empresa || null,
-        dt_inicial: this.filtros.dt_inicial,
-        dt_final: this.filtros.dt_final,
+        cd_parametro: 1,
+        cd_usuario: Number(localStorage.cd_usuario || 0),
+        cd_empresa: Number(localStorage.cd_empresa || 0),
+        cd_tabela: 0
+      },
+      {
+        dados: atributos.map((nm_atributo) => ({ nm_atributo }))
       }
+    ];
+
+    const resp = await api.post("/exec/pr_egis_pesquisa_mapa_atributo", payload);
+    const data = resp?.data ?? resp;
+
+    // mssql costuma devolver em result.recordset ou result.recordsets
+    const rows =
+      (data?.recordset) ||
+      (data?.rows) ||
+      (Array.isArray(data) ? data : null) ||
+      (data?.recordsets && data.recordsets[0]) ||
+      [];
+
+    const limpo = this.stripStatusRows(rows);
+
+    const mapa = {};
+    limpo.forEach((r) => {
+      const nm = r?.nm_atributo;
+      if (!nm) return;
+
+      const possiveis = Object.keys(r).filter((k) => k !== "nm_atributo");
+      let rotulo = null;
+
+      for (const k of possiveis) {
+        if (typeof r[k] === "string" && r[k].trim()) {
+          rotulo = r[k].trim();
+          break;
+        }
+      }
+      mapa[nm] = rotulo || nm;
+    });
+
+    return mapa;
+  } catch (e) {
+    console.warn("Mapa de atributos falhou, usando chaves como caption.", e);
+    return {}; // <-- essencial: não quebra mais
+  }
+},
+
+    obterTituloCard(item) {
+      if (!item || typeof item !== "object") return "Item";
+      // tenta usar a primeira chave como "título" sem inventar campo
+      const keys = Object.keys(item);
+      const k = keys.find((x) => typeof item[x] === "string" && item[x]) || keys[0];
+      return String(item[k] ?? "Item");
     },
 
-    async afterFetchRowsHook({ rows = [], engine }) {
-      const limpos = this.stripStatusRows(rows)
-
-      if (this.visao === "analitico") {
-        this.analiticoRows = limpos
-        this.cards = []
-      } else {
-        this.resumoRows = limpos
-        this.cards = this.montarCards(limpos)
+    obterSubtituloCard(item) {
+      if (!item || typeof item !== "object") return "";
+      const keys = Object.keys(item);
+      // tenta montar um subtítulo com 2 chaves úteis
+      const pares = [];
+      for (const k of keys) {
+        const v = item[k];
+        if (v === null || v === undefined) continue;
+        if (typeof v === "object") continue;
+        // evita repetir o título
+        const txt = `${k}: ${v}`;
+        pares.push(txt);
+        if (pares.length >= 2) break;
       }
-
-      await this.aplicarMapaAtributos(engine, limpos)
-      this.loadingConsulta = false
+      return pares.join(" • ");
     },
 
-    async aplicarMapaAtributos(engine, rows) {
-      const atributos = this.extrairAtributos(rows)
-      if (!atributos.length) return
+    obterBadgeCard(item) {
+      if (!item || typeof item !== "object") return null;
+      // se existir um valor numérico “óbvio”, usa como badge (sem amarrar em nome)
+      const keys = Object.keys(item);
+      for (const k of keys) {
+        const v = item[k];
+        if (typeof v === "number") return v;
+      }
+      return null;
+    },
+
+    selecionarCard(item) {
+      this.cardSelecionado = item || null;
+      // neste modelo não inventamos navegação/processos;
+      // se o backend retornar grids dependentes do card, dá para chamar outro cd_parametro aqui.
+    },
+
+    onDblClickCard(e) {
+      const item = e?.data;
+      if (item) this.selecionarCard(item);
+    },
+
+    // --------- Chamada principal (param 500) ----------
+    
+    async carregarTudo() {
+      
+      this.loading = true;
 
       try {
-        const mapa = await this.carregarMapaAtributos(atributos)
-        this.mapaCaption = mapa
+        const payload = [
+          {
+            ic_json_parametro: "S",
+            cd_parametro: 500,
+            cd_usuario: Number(localStorage.cd_usuario || 0),
+            cd_empresa: Number(localStorage.cd_empresa || 0),
+            dt_inicial: this.dt_inicial,
+            dt_final: this.dt_final,
+          },
+        ];
 
-        if (engine && Array.isArray(engine.columns) && engine.columns.length) {
-          engine.columns = engine.columns.map((c) => ({
-            ...c,
-            caption: mapa[c.dataField] || c.caption || c.name || c.dataField,
-          }))
+        const resp = await api.post(PROC, payload);
+        const data = resp?.data ?? resp;
+
+        /**
+         * Compatível com retornos comuns:
+         * - array direto
+         * - { recordset: [...] }
+         * - { rows: [...] }
+         * - { recordsets: [ [...], [...], ... ] }  (cards + grids)
+         */
+        const recordsets = data?.recordsets;
+
+        if (Array.isArray(recordsets) && recordsets.length) {
+          // 1º recordset -> cards
+          const rsCards = this.stripStatusRows(recordsets[0] || []);
+          this.cards = rsCards;
+
+          // demais recordsets -> grids
+          const grids = [];
+          for (let i = 1; i < recordsets.length; i++) {
+            const rows = this.stripStatusRows(recordsets[i] || []);
+            if (!rows.length) continue;
+
+            // tradução por mapa (param 1) com os nomes das colunas
+            const chaves = Object.keys(rows[0] || {});
+            const mapa = await this.obterMapaCaption(chaves);
+            const columns = this.montarColumnsPorChaves(rows, mapa);
+
+            grids.push({
+              titulo: null,
+              rows,
+              columns,
+            });
+          }
+          this.grids = grids;
+        } else {
+          // fallback: se vier só uma lista, mostramos como cards e criamos 1 grid abaixo
+          const rows =
+            (Array.isArray(data) ? data : data?.recordset || data?.rows || []) || [];
+          const limpo = this.stripStatusRows(rows);
+
+          this.cards = limpo;
+
+          if (!this.cardSelecionado && Array.isArray(this.cards) && this.cards.length) {
+  this.cardSelecionado = this.cards[0];
+}
+
+
+          const chaves = Object.keys(limpo[0] || {});
+          const mapa = chaves.length ? await this.obterMapaCaption(chaves) : {};
+          this.columnsCards = this.montarColumnsPorChaves(this.cards, mapa);
+
+          this.grids = limpo.length
+            ? [
+                {
+                  titulo: null,
+                  rows: limpo,
+                  columns: this.columnsCards,
+                },
+              ]
+            : [];
+        }
+
+        // columns do grid dos cards (quando toggle em grid)
+        if (!this.columnsCards.length && this.cards.length) {
+          const chaves = Object.keys(this.cards[0] || {});
+          const mapa = chaves.length ? await this.obterMapaCaption(chaves) : {};
+          this.columnsCards = this.montarColumnsPorChaves(this.cards, mapa);
         }
       } catch (err) {
-        console.warn("Mapa de atributos indisponível", err)
+        console.error("Erro ao carregar monitor:", err);
+       // this.cards = [];
+       // this.grids = [];
+       // this.columnsCards = [];
+      } finally {
+        this.loading = false;
       }
-    },
-
-    extrairAtributos(rows) {
-      const exemplo = Array.isArray(rows) && rows.length ? rows[0] : {}
-      return Object.keys(exemplo)
-        .filter((k) => !["sucesso", "codigo", "mensagem", "linhagridcolor"].includes(k.toLowerCase()))
-        .map((nm_atributo) => ({ nm_atributo }))
-    },
-
-    async carregarMapaAtributos(atributos = []) {
-      if (!atributos.length) return {}
-
-      const payload = [
-        { ic_json_parametro: "S", cd_parametro: 1, cd_tabela: 0 },
-        { dados: atributos },
-      ]
-
-      const resp = await api.post(MAPA_PROC, payload)
-      const data = resp?.data ?? resp
-      const linhas = this.stripStatusRows(Array.isArray(data) ? data : data?.recordset || data?.rows || [])
-      const mapa = {}
-
-      linhas.forEach((r) => {
-        const attr = (r?.nm_atributo || "").trim()
-        const titulo = (r?.nm_atributo_consulta || r?.nm_titulo || r?.ds_atributo || "").trim()
-        if (attr) mapa[attr] = titulo || attr
-      })
-
-      return mapa
-    },
-
-    montarCards(rows) {
-      if (!Array.isArray(rows) || !rows.length) return []
-
-      const totalNotas = rows.reduce((acc, r) => acc + Number(r.qt_nota_saida || 0), 0)
-      const totalValor = rows.reduce((acc, r) => acc + Number(r.vl_total || 0), 0)
-      const totalAnterior = rows.reduce((acc, r) => acc + Number(r.vl_total_ant || 0), 0)
-      const ticketMedio = rows.reduce((acc, r) => acc + Number(r.ticket_medio || 0), 0) / rows.length
-
-      return [
-        {
-          key: "notas",
-          titulo: "Notas no período",
-          valor: this.formatarNumero(totalNotas, "int"),
-          subtitulo: this.filtros.dt_inicial && this.filtros.dt_final
-            ? `${this.filtros.dt_inicial} até ${this.filtros.dt_final}`
-            : "",
-        },
-        {
-          key: "valor",
-          titulo: "Valor total",
-          valor: this.formatarNumero(totalValor, "moeda"),
-          subtitulo: totalAnterior
-            ? `Variação: ${this.formatarNumero(totalValor - totalAnterior, "moeda")}`
-            : "",
-        },
-        {
-          key: "ticket",
-          titulo: "Ticket médio",
-          valor: this.formatarNumero(ticketMedio, "moeda"),
-          subtitulo: "Média ponderada pelo período",
-        },
-        {
-          key: "participacao",
-          titulo: "Participação média",
-          valor: this.formatarNumero(
-            rows.reduce((acc, r) => acc + Number(r.perc_participacao || 0), 0) / rows.length,
-            "percentual"
-          ),
-          subtitulo: "Participação por série",
-        },
-      ]
-    },
-
-    formatarNumero(valor, tipo) {
-      const num = Number(valor || 0)
-      if (tipo === "moeda") return num.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
-      if (tipo === "percentual") return `${num.toFixed(2)}%`
-      if (tipo === "int") return num.toLocaleString("pt-BR")
-      return num
-    },
-
-    primeiroRegistroSelecionado(engine) {
-      const ctx = engine || this.$refs.engine
-      if (!ctx) return null
-      const selecionados = ctx.registrosSelecionados || []
-      if (selecionados.length) return selecionados[0]
-      return ctx.registroSelecionadoPrincipal || null
-    },
-
-    visualizarXml(engine) {
-      if (this.visao !== "analitico") return
-      const row = this.primeiroRegistroSelecionado(engine)
-      if (!row) {
-        this.$q?.notify?.({ type: "warning", message: "Selecione uma nota para visualizar" })
-        return
-      }
-
-      const xml = row.ds_xml_nota || row.ds_nota_xml_retorno
-      if (!xml) {
-        this.$q?.notify?.({ type: "warning", message: "Registro sem XML disponível" })
-        return
-      }
-
-      const numero = row.cd_nota_saida || row.cd_chave_acesso || "XML"
-      this.xmlTitulo = `XML da Nota ${numero}`
-      this.xmlConteudo = xml
-      this.dialogoXml = true
-    },
-
-    baixarZipXml() {
-      if (this.visao !== "analitico") return
-
-      const registros = this.analiticoRows.filter((r) => r?.ds_xml_nota || r?.ds_nota_xml_retorno)
-      if (!registros.length) {
-        this.$q?.notify?.({
-          type: "warning",
-          message: "Nenhum XML disponível para download",
-        })
-        return
-      }
-
-      const zip = new PizZip()
-      registros.forEach((r, idx) => {
-        const xml = r.ds_xml_nota || r.ds_nota_xml_retorno
-        const chave = (r.cd_chave_acesso || r.cd_nota_saida || idx + 1).toString().replace(/\s+/g, "")
-        const nome = `nfe_${chave || idx + 1}.xml`
-        zip.file(nome, xml)
-      })
-
-      const blob = zip.generate({ type: "blob" })
-      saveAs(blob, `monitor-nfe-xmls-${Date.now()}.zip`)
-      this.$q?.notify?.({ type: "positive", message: "Download gerado com sucesso" })
-    },
-
-    onHookError({ err, hook }) {
-      console.error("Erro no hook", hook, err)
-      this.loadingConsulta = false
-      this.$q?.notify?.({ type: "negative", message: "Falha ao carregar dados" })
     },
   },
-
-  mounted() {
-    this.mountedFetch()
-  },
-}
+};
 </script>
 
 <style scoped>
-.monitor-nfe .xml-viewer {
-  max-height: 70vh;
-  overflow: auto;
-  background: #0b1021;
-  color: #e0e0e0;
-  padding: 16px;
-  border-radius: 8px;
-  white-space: pre-wrap;
+.cards-wrapper {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 14px;
 }
 
-.empresa-card {
-  cursor: pointer;
-  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+.monitor-card {
+  border: 1px solid rgba(0,0,0,0.08);
+  border-radius: 12px;
+  padding: 14px;
+  background: #fff;
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
 }
 
-.empresa-card:hover {
+.monitor-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 8px 18px rgba(0,0,0,0.08);
 }
 
-.empresa-card--ativa {
-  border-color: #673ab7;
-  box-shadow: 0 6px 18px rgba(103, 58, 183, 0.2);
+.logo-empresa img {
+  object-fit: contain;
 }
+
+.seta-form {
+ 
+  color: #512da8
+}
+
+
+/* Emblema: anel + miolo branco + sombra */
+.logo-destaque {
+  border-radius: 50%;
+  background: #fff; /* <-- miolo branco */
+  border: 1px solid rgba(103, 58, 183, 0.60); /* deep-purple */
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.12);
+  overflow: hidden;
+
+  /* centraliza conteúdo dentro do avatar */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Logo bem maior dentro do círculo */
+.logo-destaque img {
+  width: 88%;
+  height: 88%;
+  object-fit: contain; /* não distorce */
+  padding: 0;         /* <-- remove o respiro que deixava pequeno */
+  background: #fff;   /* garante branco mesmo se a imagem tiver transparência */
+}
+
+/* Se cair no ícone padrão */
+.logo-destaque .q-icon {
+  font-size: 28px;
+  color: rgba(103, 58, 183, 0.75);
+}
+
 </style>

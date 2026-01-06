@@ -115,7 +115,8 @@ export default {
     this.rememberUser = localStorage.getItem('rememberUser') === 'true'
 
     // limpar qualquer sobra antiga de senha (migração segura)
-    localStorage.removeItem('password')
+    //localStorage.removeItem('password')
+    this.password = localStorage.password
 
     // se você precisa limpar estado do app, faça sem apagar o remember
     await this.LimpaStorageSemCredenciais()
@@ -215,6 +216,7 @@ export default {
     },
 
     async onLoginClick (e) {
+
       if (!this.login || !this.password) {
         notify({ message: 'Login e senha são obrigatórios!', type: 'error' })
         return
@@ -242,7 +244,7 @@ export default {
         }
 
         // MIGRAÇÃO: garantir que não existe senha persistida
-        localStorage.removeItem('password')
+        //localStorage.removeItem('password')
 
         // datas padrão (mantive teu padrão)
         const date = new Date()
@@ -296,6 +298,7 @@ export default {
         localStorage.fantasia = dlogin.nm_fantasia_empresa
         localStorage.email = dlogin.nm_usuario_email
         localStorage.cd_modulo = dlogin.cd_modulo
+        localStorage.password = dlogin.cd_senha_acesso
         localStorage.cd_cliente = 0 
         localStorage.cd_usuario = dlogin.cd_usuario
         localStorage.ic_etapa_processo = dlogin.ic_etapa_processo
@@ -381,7 +384,7 @@ export default {
 
         // limpa senha da memória
         
-        this.password = ''
+        //this.password = ''
         
         e === undefined ? '' : e.validationGroup.reset()
 
@@ -394,6 +397,7 @@ export default {
       } finally {
         this.load_login = false
       }
+
     },
 
     
