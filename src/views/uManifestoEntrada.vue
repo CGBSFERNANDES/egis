@@ -213,7 +213,7 @@ import axios from 'axios'
 
 // Ajuste os imports para o caminho real do seu projeto
 import unicoFormEspecial from './unicoFormEspecial.vue'
-import EntradaXML from './entradaXML.vue'
+import EntradaXML from './entradaXMLold.vue'
 
 // DevExtreme
 import { DxDataGrid, DxColumn, DxFilterRow, DxSearchPanel, DxPaging, DxPager } from 'devextreme-vue/data-grid'

@@ -1,503 +1,1193 @@
 <template>
-  <div>
+  <div class="q-pa-sm">
 
-    <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no" />
+    <!-- Topo (identidade) -->
+    <div class="row items-center no-wrap toolbar-scroll">
+      <h2 class="content-block col-12 row items-center no-wrap">
 
-    <!-- TOPO no estilo -->
+        <q-btn
+          flat
+          round
+          dense
+          icon="arrow_back"
+          class="q-mr-sm seta-form"
+          aria-label="Voltar"
+          @click="onVoltar"
+        ></q-btn>
 
-    <div class="row items-center">
-      <transition name="slide-fade">
-        <!-- título + seta + badge -->
-        <div class="topbar" v-show="tituloMenu || title">
-          <!-- seta voltar -->
-          <q-btn flat round dense icon="arrow_back" class="q-mr-sm" aria-label="Voltar" @click="onVoltar" />
-          <h2>
-            {{ tituloMenu || title }}
-          </h2>
+        <span class="text-weight-bold">{{ tituloMenu }}</span>
 
-          <!-- badge com total de registros -->
+        <q-badge
+          v-if="itens.length > 0"
+          align="middle"
+          rounded
+          color="red"
+          :label="itens.length"
+          class="q-ml-sm bg-form"
+        ></q-badge>
 
-          <q-badge v-if="(qt_registro || recordCount) >= 0" align="middle" rounded color="red"
-            :label="qt_registro || recordCount" class="q-ml-sm bg-form" />
+        <!-- Origem do XML (NFSE / CTE) -->
+        <div class="row items-center q-gutter-sm q-ml-md">
 
-          <!-- botões -->
-          <q-btn rounded color="deep-purple-7" class=" q-ml-sm" icon="picture_as_pdf" @click="exportarPDF" />
-          <q-btn rounded color="deep-purple-7" class=" q-ml-sm" icon="description" @click="abrirRelatorio" />
-          <q-btn rounded color="deep-purple-7" class=" q-ml-sm" icon="view_list" @click="dlgMapaAtributos = true" />
-<q-btn
-  color="deep-purple-7"
-  class=" q-ml-sm"
-  dense
-  rounded
-  icon="visibility"
-  label="NFS-e"
-  :disable="!podeVisualizarNFSe"
-  @click="visualizarNFSe"
-/>
-<q-btn
-  color="deep-purple-7"
-  class=" q-ml-sm"
-  rounded
-  dense
-  icon="visibility"
-  label="CT-e"
-  :disable="!podeVisualizarCTe"
-  @click="visualizarCTe"
-/>
+          <q-select
+            v-model="tipoDoc"
+            dense
+            outlined
+            emit-value
+            map-options
+            :options="tipoDocOptions"
+            style="min-width: 190px"
+            label="Tipo de documento"
+          />
 
+          <q-select
+            v-model="origemDados"
+            dense
+            outlined
+            emit-value
+            map-options
+            :options="origemOptions"
+            style="min-width: 190px"
+            label="Origem dos dados"
+          />
 
-          <!-- TODO: checar se é necessário -->
-          <!-- Botão de processos (3 pontinhos) -->
-          <!-- <q-btn v-if="cd_menu_processo > 0" rounded color="deep-purple-7" class=" q-ml-sm" icon="more_horiz"
-            @click="abrirMenuProcessos" /> -->
-          <q-btn rounded color="deep-purple-7" class=" q-ml-sm" icon="info" @click="onInfoClick" />
-          <!-- <q-chip v-if="(cdMenu || cd_menu) && (1 == 1)" rounded color="deep-purple-7" class=" q-ml-auto margin-menu"
-            size="16px" text-color="white" :label="`${cdMenu || cd_menu}`" /> -->
+          <q-select
+            v-if="origemDados === 'XML_EXISTENTE'"
+            v-model="xmlSelecionadoId"
+            dense
+            outlined
+            emit-value
+            map-options
+            :options="listaXml"
+            option-value="id"
+            option-label="label"
+            style="min-width: 260px"
+            label="XML"
+            @input="carregarXmlSelecionado"
+          />
+
+          <q-btn
+            v-if="origemDados === 'XML_EXISTENTE'"
+            dense
+            rounded
+            color="deep-purple-7"
+            icon="save"
+            class="q-ml-xs"
+            :disable="!xmlConteudo"
+            :loading="loadingSalvarXml"
+            @click="salvarXmlEditado"
+          >
+            <q-tooltip>Salvar XML</q-tooltip>
+          </q-btn>
+
+          <q-btn
+            v-if="origemDados === 'MANUAL'"
+            dense
+            rounded
+            color="deep-purple-7"
+            icon="save_alt"
+            class="q-ml-xs"
+            :loading="loadingSalvarXml"
+            @click="salvarManual"
+          >
+            <q-tooltip>Salvar (digitação manual)</q-tooltip>
+          </q-btn>
+
         </div>
-      </transition>
+
+
+        <q-space></q-space>
+
+        <q-btn
+          dense
+          rounded
+          color="deep-purple-7"
+          icon="upload_file"
+          class="q-ml-sm"
+          size="lg"
+          @click="abrirEntradaXml = true"
+        >
+          <q-tooltip>Entrada XML</q-tooltip>
+        </q-btn>
+
+        <q-btn
+          dense
+          rounded
+          color="deep-purple-7"
+          icon="check"
+          class="q-ml-sm"
+          size="lg"
+          :loading="loadingProcessar"
+          @click="processarXmlNoBanco"
+        >
+          <q-tooltip>Processar no banco (procedure)</q-tooltip>
+        </q-btn>
+
+        <q-btn
+          dense
+          rounded
+          color="deep-purple-7"
+          icon="save"
+          class="q-ml-sm"
+          size="lg"
+          :loading="loadingSalvar"
+          @click="salvarEdicao"
+        >
+          <q-tooltip>Salvar edição (payload)</q-tooltip>
+        </q-btn>
+
+        <q-btn
+          dense
+          rounded
+          color="deep-purple-7"
+          icon="refresh"
+          class="q-ml-sm"
+          size="lg"
+          @click="limparTudo"
+        >
+          <q-tooltip>Limpar</q-tooltip>
+        </q-btn>
+
+      </h2>
     </div>
 
-    <!-- Formulário de entrada -->
-    <div class="toolbar-entrada q-pa-md">
+    <q-card class="q-pa-md">
+      
 
-
-    <!-- Tipo XML -->
-    <div class="te-item te-tipo-xml">
-      <q-select
-        v-model="form.cd_tipo_xml"
-        :options="opcoesTipoXml"
-        emit-value
-        map-options
-        dense
-        outlined
-        label="Tipo XML"
-      />
-    </div>
-
-     <div class="te-item te-filtro-tipo">
-      <q-select
-        v-model="filtro.cd_tipo_xml"
-        :options="[{ label: 'Todos', value: null }, ...opcoesTipoXml]"
-        emit-value
-        map-options
-        dense
-        outlined
-        label="Filtrar por Tipo"
-      />
-    </div>
-
-    <!-- Arquivo XML -->
-    <div class="te-item te-arquivo">
-      <q-file
-        v-if="1===2"
-        v-model="form.arquivo"
-        accept=".xml"
-        dense
-        outlined
-        label="Selecione o arquivo XML"
-        use-chips
-        @input="onFileChange"
-      >
-        <template v-slot:append>
-          <q-btn
-            flat
+      <!-- Painel de XML / Digitação Manual (NFSE / CTE) -->
+      <q-card-section class="q-pt-none">
+        <div v-if="origemDados === 'XML_EXISTENTE'">
+          <q-input
+            v-model="xmlConteudo"
+            type="textarea"
+            autogrow
+            outlined
             dense
-            icon="close"
-            round
-            @click="limparArquivo"
-            v-if="form.arquivo"
+            label="Conteúdo XML"
           />
-        </template>
-      </q-file>
+        </div>
 
-      <q-file
-        v-model="form.arquivos"
-        label="Selecione o arquivo XML"
-        multiple
-        @update:model-value="onFilesSelected"
-      >
-        <template v-slot:append>
-          <q-btn
-            flat
-            dense
-            icon="close"
-            round
-            @click="limparArquivo"
-            v-if="form.arquivos.length"
-          />
-        </template>
-      </q-file>
+        <div v-else class="row q-col-gutter-sm">
+          <div class="col-12 col-md-3">
+            <q-input v-model="manual.numero" dense outlined label="Número" />
+          </div>
+          <div class="col-12 col-md-3">
+            <q-input v-model="manual.serie" dense outlined label="Série" />
+          </div>
+          <div class="col-12 col-md-3">
+            <q-input v-model="manual.dataEmissao" dense outlined label="Emissão (YYYY-MM-DD)" />
+          </div>
+          <div class="col-12 col-md-3">
+            <q-input v-model.number="manual.valor" type="number" dense outlined label="Valor" />
+          </div>
+
+          <div class="col-12 col-md-6">
+            <q-input v-model="manual.emitenteNome" dense outlined label="Prestador/Emitente" />
+          </div>
+          <div class="col-12 col-md-6">
+            <q-input v-model="manual.destinatarioNome" dense outlined label="Tomador/Destinatário" />
+          </div>
+        </div>
+
+        <q-separator spaced />
+      </q-card-section>
+
+<q-card-section class="row no-wrap items-start q-gutter-md">
+
+        <!-- Identidade visual (estilo modal) -->
+        <div class="col-auto flex flex-center bg-deep-purple-1 q-pa-lg" style="border-radius: 80px;">
+          <q-icon name="description" size="56px" color="deep-purple-7"></q-icon>
+        </div>
+
+        <div class="col">
+
+          <!-- Resumo -->
+          <div class="row items-center q-col-gutter-md q-mb-sm">
+            <div class="col-12 col-md-6">
+              <div class="text-caption text-grey-7">Chave</div>
+              <div class="text-subtitle2">{{ nfe.chNFe || '-' }}</div>
+            </div>
+            <div class="col-6 col-md-2">
+              <div class="text-caption text-grey-7">Número</div>
+              <div class="text-subtitle2">{{ nfe.nNF || '-' }}</div>
+            </div>
+            <div class="col-6 col-md-2">
+              <div class="text-caption text-grey-7">Série</div>
+              <div class="text-subtitle2">{{ nfe.serie || '-' }}</div>
+            </div>
+            <div class="col-12 col-md-2">
+              <div class="text-caption text-grey-7">Valor</div>
+              <div class="text-subtitle2">{{ valorNfFormatado }}</div>
+            </div>
+          </div>
+
+          <q-separator spaced></q-separator>
+
+          <!-- Tabs -->
+          <q-tabs v-model="tab" dense active-color="deep-purple-7" indicator-color="deep-purple-7" align="left">
+            <q-tab name="nfe" label="NFE"></q-tab>
+            <q-tab name="emit" label="Emitente"></q-tab>
+            <q-tab name="dest" label="Destinatário"></q-tab>
+            <q-tab name="itens" label="Produtos e Serviços"></q-tab>
+            <q-tab name="totais" label="Totais"></q-tab>
+            <q-tab name="transp" label="Transporte"></q-tab>
+            <q-tab name="cobr" label="Cobrança"></q-tab>
+            <q-tab name="inf" label="Informações Adicionais"></q-tab>
+            <q-tab name="eventos" label="Eventos"></q-tab>
+
+          </q-tabs>
+
+          <q-separator></q-separator>
+
+          <q-tab-panels v-model="tab" animated>
+
+            <q-tab-panel name="nfe">
+              <div class="row q-col-gutter-sm">
+                <div class="col-12 col-md-6">
+                  <q-input v-model="nfe.natOp" dense outlined label="Natureza da Operação"></q-input>
+                </div>
+                <div class="col-4 col-md-2">
+                  <q-input v-model="nfe.mod" dense outlined label="Modelo"></q-input>
+                </div>
+                <div class="col-4 col-md-2">
+                  <q-input v-model="nfe.serie" dense outlined label="Série"></q-input>
+                </div>
+                <div class="col-4 col-md-2">
+                  <q-input v-model="nfe.nNF" dense outlined label="Número NF"></q-input>
+                </div>
+                <div class="col-12 col-md-4">
+                  <q-input v-model="nfe.dhEmi" dense outlined label="Data/Hora Emissão"></q-input>
+                </div>
+                <div class="col-12 col-md-6">
+                   <q-input v-model="nfe.dhSaiEnt" dense outlined label="Data/Hora de Saída ou Entrada"></q-input>
+                </div>
+                <div class="col-12 col-md-6">
+                  <q-input v-model="prot.nProt" dense outlined label="Protocolo de Autorização e Uso"></q-input>
+                </div>
+                <div class="col-12 col-md-6">
+                  <q-input v-model="prot.dhRecbto" dense outlined label="Data/Hora Autorização"></q-input>
+                </div>
+
+                <div class="col-12 col-md-4">
+                  <q-input v-model="nfe.tpAmb" dense outlined label="Ambiente"></q-input>
+                </div>
+                <div class="col-12 col-md-4">
+                  <q-input v-model="nfe.finNFe" dense outlined label="Finalidade"></q-input>
+                </div>
+                <!-- Processo / Versão / Tipo Emissão -->
+<div class="col-12 col-md-4">
+  <q-input v-model="nfe.procEmi" dense outlined label="Processo"></q-input>
+</div>
+<div class="col-12 col-md-4">
+  <q-input v-model="nfe.verProc" dense outlined label="Versão do Processo"></q-input>
+</div>
+<div class="col-12 col-md-4">
+  <q-input v-model="nfe.tpEmis" dense outlined label="Tipo de Emissão (tpEmis)"></q-input>
+</div>
+
+<!-- Intermediador / Tipo Operação / Digest -->
+<div class="col-12 col-md-4">
+  <q-input v-model="nfe.indIntermed" dense outlined label="Intermediador / MarketPlace (indIntermed)"></q-input>
+</div>
+<div class="col-12 col-md-4">
+  <q-input v-model="nfe.tpNF" dense outlined label="Tipo de Operação (tpNF)"></q-input>
+</div>
+<div class="col-12 col-md-4">
+  <q-input v-model="prot.digVal" dense outlined label="Digest Value NF-e (digVal)"></q-input>
+</div>
+
+              </div>
+            </q-tab-panel>
+
+<q-tab-panel name="emit">
+
+  <div class="text-subtitle2 q-mb-sm">Dados do Emitente</div>
+
+  <div class="row q-col-gutter-sm">
+    <div class="col-12 col-md-8">
+      <q-input v-model="emit.xNome" dense outlined label="Nome / Razão Social"/>
+    </div>
+    <div class="col-12 col-md-4">
+      <q-input v-model="emit.xFant" dense outlined label="Nome Fantasia"/>
     </div>
 
-    <!-- BOTÕES, TODOS LADO A LADO -->
-    <div class="te-item te-botoes">
-      <q-btn
-        color="deep-purple-7"
-        label="Importar"
-        :disable="!podeImportar"
-        :loading="importando"
-        @click="enviar"
-        rounded
-        unelevated
-        icon="cloud_upload"
-        :class="['q-mt-sm', 'q-ml-sm']"
+    <div class="col-12 col-md-4">
+      <q-input v-model="emit.CNPJ" dense outlined label="CNPJ"/>
+    </div>
+    <div class="col-12 col-md-8">
+      <q-input v-model="emitEnd.xLgr" dense outlined label="Endereço"/>
+    </div>
+
+    <div class="col-12 col-md-4">
+      <q-input v-model="emitEnd.xBairro" dense outlined label="Bairro / Distrito"/>
+    </div>
+    <div class="col-12 col-md-4">
+      <q-input v-model="emitEnd.CEP" dense outlined label="CEP"/>
+    </div>
+    <div class="col-12 col-md-4">
+      <q-input v-model="emitEnd.fone" dense outlined label="Telefone"/>
+    </div>
+
+    <div class="col-12 col-md-4">
+      <q-input v-model="emitEnd.xMun" dense outlined label="Município"/>
+    </div>
+    <div class="col-12 col-md-2">
+      <q-input v-model="emitEnd.UF" dense outlined label="UF"/>
+    </div>
+    <div class="col-12 col-md-3">
+      <q-input v-model="emitEnd.cPais" dense outlined label="País"/>
+    </div>
+
+    <div class="col-12 col-md-3">
+      <q-input v-model="emit.IE" dense outlined label="Inscrição Estadual"/>
+    </div>
+    <div class="col-12 col-md-3">
+      <q-input v-model="emit.IM" dense outlined label="Inscrição Municipal"/>
+    </div>
+    <div class="col-12 col-md-3">
+      <q-input v-model="emit.CNAE" dense outlined label="CNAE Fiscal"/>
+    </div>
+    <div class="col-12 col-md-3">
+      <q-input v-model="emit.CRT" dense outlined label="Código Regime Tributário"/>
+    </div>
+  </div>
+
+</q-tab-panel>
+
+
+<q-tab-panel name="dest">
+
+  <div class="text-subtitle2 q-mb-sm">Dados do Destinatário</div>
+
+  <div class="row q-col-gutter-sm">
+
+    <!-- Nome / Razão Social -->
+    <div class="col-12">
+      <q-input
+        v-model="dest.xNome"
+        dense
+        outlined
+        label="Nome / Razão Social"
       />
-     <q-btn
-        color="deep-purple-7"
-        label="Consultar"
-        :loading="loading"
-        @click="consultar"
-        rounded
-        unelevated
-        :class="['q-mt-sm', 'q-ml-sm']"
-        icon="search"
+    </div>
+
+    <!-- CNPJ / Endereço -->
+    <div class="col-12 col-md-4">
+      <q-input
+        v-model="dest.CNPJ"
+        dense
+        outlined
+        label="CNPJ"
       />
-       <q-btn
-        color="deep-purple-7"
-        label="Processar"
-        :loading="loading"
-        @click="processar"
-        rounded
-        unelevated
-        :class="['q-mt-sm', 'q-ml-sm']"
-        icon="repeat"
+    </div>
+
+    <div class="col-12 col-md-8">
+      <q-input
+        v-model="destEnd.xLgr"
+        dense
+        outlined
+        label="Endereço"
       />
+    </div>
+
+    <!-- Bairro / CEP -->
+    <div class="col-12 col-md-4">
+      <q-input
+        v-model="destEnd.xBairro"
+        dense
+        outlined
+        label="Bairro / Distrito"
+      />
+    </div>
+
+    <div class="col-12 col-md-4">
+      <q-input
+        v-model="destEnd.CEP"
+        dense
+        outlined
+        label="CEP"
+      />
+    </div>
+
+    <!-- Município / Telefone -->
+    <div class="col-12 col-md-4">
+      <q-input
+        v-model="destEnd.xMun"
+        dense
+        outlined
+        label="Município"
+      />
+    </div>
+
+    <div class="col-12 col-md-4">
+      <q-input
+        v-model="destEnd.fone"
+        dense
+        outlined
+        label="Telefone"
+      />
+    </div>
+
+    <!-- UF / País -->
+    <div class="col-12 col-md-2">
+      <q-input
+        v-model="destEnd.UF"
+        dense
+        outlined
+        label="UF"
+      />
+    </div>
+
+    <div class="col-12 col-md-4">
+      <q-input
+        v-model="destEnd.xPais"
+        dense
+        outlined
+        label="País"
+      />
+    </div>
+
+    <!-- Indicador IE / Inscrição Estadual / SUFRAMA -->
+    <div class="col-12 col-md-4">
+      <q-input
+        v-model="dest.indIEDest"
+        dense
+        outlined
+        label="Indicador IE"
+      />
+    </div>
+
+    <div class="col-12 col-md-4">
+      <q-input
+        v-model="dest.IE"
+        dense
+        outlined
+        label="Inscrição Estadual"
+      />
+    </div>
+
+    <div class="col-12 col-md-4">
+      <q-input
+        v-model="dest.SUFRAMA"
+        dense
+        outlined
+        label="Inscrição SUFRAMA"
+      />
+    </div>
+
+    <!-- IM / Email -->
+    <div class="col-12 col-md-4">
+      <q-input
+        v-model="dest.IM"
+        dense
+        outlined
+        label="Inscrição Municipal"
+      />
+    </div>
+
+    <div class="col-12 col-md-8">
+      <q-input
+        v-model="dest.email"
+        dense
+        outlined
+        label="E-mail"
+      />
+    </div>
+
+  </div>
+
+  <q-separator spaced />
+
+  <!-- Dados da Operação (vem do IDE) -->
+  <div class="text-subtitle2 q-mb-sm">Dados da Operação</div>
+
+  <div class="row q-col-gutter-sm">
+
+    <div class="col-12 col-md-4">
+      <q-input
+        v-model="nfe.idDest"
+        dense
+        outlined
+        label="Destino da Operação"
+      />
+    </div>
+
+    <div class="col-12 col-md-4">
+      <q-input
+        v-model="nfe.indFinal"
+        dense
+        outlined
+        label="Consumidor Final"
+      />
+    </div>
+
+    <div class="col-12 col-md-4">
+      <q-input
+        v-model="nfe.indPres"
+        dense
+        outlined
+        label="Presença do Consumidor"
+      />
+    </div>
+
+  </div>
+
+</q-tab-panel>
+
+<q-tab-panel name="itens">
+
+  <div class="text-subtitle2 q-mb-sm">Dados dos Produtos e Serviços</div>
+
+  <!-- MASTER: tabela -->
+  <q-table
+    :rows="itens"
+    :columns="colItens"
+    row-key="__id"
+    dense
+    flat
+    separator="cell"
+    :pagination="{ rowsPerPage: 8 }"
+    @row-click="onClickItem"
+  ></q-table>
+
+  <q-separator spaced></q-separator>
+
+  <!-- DETAIL -->
+  <div v-if="itemSelecionado" class="q-mt-sm">
+
+    <div class="row items-center q-mb-sm">
+      <div class="text-subtitle2">
+        Item {{ itemSelecionado.nItem }} | {{ itemSelecionado.prod.xProd }}
+      </div>
+      <q-space></q-space>
+      <q-chip dense color="deep-purple-7" text-color="white">
+        vProd: {{ itemSelecionado.prod.vProd || '-' }}
+      </q-chip>
+    </div>
+
+
+    <!-- SUB-TABS -->
+    <q-tabs v-model="tabProd" dense active-color="deep-purple-7" indicator-color="deep-purple-7" align="left">
+      <q-tab name="prod" label="Produto"></q-tab>
+      <q-tab name="icms" label="ICMS"></q-tab>
+      <q-tab name="ipi" label="IPI"></q-tab>
+      <q-tab name="pis" label="PIS"></q-tab>
+      <q-tab name="cofins" label="COFINS"></q-tab>
+      <q-tab name="ibscbs" label="IBS/CBS"></q-tab>
+    </q-tabs>
+
+    <q-separator></q-separator>
+
+    <q-tab-panels v-model="tabProd" animated>
+
+      <!-- PROD -->
+      <q-tab-panel name="prod">
+
+  <!-- BLOCO 1: Identificação do Produto -->
+  <div class="text-subtitle2 q-mb-xs">Identificação do Produto</div>
+  <div class="row q-col-gutter-sm q-mb-sm">
+    <div class="col-12 col-md-3">
+      <q-input v-model="itemSelecionado.prod.cProd" dense outlined label="Código do Produto"></q-input>
+    </div>
+    <div class="col-12 col-md-3">
+      <q-input v-model="itemSelecionado.prod.NCM" dense outlined label="Código NCM"></q-input>
+    </div>
+    <div class="col-12 col-md-3">
+      <q-input v-model="itemSelecionado.prod.CEST" dense outlined label="Código CEST"></q-input>
+    </div>
+    <div class="col-12 col-md-3">
+      <q-input v-model="itemSelecionado.prod.cBenef" dense outlined label="Benefício Fiscal (cBenef)"></q-input>
+    </div>
+
+    <div class="col-12">
+      <q-input v-model="itemSelecionado.prod.xProd" dense outlined label="Descrição"></q-input>
+    </div>
+
+    <div class="col-12 col-md-3">
+      <q-input v-model="itemSelecionado.prod.cEAN" dense outlined label="EAN Comercial (cEAN)"></q-input>
+    </div>
+    <div class="col-12 col-md-3">
+      <q-input v-model="itemSelecionado.prod.cEANTrib" dense outlined label="EAN Tributável (cEANTrib)"></q-input>
+    </div>
+    <div class="col-12 col-md-3">
+      <q-input v-model="itemSelecionado.prod.extIPI" dense outlined label="Código EX TIPI (EXTIPI)"></q-input>
+    </div>
+    <div class="col-12 col-md-3">
+      <q-input v-model="itemSelecionado.prod.CFOP" dense outlined label="CFOP"></q-input>
+    </div>
+  </div>
+
+  <q-separator spaced></q-separator>
+
+  <!-- BLOCO 2: Comercial / Tributável -->
+  <div class="text-subtitle2 q-mb-xs">Comercial / Tributável</div>
+  <div class="row q-col-gutter-sm q-mb-sm">
+
+    <div class="col-12 col-md-3">
+      <q-input v-model="itemSelecionado.prod.uCom" dense outlined label="Unidade Comercial (uCom)"></q-input>
+    </div>
+    <div class="col-12 col-md-3">
+      <q-input v-model="itemSelecionado.prod.qCom" dense outlined label="Quantidade Comercial (qCom)"></q-input>
+    </div>
+    <div class="col-12 col-md-3">
+      <q-input v-model="itemSelecionado.prod.vUnCom" dense outlined label="Valor Unitário (vUnCom)"></q-input>
+    </div>
+    <div class="col-12 col-md-3">
+      <q-input v-model="itemSelecionado.prod.vProd" dense outlined label="Valor do Item (vProd)"></q-input>
+    </div>
+
+    <div class="col-12 col-md-3">
+      <q-input v-model="itemSelecionado.prod.uTrib" dense outlined label="Unidade Tributável (uTrib)"></q-input>
+    </div>
+    <div class="col-12 col-md-3">
+      <q-input v-model="itemSelecionado.prod.qTrib" dense outlined label="Quantidade Tributável (qTrib)"></q-input>
+    </div>
+    <div class="col-12 col-md-3">
+      <q-input v-model="itemSelecionado.prod.vUnTrib" dense outlined label="Valor Unit. Tributável (vUnTrib)"></q-input>
+    </div>
+    <div class="col-12 col-md-3">
+      <q-input v-model="itemSelecionado.prod.vTotTrib" dense outlined label="Valor Aproximado Tributos (vTotTrib)"></q-input>
+    </div>
+  </div>
+
+  <q-separator spaced></q-separator>
+
+  <!-- BLOCO 3: Valores Acessórios -->
+  <div class="text-subtitle2 q-mb-xs">Valores Acessórios</div>
+  <div class="row q-col-gutter-sm q-mb-sm">
+    <div class="col-12 col-md-3">
+      <q-input v-model="itemSelecionado.prod.vDesc" dense outlined label="Desconto (vDesc)"></q-input>
+    </div>
+    <div class="col-12 col-md-3">
+      <q-input v-model="itemSelecionado.prod.vFrete" dense outlined label="Frete (vFrete)"></q-input>
+    </div>
+    <div class="col-12 col-md-3">
+      <q-input v-model="itemSelecionado.prod.vSeg" dense outlined label="Seguro (vSeg)"></q-input>
+    </div>
+    <div class="col-12 col-md-3">
+      <q-input v-model="itemSelecionado.prod.vOutro" dense outlined label="Outras Despesas (vOutro)"></q-input>
+    </div>
+  </div>
+
+  <q-separator spaced></q-separator>
+
+  <!-- BLOCO 4: Origem / Pedido / Fabricante -->
+  <div class="text-subtitle2 q-mb-xs">Origem / Pedido / Fabricante</div>
+  <div class="row q-col-gutter-sm">
+    <div class="col-12 col-md-3">
+      <q-input v-model="itemSelecionado.prod.indEscala" dense outlined label="Indicador Escala (indEscala)"></q-input>
+    </div>
+    <div class="col-12 col-md-3">
+      <q-input v-model="itemSelecionado.prod.CNPJFab" dense outlined label="CNPJ Fabricante (CNPJFab)"></q-input>
+    </div>
+    <div class="col-12 col-md-3">
+      <q-input v-model="itemSelecionado.prod.xPed" dense outlined label="Pedido de compra (xPed)"></q-input>
+    </div>
+    <div class="col-12 col-md-3">
+      <q-input v-model="itemSelecionado.prod.nItemPed" dense outlined label="Item do pedido (nItemPed)"></q-input>
+    </div>
+
+    <div class="col-12 col-md-3">
+      <q-input v-model="itemSelecionado.prod.nFCI" dense outlined label="Número FCI (nFCI)"></q-input>
+    </div>
+  </div>
+
+</q-tab-panel>
+
+
+      <!-- ICMS -->
+      <q-tab-panel name="icms">
+        <div class="row q-col-gutter-sm">
+          <div class="col-12 col-md-3">
+            <q-input v-model="itemSelecionado.imposto.icms.tipo" dense outlined label="Tipo ICMS (ICMS00/ICMS10/...)"></q-input>
+          </div>
+          <div class="col-12 col-md-3">
+            <q-input v-model="itemSelecionado.imposto.icms.orig" dense outlined label="Origem (orig)"></q-input>
+          </div>
+          <div class="col-12 col-md-3">
+            <q-input v-model="itemSelecionado.imposto.icms.CST" dense outlined label="CST/CSOSN"></q-input>
+          </div>
+          <div class="col-12 col-md-3">
+            <q-input v-model="itemSelecionado.imposto.icms.modBC" dense outlined label="Modalidade BC (modBC)"></q-input>
+          </div>
+
+          <div class="col-12 col-md-3">
+            <q-input v-model="itemSelecionado.imposto.icms.vBC" dense outlined label="Base de Cálculo (vBC)"></q-input>
+          </div>
+          <div class="col-12 col-md-3">
+            <q-input v-model="itemSelecionado.imposto.icms.pICMS" dense outlined label="Alíquota (pICMS)"></q-input>
+          </div>
+          <div class="col-12 col-md-3">
+            <q-input v-model="itemSelecionado.imposto.icms.vICMS" dense outlined label="Valor ICMS (vICMS)"></q-input>
+          </div>
+          <div class="col-12 col-md-3">
+            <q-input v-model="itemSelecionado.imposto.icms.modBCST" dense outlined label="Modalidade BC ST (modBCST)"></q-input>
+          </div>
+
+          <div class="col-12 col-md-3">
+            <q-input v-model="itemSelecionado.imposto.icms.vBCST" dense outlined label="BC ST (vBCST)"></q-input>
+          </div>
+          <div class="col-12 col-md-3">
+            <q-input v-model="itemSelecionado.imposto.icms.pICMSST" dense outlined label="Alíquota ST (pICMSST)"></q-input>
+          </div>
+          <div class="col-12 col-md-3">
+            <q-input v-model="itemSelecionado.imposto.icms.vICMSST" dense outlined label="Valor ST (vICMSST)"></q-input>
+          </div>
+          <div class="col-12 col-md-3">
+            <q-input v-model="itemSelecionado.imposto.icms.pRedBC" dense outlined label="% Redução BC (pRedBC)"></q-input>
+          </div>
+        </div>
+      </q-tab-panel>
+
+      <!-- IPI -->
+      <q-tab-panel name="ipi">
+        <div class="row q-col-gutter-sm">
+          <div class="col-12 col-md-3">
+            <q-input v-model="itemSelecionado.imposto.ipi.CST" dense outlined label="CST"></q-input>
+          </div>
+          <div class="col-12 col-md-3">
+            <q-input v-model="itemSelecionado.imposto.ipi.vBC" dense outlined label="Base de Cálculo (vBC)"></q-input>
+          </div>
+          <div class="col-12 col-md-3">
+            <q-input v-model="itemSelecionado.imposto.ipi.pIPI" dense outlined label="Alíquota (pIPI)"></q-input>
+          </div>
+          <div class="col-12 col-md-3">
+            <q-input v-model="itemSelecionado.imposto.ipi.vIPI" dense outlined label="Valor IPI (vIPI)"></q-input>
+          </div>
+        </div>
+      </q-tab-panel>
+
+      <!-- PIS -->
+      <q-tab-panel name="pis">
+        <div class="row q-col-gutter-sm">
+          <div class="col-12 col-md-3">
+            <q-input v-model="itemSelecionado.imposto.pis.CST" dense outlined label="CST"></q-input>
+          </div>
+          <div class="col-12 col-md-3">
+            <q-input v-model="itemSelecionado.imposto.pis.vBC" dense outlined label="Base (vBC)"></q-input>
+          </div>
+          <div class="col-12 col-md-3">
+            <q-input v-model="itemSelecionado.imposto.pis.pPIS" dense outlined label="Alíquota (pPIS)"></q-input>
+          </div>
+          <div class="col-12 col-md-3">
+            <q-input v-model="itemSelecionado.imposto.pis.vPIS" dense outlined label="Valor (vPIS)"></q-input>
+          </div>
+        </div>
+      </q-tab-panel>
+
+      <!-- COFINS -->
+      <q-tab-panel name="cofins">
+        <div class="row q-col-gutter-sm">
+          <div class="col-12 col-md-3">
+            <q-input v-model="itemSelecionado.imposto.cofins.CST" dense outlined label="CST"></q-input>
+          </div>
+          <div class="col-12 col-md-3">
+            <q-input v-model="itemSelecionado.imposto.cofins.vBC" dense outlined label="Base (vBC)"></q-input>
+          </div>
+          <div class="col-12 col-md-3">
+            <q-input v-model="itemSelecionado.imposto.cofins.pCOFINS" dense outlined label="Alíquota (pCOFINS)"></q-input>
+          </div>
+          <div class="col-12 col-md-3">
+            <q-input v-model="itemSelecionado.imposto.cofins.vCOFINS" dense outlined label="Valor (vCOFINS)"></q-input>
+          </div>
+        </div>
+      </q-tab-panel>
+
+      <!-- IBS/CBS (placeholder para evoluir conforme schema) -->
+      <q-tab-panel name="ibscbs">
+        <div class="text-caption text-grey-7">
+          IBS/CBS: estrutura varia por versão do schema e legislação. Este bloco fica pronto para mapear quando seu XML/tabelas já estiverem gerando estes nós.
+        </div>
+        <div class="row q-col-gutter-sm q-mt-sm">
+          <div class="col-12 col-md-4">
+            <q-input v-model="itemSelecionado.imposto.ibs_cbs.tipo" dense outlined label="Tipo"></q-input>
+          </div>
+          <div class="col-12 col-md-4">
+            <q-input v-model="itemSelecionado.imposto.ibs_cbs.vBC" dense outlined label="Base"></q-input>
+          </div>
+          <div class="col-12 col-md-4">
+            <q-input v-model="itemSelecionado.imposto.ibs_cbs.vTrib" dense outlined label="Valor"></q-input>
+          </div>
+        </div>
+      </q-tab-panel>
+
+    </q-tab-panels>
+
+  </div>
+
+  <div v-else class="text-caption text-grey-7">
+    Clique em um item na lista para editar os detalhes.
+  </div>
+
+</q-tab-panel>
+
+<q-tab-panel name="totais">
+
+  <div class="text-subtitle2 q-mb-sm">Totais</div>
+
+  <div class="text-subtitle2 q-mb-xs">ICMS</div>
+
+  <div class="row q-col-gutter-sm">
+
+    <div class="col-12 col-md-3">
+      <q-input v-model="totais.vBC" dense outlined label="Base de Cálculo ICMS"></q-input>
+    </div>
+    <div class="col-12 col-md-3">
+      <q-input v-model="totais.vICMS" dense outlined label="Valor do ICMS"></q-input>
+    </div>
+    <div class="col-12 col-md-3">
+      <q-input v-model="totais.vICMSDeson" dense outlined label="Valor do ICMS Desonerado"></q-input>
+    </div>
+    <div class="col-12 col-md-3">
+      <q-input v-model="totais.vFCP" dense outlined label="Valor Total do FCP"></q-input>
+    </div>
+
+    <div class="col-12 col-md-3">
+      <q-input v-model="totais.vICMSFCP" dense outlined label="Valor Total ICMS FCP"></q-input>
+    </div>
+    <div class="col-12 col-md-3">
+      <q-input v-model="totais.vICMSUFDest" dense outlined label="Valor Total ICMS Interestadual UF Destino"></q-input>
+    </div>
+    <div class="col-12 col-md-3">
+      <q-input v-model="totais.vICMSUFRemet" dense outlined label="Valor Total ICMS Interestadual UF Rem."></q-input>
+    </div>
+    <div class="col-12 col-md-3">
+      <q-input v-model="totais.vBCST" dense outlined label="Base de Cálculo ICMS ST"></q-input>
+    </div>
+
+    <div class="col-12 col-md-3">
+      <q-input v-model="totais.vST" dense outlined label="Valor ICMS Substituição"></q-input>
+    </div>
+    <div class="col-12 col-md-3">
+      <q-input v-model="totais.vFCPSTRet" dense outlined label="Valor Total do FCP retido por ST"></q-input>
+    </div>
+    <div class="col-12 col-md-3">
+      <q-input v-model="totais.vFCPSTAnt" dense outlined label="Valor Total do FCP retido anteriormente por ST"></q-input>
+    </div>
+    <div class="col-12 col-md-3">
+      <q-input v-model="totais.vFCPUFDest" dense outlined label="Valor Total do FCP UF Destino"></q-input>
+    </div>
+
+    <div class="col-12 col-md-6">
+      <q-input v-model="totais.qBCMono" dense outlined label="Qtd. tributada ICMS monofásico próprio (qBCMono)"></q-input>
+    </div>
+    <div class="col-12 col-md-6">
+      <q-input v-model="totais.vICMSMono" dense outlined label="Valor do ICMS monofásico próprio (vICMSMono)"></q-input>
+    </div>
+
+    <div class="col-12 col-md-6">
+      <q-input v-model="totais.qBCMonoReten" dense outlined label="Qtd. tributada ICMS monofásico sujeito a retenção (qBCMonoReten)"></q-input>
+    </div>
+    <div class="col-12 col-md-6">
+      <q-input v-model="totais.vICMSMonoReten" dense outlined label="Valor do ICMS monofásico sujeito a retenção (vICMSMonoReten)"></q-input>
+    </div>
+
+    <div class="col-12 col-md-6">
+      <q-input v-model="totais.qBCMonoRetAnt" dense outlined label="Qtd. tributada ICMS monofásico retido anteriormente (qBCMonoRetAnt)"></q-input>
+    </div>
+    <div class="col-12 col-md-6">
+      <q-input v-model="totais.vICMSMonoRetAnt" dense outlined label="Valor do ICMS monofásico retido anteriormente (vICMSMonoRetAnt)"></q-input>
+    </div>
+
+    <q-separator class="col-12 q-my-sm"></q-separator>
+
+    <div class="col-12 col-md-3">
+      <q-input v-model="totais.vProd" dense outlined label="Valor Total dos Produtos"></q-input>
+    </div>
+    <div class="col-12 col-md-3">
+      <q-input v-model="totais.vFrete" dense outlined label="Valor do Frete"></q-input>
+    </div>
+    <div class="col-12 col-md-3">
+      <q-input v-model="totais.vSeg" dense outlined label="Valor do Seguro"></q-input>
+    </div>
+    <div class="col-12 col-md-3">
+      <q-input v-model="totais.vDesc" dense outlined label="Valor Total dos Descontos"></q-input>
+    </div>
+
+    <div class="col-12 col-md-3">
+      <q-input v-model="totais.vII" dense outlined label="Valor Total do II"></q-input>
+    </div>
+    <div class="col-12 col-md-3">
+      <q-input v-model="totais.vIPI" dense outlined label="Valor Total do IPI"></q-input>
+    </div>
+    <div class="col-12 col-md-3">
+      <q-input v-model="totais.vIPIDevol" dense outlined label="Valor Total do IPI Devolvido"></q-input>
+    </div>
+    <div class="col-12 col-md-3">
+      <q-input v-model="totais.vPIS" dense outlined label="Valor do PIS"></q-input>
+    </div>
+
+    <div class="col-12 col-md-3">
+      <q-input v-model="totais.vCOFINS" dense outlined label="Valor da COFINS"></q-input>
+    </div>
+    <div class="col-12 col-md-3">
+      <q-input v-model="totais.vOutro" dense outlined label="Outras Despesas Acessórias"></q-input>
+    </div>
+    <div class="col-12 col-md-3">
+      <q-input v-model="totais.vNF" dense outlined label="Valor Total da NF-e"></q-input>
+    </div>
+    <div class="col-12 col-md-3">
+      <q-input v-model="totais.vTotTrib" dense outlined label="Valor Aproximado dos Tributos"></q-input>
+    </div>
+
+  </div>
+
+</q-tab-panel>
+
+
+
+
+                     <q-tab-panel name="transp">
+
+  <div class="text-subtitle2 q-mb-sm">Dados do Transporte</div>
+
+  <div class="row q-col-gutter-sm">
+    <div class="col-12">
+      <q-input v-model="transp.modFrete" dense outlined label="Modalidade do Frete (modFrete)"></q-input>
+    </div>
+  </div>
+
+  <q-separator spaced></q-separator>
+
+  <div class="text-subtitle2 q-mb-sm">Transportador</div>
+  <div class="row q-col-gutter-sm">
+    <div class="col-12 col-md-4">
+      <q-input v-model="transporta.CNPJ" dense outlined label="CNPJ"></q-input>
+    </div>
+    <div class="col-12 col-md-8">
+      <q-input v-model="transporta.xNome" dense outlined label="Razão Social / Nome"></q-input>
+    </div>
+
+    <div class="col-12 col-md-4">
+      <q-input v-model="transporta.IE" dense outlined label="Inscrição Estadual"></q-input>
+    </div>
+    <div class="col-12 col-md-4">
+      <q-input v-model="transporta.xEnder" dense outlined label="Endereço Completo"></q-input>
+    </div>
+    <div class="col-12 col-md-3">
+      <q-input v-model="transporta.xMun" dense outlined label="Município"></q-input>
+    </div>
+    <div class="col-12 col-md-1">
+      <q-input v-model="transporta.UF" dense outlined label="UF"></q-input>
+    </div>
+  </div>
+
+  <q-separator spaced></q-separator>
+
+  <div class="text-subtitle2 q-mb-sm">Veículo</div>
+  <div class="row q-col-gutter-sm">
+    <div class="col-12 col-md-4">
+      <q-input v-model="veicTransp.placa" dense outlined label="Placa"></q-input>
+    </div>
+    <div class="col-12 col-md-4">
+      <q-input v-model="veicTransp.UF" dense outlined label="UF"></q-input>
+    </div>
+    <div class="col-12 col-md-4">
+      <q-input v-model="veicTransp.RNTC" dense outlined label="RNTC"></q-input>
+    </div>
+  </div>
+
+  <q-separator spaced></q-separator>
+
+  <div class="text-subtitle2 q-mb-sm">Volumes</div>
+  <div class="row q-col-gutter-sm">
+    <div class="col-12 col-md-3">
+      <q-input v-model="vol.qVol" dense outlined label="Quantidade"></q-input>
+    </div>
+    <div class="col-12 col-md-3">
+      <q-input v-model="vol.esp" dense outlined label="Espécie"></q-input>
+    </div>
+    <div class="col-12 col-md-3">
+      <q-input v-model="vol.marca" dense outlined label="Marca dos Volumes"></q-input>
+    </div>
+    <div class="col-12 col-md-3">
+      <q-input v-model="vol.nVol" dense outlined label="Numeração"></q-input>
+    </div>
+
+    <div class="col-12 col-md-6">
+      <q-input v-model="vol.pesoL" dense outlined label="Peso Líquido"></q-input>
+    </div>
+    <div class="col-12 col-md-6">
+      <q-input v-model="vol.pesoB" dense outlined label="Peso Bruto"></q-input>
+    </div>
+  </div>
+
+</q-tab-panel>
+
+<q-tab-panel name="cobr">
+
+  <div class="text-subtitle2 q-mb-sm">Dados de Cobrança</div>
+
+  <div class="text-subtitle2 q-mt-sm q-mb-xs">Fatura</div>
+  <div class="row q-col-gutter-sm">
+    <div class="col-12 col-md-4">
+      <q-input v-model="cobr.nFat" dense outlined label="Número"></q-input>
+    </div>
+    <div class="col-12 col-md-4">
+      <q-input v-model="cobr.vOrig" dense outlined label="Valor Original"></q-input>
+    </div>
+    <div class="col-12 col-md-4">
+      <q-input v-model="cobr.vDesc" dense outlined label="Valor do Desconto"></q-input>
+    </div>
+    <div class="col-12 col-md-4">
+      <q-input v-model="cobr.vLiq" dense outlined label="Valor Líquido"></q-input>
+    </div>
+  </div>
+
+  <q-separator spaced></q-separator>
+
+  <div class="row items-center q-mb-sm">
+    <div class="text-subtitle2">Parcelas</div>
+    <q-space></q-space>
+    <q-btn dense color="deep-purple-7" icon="add" label="Adicionar" @click="addDup"></q-btn>
+  </div>
+
+  <q-table
+    :rows="dups"
+    :columns="colDups"
+    row-key="__id"
+    dense
+    flat
+    separator="cell"
+  >
+    <template v-slot:body-cell-actions="props">
+      <q-td :props="props" class="text-right">
+        <q-btn dense flat round icon="delete" color="red" @click="remDup(props.row)"></q-btn>
+      </q-td>
+    </template>
+  </q-table>
+
+  <q-separator spaced></q-separator>
+
+  <div class="text-subtitle2 q-mb-sm">Formas de Pagamento</div>
+  <div class="row q-col-gutter-sm">
+    <div class="col-12 col-md-3">
+      <q-input v-model="pag.indPag" dense outlined label="Ind. Forma de Pagamento (indPag)"></q-input>
+    </div>
+    <div class="col-12 col-md-3">
+      <q-input v-model="pag.tPag" dense outlined label="Meio de Pagamento (tPag)"></q-input>
+    </div>
+    <div class="col-12 col-md-3">
+      <q-input v-model="pag.xPag" dense outlined label="Descrição do Meio (xPag)"></q-input>
+    </div>
+    <div class="col-12 col-md-3">
+      <q-input v-model="pag.vPag" dense outlined label="Valor do Pagamento (vPag)"></q-input>
+    </div>
+
+    <div class="col-12 col-md-3">
+      <q-input v-model="pag.UF" dense outlined label="UF processamento pagamento (UFPag)"></q-input>
+    </div>
+  </div>
+
+</q-tab-panel>
+
+         <q-tab-panel name="inf">
+  <div class="row q-col-gutter-sm">
+    <div class="col-12">
+      <q-input v-model="nfe.tpImp" dense outlined label="Formato de Impressão DANFE (tpImp)"></q-input>
+    </div>
+    <div class="col-12">
+      <q-input v-model="infAdic.infCpl" type="textarea" autogrow dense outlined
+               label="Informações Complementares (infCpl)"></q-input>
+    </div>
+  </div>
+</q-tab-panel>
+
+
+
+                     <q-tab-panel name="eventos">
+  <div class="row items-center q-mb-sm">
+    <div class="text-subtitle2 text-grey-8">Eventos da NF-e</div>
+    <q-badge color="deep-purple-7" class="q-ml-sm">{{ eventos.length }}</q-badge>
+    <q-space></q-space>
+    <q-btn dense color="deep-purple-7" icon="add" label="Adicionar evento" @click="addEvento"></q-btn>
+  </div>
+
+  <q-table
+    :rows="eventos"
+    :columns="colEventos"
+    row-key="__id"
+    dense
+    flat
+    separator="cell"
+  >
+    <template v-slot:body-cell-actions="props">
+      <q-td :props="props" class="text-right">
+        <q-btn dense flat round icon="delete" color="red" @click="remEvento(props.row)"></q-btn>
+      </q-td>
+    </template>
+  </q-table>
+</q-tab-panel>
+
+          </q-tab-panels>
+
+        </div>
+      </q-card-section>
+    </q-card>
+
+    <!-- Dialog: Entrada XML (igual conceito do entradaXML.vue: arquivo + colar) -->
+    <q-dialog v-model="abrirEntradaXml" persistent>
+      <q-card style="min-width: 85vw; max-width: 85vw;">
+        <q-card-section class="row items-center">
+          <div class="text-h6 text-weight-bold">Entrada XML</div>
+          <q-space></q-space>
+          <q-btn dense rounded color="deep-purple-7" icon="close" v-close-popup></q-btn>
+        </q-card-section>
+
+        <q-separator></q-separator>
+
+        <q-card-section>
+          <div class="row q-col-gutter-md">
+            <div class="col-12 col-md-4">
+              <q-file
+                v-model="xmlFile"
+                dense
+                outlined
+                label="Selecionar XML"
+                accept=".xml,text/xml"
+                @input="onFileSelected"
+              ></q-file>
+
+              <q-btn
+                class="q-mt-sm full-width"
+                color="deep-purple-7"
+                icon="check"
+                label="Carregar e iniciar edição"
+                :loading="loadingParseLocal"
+                @click="carregarLocalEIniciar"
+              ></q-btn>
+
+              <q-btn
+                class="q-mt-sm full-width"
+                color="grey-7"
+                icon="delete"
+                label="Limpar XML"
+                @click="limparXml"
+              ></q-btn>
+            </div>
+
+            <div class="col-12 col-md-8">
+              <q-input
+                v-model="xmlText"
+                type="textarea"
+                autogrow
+                outlined
+                dense
+                label="Cole aqui o XML"
+              ></q-input>
+            </div>
+          </div>
+        </q-card-section>
+
+        <q-separator></q-separator>
+
+        <q-card-actions align="right">
+          <q-btn color="deep-purple-7" flat label="Fechar" v-close-popup></q-btn>
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
+
     
-     <q-btn
-        rounded
-        color="deep-purple-7"
-        icon="far fa-file-excel"
-        @click="exportarExcel && exportarExcel()"
-        :disable="!rows.length"
-        :loading="exporting"
-        :class="['q-mt-sm', 'q-ml-sm']"
-        label="Excel"
-      />
-    </div>
-
-  <!-- Grid -->
-      <div class="q-mt-md grid">
-        <q-card flat bordered>
-          <q-separator />
-          <q-card-section class="q-pa-none">
-            <DxDataGrid
-              ref="gridDados"
-              :width="'100%'"
-              :data-source="rows"
-              :height="gridHeight"
-              :column-auto-width="true"
-              :row-alternation-enabled="true"
-              :show-borders="true"
-              :hover-state-enabled="true"
-              :word-wrap-enabled="true"
-              no-data-text="Sem dados"
-              :onRowDblClick="onRowDblClick"
-            >
-             <DxColumn
-                caption="Ações"
-                :width="180"
-                :allow-sorting="false"
-                cell-template="acoesCell"
-              />
-              <DxFilterRow :visible="true" />
-              <DxHeaderFilter :visible="true" />
-              <DxSearchPanel :visible="true" :highlight-case-sensitive="false" :width="260" />
-              <DxGroupPanel :visible="false" />
-              <DxGrouping :auto-expand-all="false" />
-              <DxSelection mode="none" />
-
-              <!-- Paginação -->
-              <DxPaging :enabled="!usarScrollVirtual" :page-size="pageSize" />
-              <DxPager
-                :visible="!usarScrollVirtual"
-                :show-page-size-selector="true"
-                :allowed-page-sizes="pageSizes.map(p=>p.value)"
-                :show-navigation-buttons="true"
-                :show-info="true"
-              />
-
-              <!-- Scrolling -->
-
-              <DxScrolling :mode="usarScrollVirtual ? 'virtual' : 'standard'" />
-
-              <DxColumn
-                v-for="c in columns"
-                :key="c.dataField"
-                :data-field="c.dataField"
-                :caption="c.caption"
-                :data-type="c.dataType"
-                :format="c.format || undefined"
-                :width="c.width || undefined"
-                :visible="c.visible !== false"
-                :allow-sorting="true"
-              />
-              <template #acoesCell="{ data }">
-                          <div class="q-gutter-xs">
-                              <q-btn
-                                dense
-                                round
-                                color="deep-orange-9"
-                                icon="edit"
-                                @click="abrirFormEspecialNota(data.data)"
-                           />
-                           <q-btn
-                            dense
-                            round
-                            color="deep-purple-7"
-                            icon="list_alt"
-                            @click="abrirItensNota(data.data)" 
-                          />
-                          <q-btn dense round
-                           color="primary" icon="picture_as_pdf" @click="abrirDanfe(data.data)" />
-                          <q-btn dense 
-                           round 
-                           color="secondary" icon="cloud_download" @click="baixarXml(data.data)" />
-                       </div>
-              </template>
-            </DxDataGrid>
-
-<!-- Dialog full-screen com o unicoFormEspecial dentro -->
-
-<q-dialog v-model="mostrarFormEspecial" persistent maximized>
-  <q-card style="width: 100%; height: 100%;">
-    <unico-form-especial
-      :cd_menu_entrada="cdMenuForm"
-      :cd_acesso_entrada="cdAcessoEntradaForm"
-      :ic_modal_pesquisa="icModalPesquisaForm"
-      :cd_menu_modal="cdMenuModalForm"
-      @fechar="fecharFormEspecial"
-    />
-  </q-card>
-</q-dialog>
-
-          </q-card-section>
-        </q-card>
-      </div>
-    </div>
-    <q-inner-loading :showing="loading || importando" />
-
-    <!-- TODO: precisa ajustar DIALOG DO MAPA DE ATRIBUTOS -->
-
-    <q-dialog v-model="dlgMapaAtributos">
-      <q-card style="min-width: 760px; max-width: 96vw">
-        <q-card-section class="row items-center q-pb-none">
-          <div class="text-h6">
-            Mapa de Atributos – {{ tituloMenu || title }}
-          </div>
-          <q-space />
-          <q-btn icon="close" flat round dense v-close-popup />
-        </q-card-section>
-
-        <q-separator />
-
-        <q-card-section>
-          <dx-data-grid class="dx-card wide-card" :data-source="mapaRows" :column-auto-width="true"
-            :row-alternation-enabled="true" :show-borders="true" height="60vh">
-            <DxColumn v-for="c in mapaColumns" :key="c.dataField" :data-field="c.dataField" :caption="c.caption"
-              :width="c.width" :min-width="c.minWidth" :alignment="c.alignment" />
-          </dx-data-grid>
-        </q-card-section>
-      </q-card>
-    </q-dialog>
-
-    <!-- TODO: precisa ajustar Diálogo do Relatório PDF -->
-    <q-dialog v-model="showRelatorio" maximized>
-      <q-card style="min-height: 90vh">
-        <q-card-section class="row items-center q-pb-none">
-          <div class="text-h6">Relatório</div>
-          <q-space />
-          <q-btn dense flat icon="close" @click="showRelatorio = false" />
-        </q-card-section>
-
-        <q-separator />
-
-        <q-card-section>
-          <!-- Passe props se já tiver os dados/meta no form -->
-          <Relatorio
-            v-if="showRelatorio"
-            :columns="gridColumns"
-            :rows="rows"
-            :summary="totalColumns"
-            :titulo="this.tituloMenu"
-            :menu-codigo="this.cd_menu"
-            :usuario-nome-ou-id="this.nm_usuario"
-            :logoSrc="this.logo"
-            :empresaNome="this.empresa"
-            :totais="totalColumns"
-            @pdf="exportarPDF()"
-            @excel="exportarExcel()"
-          />
-        </q-card-section>
-      </q-card>
-    </q-dialog>
-
-
-    <q-dialog v-model="nfseRel.open" maximized>
-  <q-card class="bg-white">
-    <q-bar>
-      <div class="text-weight-medium">Visualização NFS-e</div>
-      <q-space />
-      <q-btn dense flat icon="print" @click="imprimirNFSe" />
-      <q-btn dense flat icon="close" v-close-popup />
-    </q-bar>
-
-    <q-card-section class="q-pa-md">
-      <div v-if="!nfseRel.dados" class="text-grey">
-        Sem dados.
-      </div>
-
-      <div v-else class="nfse-paper">
-
-        <div class="row items-start q-col-gutter-md">
-          <div class="col-8">
-            <div class="text-h6">NFS-e (DANFSE)</div>
-            <div class="text-caption text-grey">Layout: {{ nfseRel.dados.ds_layout }}</div>
-          </div>
-          <div class="col-4 text-right">
-            <div class="text-subtitle1"><b>Nº:</b> {{ nfseRel.dados.nr_nfse }}</div>
-            <div><b>Emissão:</b> {{ nfseRel.dados.dt_emissao }}</div>
-            <div><b>Cód. Verificação:</b> {{ nfseRel.dados.cd_verificacao }}</div>
-          </div>
-        </div>
-
-        <q-separator class="q-my-sm" />
-
-        <div class="row q-col-gutter-md">
-          <div class="col-6">
-            <div class="text-subtitle2">Prestador</div>
-            <div><b>CNPJ:</b> {{ nfseRel.dados.cnpj_prestador }}</div>
-            <div><b>IM:</b> {{ nfseRel.dados.im_prestador }}</div>
-          </div>
-          <div class="col-6">
-            <div class="text-subtitle2">Tomador</div>
-            <div><b>CNPJ:</b> {{ nfseRel.dados.cnpj_tomador }}</div>
-          </div>
-        </div>
-
-        <q-separator class="q-my-sm" />
-
-        <div class="row q-col-gutter-md">
-          <div class="col-12">
-            <div class="text-subtitle2">Serviço</div>
-            <div class="row q-col-gutter-md">
-              <div class="col-4"><b>Item Lista:</b> {{ nfseRel.dados.item_lista_servico }}</div>
-              <div class="col-4"><b>Cód. Trib. Mun.:</b> {{ nfseRel.dados.cod_trib_municipio }}</div>
-              <div class="col-4"><b>Município Prest.:</b> {{ nfseRel.dados.municipio_prestacao }}</div>
-            </div>
-            <div class="q-mt-sm">
-              <b>Discriminação:</b>
-              <div class="nfse-box">{{ nfseRel.dados.ds_discriminacao }}</div>
-            </div>
-          </div>
-        </div>
-
-        <q-separator class="q-my-sm" />
-
-        <div class="row q-col-gutter-md">
-          <div class="col-3"><b>Vlr Serviços:</b> {{ nfseRel.dados.vl_servicos }}</div>
-          <div class="col-3"><b>Base Calc:</b> {{ nfseRel.dados.base_calculo }}</div>
-          <div class="col-3"><b>Alíquota:</b> {{ nfseRel.dados.aliq_iss }}</div>
-          <div class="col-3"><b>Vlr ISS:</b> {{ nfseRel.dados.vl_iss }}</div>
-          <div class="col-12 text-right q-mt-sm">
-            <div class="text-subtitle1"><b>Valor Líquido:</b> {{ nfseRel.dados.vl_liquido }}</div>
-          </div>
-        </div>
-
-      </div>
-    </q-card-section>
-  </q-card>
-</q-dialog>
-
-<q-dialog v-model="cteRel.open" maximized>
-  <q-card class="bg-white">
-    <q-bar>
-      <div class="text-weight-medium">DACTE Simplificado</div>
-      <q-space />
-      <q-btn dense flat icon="print" @click="imprimirCTe" />
-      <q-btn dense flat icon="close" v-close-popup />
-    </q-bar>
-
-    <q-card-section class="q-pa-md">
-      <div v-if="!cteRel.dados" class="text-grey">
-        Sem dados.
-      </div>
-
-      <div v-else class="cte-paper">
-
-        <div class="row items-start q-col-gutter-md">
-          <div class="col-8">
-            <div class="text-h6">Conhecimento de Transporte Eletrônico (CT-e)</div>
-            <div class="text-caption text-grey">
-              Chave: {{ cteRel.dados.ch_cte }}
-            </div>
-          </div>
-
-          <div class="col-4 text-right">
-            <div class="text-subtitle1">
-              <b>Nº:</b> {{ cteRel.dados.nr_cte }} <span v-if="cteRel.dados.serie">/ {{ cteRel.dados.serie }}</span>
-            </div>
-            <div><b>Emissão:</b> {{ cteRel.dados.dt_emissao }}</div>
-            <div><b>Modal:</b> {{ cteRel.dados.modal }} <span v-if="cteRel.dados.cfop">| <b>CFOP:</b> {{ cteRel.dados.cfop }}</span></div>
-          </div>
-        </div>
-
-        <q-separator class="q-my-sm" />
-
-        <div class="row q-col-gutter-md">
-          <div class="col-6">
-            <div class="text-subtitle2">Emitente</div>
-            <div><b>CNPJ:</b> {{ cteRel.dados.cnpj_emit }}</div>
-            <div><b>Nome:</b> {{ cteRel.dados.xnome_emit }}</div>
-          </div>
-          <div class="col-6">
-            <div class="text-subtitle2">Destinatário</div>
-            <div><b>Doc:</b> {{ cteRel.dados.cnpj_dest }}</div>
-            <div><b>Nome:</b> {{ cteRel.dados.xnome_dest }}</div>
-          </div>
-        </div>
-
-        <q-separator class="q-my-sm" />
-
-        <div class="row q-col-gutter-md">
-          <div class="col-12">
-            <div class="text-subtitle2">Percurso</div>
-            <div class="row q-col-gutter-md">
-              <div class="col-6">
-                <b>Origem:</b> {{ cteRel.dados.xmun_ini }} - {{ cteRel.dados.uf_ini }}
-              </div>
-              <div class="col-6">
-                <b>Destino:</b> {{ cteRel.dados.xmun_fim }} - {{ cteRel.dados.uf_fim }}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <q-separator class="q-my-sm" />
-
-        <div class="row q-col-gutter-md">
-          <div class="col-12">
-            <div class="text-subtitle2">Carga</div>
-            <div class="row q-col-gutter-md">
-              <div class="col-4"><b>Vlr Carga:</b> {{ cteRel.dados.v_carga }}</div>
-              <div class="col-8"><b>Produto Predominante:</b> {{ cteRel.dados.pro_pred }}</div>
-            </div>
-          </div>
-        </div>
-
-        <q-separator class="q-my-sm" />
-
-        <div class="row q-col-gutter-md">
-          <div class="col-3"><b>Vlr Prestação:</b> {{ cteRel.dados.v_tprest }}</div>
-          <div class="col-3"><b>Vlr a Receber:</b> {{ cteRel.dados.v_rec }}</div>
-          <div class="col-3"><b>Tipo CT-e:</b> {{ cteRel.dados.tp_cte }}</div>
-          <div class="col-3"><b>Tipo Serviço:</b> {{ cteRel.dados.tp_serv }}</div>
-        </div>
-
-      </div>
-    </q-card-section>
-  </q-card>
-</q-dialog>
-
 
   </div>
 </template>
@@ -811,7 +1501,8 @@ export default {
 
       rows: [],
       columns: [],
-
+      itens:[],
+      colItens:[],
       opcoesTipoXml: [
         { label: "55 - NFe", value: 55 },
         { label: "65 - NFCe", value: 65 },
@@ -2464,7 +3155,7 @@ window.open(url,'_blank');
             cd_usuario_inclusao: this.usuario?.cd_usuario || null
           }];
 
-      console.log('Importando XML único (ds_xml): chave:', cfg, chave, body, `${driver.inserirProc}`);
+      console.log('Importando XML único (ds_xml): chave:', chave, body, `${driver.inserirProc}`);
 
       await api.post(`/exec/${driver.inserirProc}`, body, cfg);
 

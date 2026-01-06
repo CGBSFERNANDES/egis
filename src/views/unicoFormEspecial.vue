@@ -191,6 +191,7 @@
         <q-tooltip>Informações</q-tooltip>
         </q-btn>
 <q-btn
+  v-if="filtros && filtros.length"
    dense
     rounded
           color="deep-purple-7"
@@ -2682,7 +2683,13 @@ export default {
 
   async mounted() {
 
-    this.restoreGridConfig();
+    this.$nextTick(() => {
+       this.restoreGridConfig();
+    });
+
+    //this.restoreGridConfig();
+    
+    //
     this.definirAlturaInicialGrid();
 
     // Mantém a grid sempre ocupando o resto da tela (vertical)
@@ -3196,8 +3203,12 @@ dashboardCards() {
 
   methods: {
  
+    onGridReady() {
+      this.restoreGridConfig();
+    },
 
-onGridInitialized(e) {
+
+    onGridInitialized(e) {
   if (this._gridReady) return;
   this._gridReady = true;
 
@@ -5232,11 +5243,12 @@ selecionarERetornarOld(rows) {
       if (e.name === "columns") {
         this.saveGridConfig();
       }
+      //
 
        if (e.name === "filterValue" || e.name === "columns") {
-      const dataGrid = e.component;
-      const hasFilter = dataGrid.getCombinedFilter() !== null;
-      this.showClearButton = !!hasFilter;
+          const dataGrid = e.component;
+          const hasFilter = dataGrid.getCombinedFilter() !== null;
+          this.showClearButton = !!hasFilter;
 
       // força atualização da toolbar
       dataGrid.repaint();
@@ -5337,7 +5349,12 @@ selecionarERetornarOld(rows) {
    },
 
    saveGridConfig() {
-      const grid = this.$refs.grid.instance;
+      
+      //const grid = this.$refs.grid.instance;
+      
+      const grid = this.$refs?.grid?.instance;
+      if (!grid) return;
+
       const config = grid.option("columns").map(col => ({
         dataField: col.dataField,
         visible: col.visible,
@@ -5351,7 +5368,12 @@ selecionarERetornarOld(rows) {
       const saved = localStorage.getItem(key);
       if (saved) {
         const config = JSON.parse(saved);
-        const grid = this.$refs.grid.instance;
+        //const grid = this.$refs.grid.instance;
+
+        const grid = this.$refs?.grid?.instance;
+        
+        if (!grid) return;
+
         config.forEach(col => {
           grid.columnOption(col.dataField, "visible", col.visible);
         });
@@ -5701,75 +5723,53 @@ this.columnsProcessos = [colAcoesProcesso, colProcesso, colDescritivo]
 
 //
 
-async copiarRegistro (registro) {
+async copiarRegistro(registro) {
+  // ✅ normaliza: se vier e.row, usa e.row.data
+  const rowData =
+    registro?.data && typeof registro.data === "object"
+      ? registro.data
+      : registro;
 
-    if (!registro || typeof registro !== 'object') return
+  if (!rowData || typeof rowData !== "object") return;
 
-
-      // 1) Descobre a chave primária a partir do META (igual o salvarCRUD faz)
+  // (opcional) debug rápido
+  // console.log("[COPIAR] registro=", registro);
+  // console.log("[COPIAR] rowData=", rowData);
 
   const pkAttr =
-    ((this.gridMeta || []).find(
-      m =>
-        String(m.ic_atributo_chave || '')
-          .trim()
-          .toUpperCase() === 'S'
-    ) || {}).nm_atributo ||
+    ((this.gridMeta || []).find(m => String(m.ic_atributo_chave || "").trim().toUpperCase() === "S") || {}).nm_atributo ||
     this.keyName ||
     this.id ||
-    null
+    null;
 
-    
-    // 2) Clona o objeto para não mexer no original
-    //const modelo = { ...registro }
-    const modelo = JSON.parse(JSON.stringify(registro))
+  const modelo = JSON.parse(JSON.stringify(rowData));
 
-    // 3) Remove o campo chave primária (keyName da grid)
-    //    Assim o back entende como "novo registro"
-    const pk = this.keyName || this.id || null
-    if (pk && Object.prototype.hasOwnProperty.call(modelo, pk)) {
-      delete modelo[pk]
-    }
+  // remove PK correta
+  if (pkAttr && Object.prototype.hasOwnProperty.call(modelo, pkAttr)) delete modelo[pkAttr];
+  if (Object.prototype.hasOwnProperty.call(modelo, "id")) delete modelo.id;
 
-    // 4) Zera campos que são numeração automática (se existirem no meta)
-    if (Array.isArray(this.gridMeta)) {
-      this.gridMeta.forEach(attr => {
-        const ehAuto =
-          String(attr.ic_numeracao_automatica || '').toUpperCase() === 'S'
-
-        if (ehAuto && attr.nm_atributo && modelo.hasOwnProperty(attr.nm_atributo)) {
-          modelo[attr.nm_atributo] = null // ou '' se preferir
-        }
-      })
-    }
-
-    //5)
-
-    this.abrirFormEspecial({
-      modo: 'A',        // força o caminho de edição para mapear o registro
-      registro: modelo  // já sem PK e com campos ajustados
-    })
-
-    // 6) Abre o mesmo modal que você já usa, mas em modo INCLUSÃO
-    //    reaproveitando seu abrirFormEspecial sem mudar nada nele
-    this.formMode = 'I'
-
-    // 7) Garante que o campo de código esteja REALMENTE zerado no formData
-  if (pkAttr && this.formData) {
-    if (Object.prototype.hasOwnProperty.call(this.formData, pkAttr)) {
-      this.$set(this.formData, pkAttr, null)   // fica em branco no formulário
-    }
-    if (Object.prototype.hasOwnProperty.call(this.formData, 'id')) {
-      this.$set(this.formData, 'id', null)
-    }
+  // zera numeração automática
+  if (Array.isArray(this.gridMeta)) {
+    this.gridMeta.forEach(attr => {
+      const ehAuto = String(attr.ic_numeracao_automatica || "").toUpperCase() === "S";
+      if (ehAuto && attr.nm_atributo && Object.prototype.hasOwnProperty.call(modelo, attr.nm_atributo)) {
+        modelo[attr.nm_atributo] = null;
+      }
+    });
   }
-    /*
-    this.abrirFormEspecial({
-      modo: 'I',       // inclusão
-      registro: modelo // dados copiados
-    })
-    */  
-  },
+
+  await this.abrirFormEspecial({ modo: "I", registro: modelo, copia: true });
+
+  // garante PK nula no formData
+  if (pkAttr && this.formData && Object.prototype.hasOwnProperty.call(this.formData, pkAttr)) {
+    this.$set(this.formData, pkAttr, null);
+  }
+  if (this.formData && Object.prototype.hasOwnProperty.call(this.formData, "id")) {
+    this.$set(this.formData, "id", null);
+  }
+
+  await this.$nextTick();
+},
 
 montarPayloadPesquisa() {
 
@@ -7014,7 +7014,10 @@ if (rowEl.dataset) {
     },
     
     //
-    async abrirFormEspecial({ modo = "I", registro = {} } = {}) {
+ 
+    //async abrirFormEspecial({ modo = "I", registro = {} } = {}) {
+    async abrirFormEspecial({ modo = "I", registro = {}, copia = false } = {}) {
+    //
 
       // 1) define modo (I/A/E)
       const m = String(modo || "I").toUpperCase();
@@ -7069,18 +7072,35 @@ if (rowEl.dataset) {
         // 3) base
 
         this.record = this.record || {};
+
         //this.formData = this.formData || registro || {};
         this.formData = JSON.parse(JSON.stringify(registro || {}));
+        //
 
         if (this.formMode === "I") {
-          // inclusão
-          this.formData = this.montarRegistroVazio();
-          //
-          this.aplicarDataPadraoNosCampos(this.formData, this.atributosForm);
-          //
-          Object.keys(sessionStorage)
-            .filter((k) => k.startsWith("fixo_"))
-            .forEach((k) => {
+
+            const temRegistroBase = copia || (registro && Object.keys(registro).length > 0);
+
+            if (temRegistroBase) {
+              // ✅ o pulo do gato: alinhar as chaves do registro com o meta do form
+              const registroMapeado = this.mapearConsultaParaAtributoRobusto(
+                registro,
+                this.atributosForm
+              );
+
+              // monta vazio + aplica os valores mapeados
+              this.formData = Object.assign(this.montarRegistroVazio(), registroMapeado);
+            } else {
+              this.formData = this.montarRegistroVazio();
+            }
+
+           //   
+           this.aplicarDataPadraoNosCampos(this.formData, this.atributosForm);
+           //
+          
+           Object.keys(sessionStorage)
+             .filter((k) => k.startsWith("fixo_"))
+             .forEach((k) => {
               const campo = k.replace("fixo_", "");
               const val = sessionStorage.getItem(k);
               if (campo) this.$set(this.formData, campo, val);
@@ -7166,6 +7186,7 @@ if (this.modoCRUD === 1 && Array.isArray(this.atributosForm)) {
 
         await this.$nextTick();
            this.montarFormEspecialDinamico?.();
+
       } catch (e) {
         console.error("Falha ao abrir form especial:", e);
         this.notifyErr("Erro ao abrir formulário.");
