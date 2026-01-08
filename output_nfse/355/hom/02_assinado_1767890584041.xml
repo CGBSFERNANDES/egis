@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<GerarNfseEnvio xmlns="http://www.giss.com.br/gerar-nfse-envio-v2_04.xsd" xmlns:tipos="http://www.giss.com.br/tipos-v2_04.xsd" xmlns:dsig="http://www.w3.org/2000/09/xmldsig#">
+  <Rps>
+    <tipos:InfDeclaracaoPrestacaoServico Id="RPS1">
+      <tipos:Rps>
+        <tipos:IdentificacaoRps>
+          <tipos:Numero>315</tipos:Numero>
+          <tipos:Serie>1</tipos:Serie>
+          <tipos:Tipo>1</tipos:Tipo>
+        </tipos:IdentificacaoRps>
+        <tipos:DataEmissao>2026-01-06</tipos:DataEmissao>
+        <tipos:Status>1</tipos:Status>
+      </tipos:Rps>
+      <tipos:Competencia>2026-01-06</tipos:Competencia>
+      <tipos:NaturezaOperacao>1</tipos:NaturezaOperacao>
+      <tipos:RegimeEspecialTributacao>3</tipos:RegimeEspecialTributacao>
+      <tipos:OptanteSimplesNacional>1</tipos:OptanteSimplesNacional>
+      <tipos:IncentivadorCultural>2</tipos:IncentivadorCultural>
+      <tipos:IncentivoFiscal>2</tipos:IncentivoFiscal>
+      <tipos:Servico>
+        <tipos:Valores>
+          <tipos:ValorServicos>7300.00</tipos:ValorServicos>
+          <tipos:ValorDeducoes>0.00</tipos:ValorDeducoes>
+          <tipos:ValorIss>146.73</tipos:ValorIss>
+          <tipos:Aliquota>0.0201</tipos:Aliquota>
+        </tipos:Valores>
+        <tipos:IssRetido>2</tipos:IssRetido>
+        <tipos:ItemListaServico>14.01</tipos:ItemListaServico>
+        <tipos:CodigoCnae>3329599</tipos:CodigoCnae>
+        <tipos:CodigoTributacaoMunicipio>14.01</tipos:CodigoTributacaoMunicipio>
+        <tipos:Discriminacao>SERVIÇOS PRESTADOS: SOFT STARTER  Modelo: SSW070130T5SZ WEG Serie: 1075556506 220-575v Pedido COSME/BRUNA = R$ 7300.00  Vlr. Aprox. Trib.: 485.45 ( 6.65 %)   PARCELA(S):  1. - VALOR:7300.00 DATA:27/01/2026 OS-Serial: 88458-1075556506 Vendedor: ARIOVALDO P. DOS SANTOS  NF de retorno: 50063 Ped. Cliente: COSME/BRUNA  VNL - ITEM 10194176 - N.SERIE 1122456098 FB.15/12/2025</tipos:Discriminacao>
+        <tipos:CodigoMunicipio>3547809</tipos:CodigoMunicipio>
+        <tipos:ExigibilidadeISS>1</tipos:ExigibilidadeISS>
+      </tipos:Servico>
+      <tipos:Prestador>
+        <tipos:CpfCnpj>
+          <tipos:Cnpj>45872390000128</tipos:Cnpj>
+        </tipos:CpfCnpj>
+        <tipos:InscricaoMunicipal>317023</tipos:InscricaoMunicipal>
+      </tipos:Prestador>
+      <tipos:TomadorServico>
+        <tipos:IdentificacaoTomador>
+          <tipos:CpfCnpj>
+            <tipos:Cnpj>50313451000157</tipos:Cnpj>
+          </tipos:CpfCnpj>
+        </tipos:IdentificacaoTomador>
+        <tipos:RazaoSocial>QUALLICAL INDUSTRIA E COMERCIO LTDA.</tipos:RazaoSocial>
+        <tipos:Endereco>
+          <tipos:Endereco>Estrada de Ferro Santos Jundiaí</tipos:Endereco>
+          <tipos:Numero>S/N</tipos:Numero>
+          <tipos:Complemento>KM 38</tipos:Complemento>
+          <tipos:Bairro>Vila Elclor</tipos:Bairro>
+          <tipos:Uf>SP</tipos:Uf>
+          <tipos:Cep>09154100</tipos:Cep>
+          <tipos:CodigoPais>1058</tipos:CodigoPais>
+        </tipos:Endereco>
+      </tipos:TomadorServico>
+    </tipos:InfDeclaracaoPrestacaoServico><dsig:Signature xmlns:dsig="http://www.w3.org/2000/09/xmldsig#"><dsig:SignedInfo><dsig:CanonicalizationMethod Algorithm="http://www.w3.org/TR/2001/REC-xml-c14n-20010315"/><dsig:SignatureMethod Algorithm="http://www.w3.org/2000/09/xmldsig#rsa-sha1"/><dsig:Reference URI="#RPS1"><dsig:Transforms><dsig:Transform Algorithm="http://www.w3.org/2000/09/xmldsig#enveloped-signature"/><dsig:Transform Algorithm="http://www.w3.org/TR/2001/REC-xml-c14n-20010315"/></dsig:Transforms><dsig:DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha1"/><dsig:DigestValue>0sc/rF7V91EkK3OXcSI+vC0xLVY=</dsig:DigestValue></dsig:Reference></dsig:SignedInfo><dsig:SignatureValue>F2PIkZONI7UiVAX4dP1DgrehLORvvwM6LdJK8iN6wBwjj0Lt83gA47oNS1OFC9uCm0q4Ipr2hXeZTmnGiOA6vDjGHtEbe8kuCYIPrpYwHFStwlFAZKPD6JkDt8Ad+XJdliqZ3aHIV7RqAjR7h+R+JRLUoWEpJ9hY1vFqUu32BJQICGdwSGujoRNEQbp+KIJ4okVA2S+Kys+56G8DeB/Fskmi4GtAH9ID/YvvoU5RAD6QLePOooK+DF4n6zwmFXi2StNsWxhP+5gKAIlbpxwINBFHc65+aYAa8nBjlZReEOKACJCQ1V0X6B4kv+x6uAWfXW+fd8oP/Ur9QjawuWrdxQ==</dsig:SignatureValue><dsig:KeyInfo><dsig:X509Data><dsig:X509Certificate>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</dsig:X509Certificate></dsig:X509Data></dsig:KeyInfo></dsig:Signature>
+  </Rps>
+</GerarNfseEnvio>

@@ -25,6 +25,7 @@
           <q-btn rounded color="deep-purple-7" class=" q-ml-sm" icon="description" @click="abrirRelatorio" />
           <q-btn rounded color="deep-purple-7" class=" q-ml-sm" icon="view_list" @click="dlgMapaAtributos = true" />
 <q-btn
+  v-if="false"
   color="deep-purple-7"
   class=" q-ml-sm"
   dense
@@ -35,6 +36,7 @@
   @click="visualizarNFSe"
 />
 <q-btn
+  v-if="false"
   color="deep-purple-7"
   class=" q-ml-sm"
   rounded
