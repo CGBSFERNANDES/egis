@@ -173,6 +173,13 @@ begin
 	return
 end
 
+--Nota Fiscal de Servi�o------------------------------------------------------------------------------------------------
+if @cd_relatorio = 421
+begin
+	exec pr_egis_relatorio_nota_servico @json = @json
+	return
+end
+
 --Crítica de Lançamento Contábil------------------------------------------------------------------------------------------
 if @cd_relatorio = 407
 begin 
