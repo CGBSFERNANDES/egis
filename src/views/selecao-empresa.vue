@@ -14,6 +14,10 @@
     :label="exibirComoCards ? 'grid' : 'cards'"
     keep-color
   />
+
+    <div v-if="exibirComoCards" class="q-ml-md text-grey-6">
+     {{ qtdFiltrados }} de {{ qtdTotal }}
+    </div>
     </div>
     <dx-data-grid
       v-if="!exibirComoCards"
@@ -77,9 +81,23 @@
       v-else class="q-mt-lg q-ml-lg"
       >
      
+    <div class="q-mb-md filtros-empresas">
+    <div class="row q-col-gutter-md q-mt-sm items-center">
+      <div class="col-12 col-md-4">
+        <q-input
+          dense
+          outlined
+          v-model="filtroTexto"
+          placeholder="Buscar empresa..."
+          clearable
+        />
+      </div>
+    </div>
+  </div>
+   
   <div class="cards-wrapper">
   <div
-    v-for="empresa in dataSourceConfig"
+    v-for="empresa in empresasFiltradas"
     :key="empresa.cd_empresa"
     class="empresa-card cursor-pointer"
     @click="selecionarEmpresa(empresa)"
@@ -200,6 +218,7 @@ var dados = [];
 export default {
   data() {
     return {
+      filtroTexto: '',
       tituloMenu: "",
       columns: [],
       qt_registro: 0,
@@ -245,6 +264,40 @@ export default {
     DxSearchPanel,
   },
 
+  computed: {
+    qtdTotal () {
+      return Array.isArray(this.dataSourceConfig) ? this.dataSourceConfig.length : 0
+    },
+
+    empresasFiltradas () {
+      const lista = Array.isArray(this.dataSourceConfig) ? this.dataSourceConfig : []
+      const texto = (this.filtroTexto || '').toLowerCase().trim()
+      if (!texto) return lista
+
+      return lista.filter((empresa) => {
+        const codigo = String(empresa.cd_empresa || '').toLowerCase()
+        const fantasia = String(empresa.nm_fantasia_empresa || '').toLowerCase()
+        const razao = String(empresa.nm_empresa || '').toLowerCase()
+        const cidade = String(empresa.nm_cidade || '').toLowerCase()
+        const uf = String(empresa.sg_estado || '').toLowerCase()
+        const tel = String(empresa.cd_telefone_empresa || '').toLowerCase()
+
+        return (
+          codigo.includes(texto) ||
+          fantasia.includes(texto) ||
+          razao.includes(texto) ||
+          cidade.includes(texto) ||
+          uf.includes(texto) ||
+          tel.includes(texto)
+        )
+      })
+    },
+
+    qtdFiltrados () {
+      return this.empresasFiltradas.length
+    },
+  },
+ 
   methods: {
     onFocusedRowChanged: function (e) {
       this.data = e.row && e.row.data;
