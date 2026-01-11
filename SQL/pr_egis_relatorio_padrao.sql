@@ -180,6 +180,13 @@ begin
 	return
 end
 
+--Contrato de Serviços------------------------------------------------------------------------------------------------
+if @cd_relatorio = 422
+begin
+	exec pr_egis_relatorio_contrato_servico @json = @json
+	return
+end
+
 --Crítica de Lançamento Contábil------------------------------------------------------------------------------------------
 if @cd_relatorio = 407
 begin 
