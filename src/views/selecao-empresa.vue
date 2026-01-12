@@ -172,6 +172,9 @@
 </template>
 
 <script>
+
+import { executarProcesso } from "@/services/procedure.service";
+
 import {
   DxDataGrid,
   DxFilterRow,
@@ -232,6 +235,7 @@ export default {
       temPanel: false,
       exibirComoCards: true, // ou false, conforme desejar padrão
       data: {},
+      cd_acesso_empresa: null
     };
   },
 
@@ -311,6 +315,7 @@ export default {
       cd_menu = 6542;
       cd_api = 51; //Procedimento 896 -- pr_consulta_usuario_empresa
       api = localStorage.nm_identificacao_api;
+      
       //console.log(api);
 
       dados = await Menu.montarMenu(cd_empresa, cd_menu, cd_api); //'titulo';
@@ -333,7 +338,9 @@ export default {
         api,
         sParametroApi
       );
-      console.log('dados da empresa: ', this.dataSourceConfig);
+
+      //console.log('dados da empresa: ', this.dataSourceConfig);
+
       filename = this.tituloMenu + ".xlsx";
       this.qt_registro = this.dataSourceConfig.length;
 
@@ -387,11 +394,30 @@ export default {
         sParametroApi
       );
 
-      await validaUsuario.validar(localStorage.login, localStorage.password);
+      const ret = await validaUsuario.validar(localStorage.login, localStorage.password);
+
+      //console.log('retorno',ret);
+
+      //Atualizar a Tabela de usuario_empresa
+      
+      const resp = await executarProcesso({
+          ic_json_parametro: 'S', 
+          cd_parametro: 300,
+          cd_usuario: localStorage.cd_usuario,
+          cd_empresa,
+          procedure: 'pr_egis_admin_processo_modulo',
+          extra: {
+            cd_acesso_empresa: this.cd_acesso_empresa
+          }
+
+        });
+
+        //console.log("resp:", resp, cd_empresa);
 
       this.$router.push({ name: "home" });
 
       //localStorage.nm_modulo = localStorage.nm_modulo_selecao;
+
     },
 
      getLogoUrl (empresa) {
@@ -403,6 +429,8 @@ export default {
   },
     selecionarEmpresa(empresa) {
       this.data = empresa;
+      this.cd_acesso_empresa = this.data.cd_empresa;
+      //console.log('cd_acesso_empresa', this.cd_acesso_empresa)
       this.onClickAprovar();
     },
 

@@ -1,0 +1,702 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Proposta Comercial</title>
+
+  <style>
+    :root{
+      /* Paleta (aprox. deep-orange-6 / deep-purple-7 / cyan-7) */
+      --orange-6: #f4511e;   /* deep orange 600 */
+      --purple-7: #4527a0;   /* deep purple 800/900 vibe */
+      --cyan-7:   #0097a7;   /* cyan 700 */
+
+      --ink: #0f172a;        /* texto principal (slate-900) */
+      --muted:#475569;       /* slate-600 */
+      --line: #e2e8f0;       /* slate-200 */
+      --paper:#ffffff;       /* fundo branco */
+      --soft: #f8fafc;       /* slate-50 */
+      --soft2:#f1f5f9;       /* slate-100 */
+
+      --r-xl: 22px;
+      --r-lg: 16px;
+      --r-md: 12px;
+      --shadow: 0 12px 28px rgba(2,6,23,.08);
+
+      --max: 1080px;
+      --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    }
+
+    *{ box-sizing:border-box; }
+    body{
+      margin:0;
+      font-family: var(--sans);
+      color: var(--ink);
+      background: var(--paper);
+    }
+
+    .wrap{
+      max-width: var(--max);
+      margin: 0 auto;
+      padding: 28px 18px 42px;
+    }
+
+    /* Top controls (someem no print) */
+    .topbar{
+      display:flex; align-items:center; justify-content:space-between;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+    .meta{
+      display:flex; flex-wrap:wrap; gap: 8px;
+      align-items:center;
+    }
+    .pill{
+      display:inline-flex; align-items:center; gap:8px;
+      padding: 9px 12px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: #fff;
+      box-shadow: 0 6px 16px rgba(2,6,23,.05);
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .pill b{ color: var(--ink); font-weight: 750; }
+    .btn{
+      border: 0;
+      cursor:pointer;
+      padding: 10px 14px;
+      border-radius: 999px;
+      color: #fff;
+      background: linear-gradient(135deg, var(--purple-7), var(--cyan-7));
+      box-shadow: 0 10px 22px rgba(69,39,160,.18);
+    }
+
+    /* Header / capa */
+    .hero{
+      position: relative;
+      border: 1px solid var(--line);
+      border-radius: 26px;
+      overflow:hidden;
+      background: linear-gradient(180deg, #fff 0%, var(--soft) 100%);
+      box-shadow: var(--shadow);
+    }
+    .heroTop{
+      padding: 22px;
+      display:grid;
+      grid-template-columns: 1.1fr .9fr;
+      gap: 16px;
+      align-items:start;
+    }
+    @media (max-width: 900px){ .heroTop{ grid-template-columns: 1fr; } }
+
+    .brandStripe{
+      height: 10px;
+      background: linear-gradient(90deg, var(--orange-6), var(--purple-7), var(--cyan-7));
+    }
+
+    .badge{
+      display:inline-flex; align-items:center; gap:10px;
+      padding: 9px 12px;
+      border-radius: 999px;
+      background: rgba(0,151,167,.10);
+      color: #0b5560;
+      border: 1px solid rgba(0,151,167,.25);
+      font-size: 12px;
+      font-family: var(--mono);
+      width: fit-content;
+    }
+
+    h1{
+      margin: 10px 0 8px;
+      font-size: 38px;
+      line-height: 1.08;
+      letter-spacing: -0.02em;
+      color: var(--purple-7);
+    }
+    .subtitle{
+      margin:0;
+      color: var(--muted);
+      font-size: 14px;
+      max-width: 70ch;
+    }
+
+    .kpis{
+      display:grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-top: 14px;
+    }
+    @media (max-width: 740px){ .kpis{ grid-template-columns: 1fr; } }
+
+    .kpi{
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: #fff;
+      padding: 14px 14px 12px;
+    }
+    .kpi .label{
+      font-size: 11px;
+      letter-spacing: .10em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .kpi .value{
+      margin-top: 6px;
+      font-size: 20px;
+      font-weight: 800;
+      letter-spacing: -0.01em;
+      color: var(--ink);
+    }
+    .kpi .hint{
+      margin-top: 6px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .money{ font-family: var(--mono); white-space:nowrap; }
+
+    .heroSide{
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: linear-gradient(180deg, rgba(69,39,160,.06), rgba(0,151,167,.06));
+      padding: 14px;
+    }
+    .heroSide h3{
+      margin:0;
+      font-size: 12px;
+      letter-spacing: .10em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .heroSide .row{
+      margin-top: 10px;
+      display:grid;
+      gap: 8px;
+    }
+    .kv{
+      display:flex; justify-content:space-between; gap: 12px;
+      padding: 10px 12px;
+      background:#fff;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .kv b{ color: var(--ink); }
+
+    /* Sections */
+    .section{
+      margin-top: 14px;
+      border: 1px solid var(--line);
+      border-radius: 22px;
+      overflow:hidden;
+      box-shadow: 0 10px 24px rgba(2,6,23,.05);
+      background:#fff;
+    }
+    .sectionHd{
+      padding: 14px 16px;
+      display:flex; align-items:center; justify-content:space-between; gap: 10px;
+      background: linear-gradient(90deg, rgba(244,81,30,.06), rgba(69,39,160,.06), rgba(0,151,167,.06));
+      border-bottom: 1px solid var(--line);
+    }
+    .sectionHd h2{
+      margin:0;
+      font-size: 13px;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: var(--ink);
+    }
+    .tag{
+      display:inline-flex; align-items:center; gap:8px;
+      padding: 8px 10px;
+      border-radius: 999px;
+      background:#fff;
+      border: 1px solid var(--line);
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .sectionBd{ padding: 16px; }
+
+    .twoCols{
+      display:grid;
+      grid-template-columns: 1.2fr .8fr;
+      gap: 12px;
+      align-items:start;
+    }
+    @media (max-width: 900px){ .twoCols{ grid-template-columns: 1fr; } }
+
+    .list{
+      display:grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+      margin:0; padding:0; list-style:none;
+    }
+    @media (max-width: 760px){ .list{ grid-template-columns: 1fr; } }
+
+    .li{
+      display:flex; gap: 10px; align-items:flex-start;
+      padding: 10px 12px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: linear-gradient(180deg, #fff, var(--soft));
+    }
+    .dot{
+      width: 10px; height: 10px; border-radius: 50%;
+      margin-top: 4px;
+      background: linear-gradient(135deg, var(--orange-6), var(--purple-7));
+      flex: 0 0 auto;
+    }
+    .li b{ display:block; font-size: 13px; color: var(--ink); }
+    .li span{ display:block; margin-top: 2px; font-size: 12px; color: var(--muted); }
+
+    /* Tables */
+    table{
+      width:100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      overflow:hidden;
+      background:#fff;
+    }
+    th, td{ padding: 12px 12px; text-align:left; }
+    th{
+      font-size: 12px;
+      color: #23314c;
+      background: linear-gradient(90deg, rgba(69,39,160,.08), rgba(0,151,167,.08));
+      border-bottom: 1px solid var(--line);
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+    td{
+      font-size: 13px;
+      color: var(--ink);
+      border-bottom: 1px solid var(--line);
+    }
+    tr:last-child td{ border-bottom:none; }
+    .right{ text-align:right; }
+    .muted{ color: var(--muted); }
+
+    .callout{
+      border: 1px solid rgba(244,81,30,.25);
+      background: rgba(244,81,30,.06);
+      border-radius: 18px;
+      padding: 14px;
+    }
+    .callout .t{
+      display:flex; justify-content:space-between; align-items:flex-start; gap: 10px;
+      margin-bottom: 10px;
+    }
+    .callout .t b{
+      color: var(--orange-6);
+      font-size: 14px;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+    .callout .pill2{
+      display:inline-flex; align-items:center;
+      padding: 7px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(69,39,160,.25);
+      background: rgba(69,39,160,.06);
+      color: var(--purple-7);
+      font-size: 12px;
+      font-family: var(--mono);
+    }
+
+    /* Timeline / SLA cards */
+    .timeline{
+      display:grid; gap: 10px;
+    }
+    .step{
+      display:grid;
+      grid-template-columns: 110px 1fr;
+      gap: 10px;
+      padding: 12px;
+      border-radius: 16px;
+      border: 1px solid var(--line);
+      background: linear-gradient(180deg, #fff, var(--soft));
+    }
+    .step .chip{
+      display:inline-flex; align-items:center; justify-content:center;
+      padding: 8px 10px;
+      border-radius: 14px;
+      color:#fff;
+      background: linear-gradient(135deg, var(--purple-7), var(--cyan-7));
+      font-family: var(--mono);
+      font-size: 12px;
+      width: fit-content;
+      height: fit-content;
+    }
+    .step b{ display:block; font-size: 13px; }
+    .step span{ display:block; margin-top: 4px; color: var(--muted); font-size: 12px; }
+
+    .footer{
+      margin-top: 14px;
+      display:flex; flex-wrap:wrap; gap: 10px;
+      justify-content: space-between; align-items:center;
+      color: var(--muted);
+      font-size: 12px;
+      padding: 10px 2px 0;
+    }
+
+    /* PRINT */
+    @media print{
+      .btn{ display:none; }
+      body{ background:#fff; }
+      .wrap{ padding: 0; }
+      .hero, .section{ box-shadow:none; }
+      .pill{ box-shadow:none; }
+      a{ text-decoration:none; }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="wrap">
+    <div class="topbar">
+      <div class="meta">
+        <div class="pill">Proposta <b>#{{CODIGO}}</b></div>
+        <div class="pill">{{DATA}}</div>
+        <div class="pill"><b>Cliente:</b> {{CLIENTE}}</div>
+      </div>
+      <button class="btn" onclick="window.print()">Salvar em PDF / Imprimir</button>
+    </div>
+
+    <section class="hero">
+      <div class="brandStripe"></div>
+
+      <div class="heroTop">
+        <div>
+          <div class="badge">Solução • ERP + App + Plataforma</div>
+          <h1>Proposta Comercial</h1>
+          <p class="subtitle">
+            Implantação da <b>{{SOLUCAO}}</b> com escopo, investimento, fluxo de pagamento,
+            manutenção e SLA — pronta para geração automática e envio em PDF.
+          </p>
+
+          <div class="kpis">
+            <div class="kpi">
+              <div class="label">Investimento inicial</div>
+              <div class="value money">{{INVEST_TOTAL}}</div>
+              <div class="hint">Valores sem impostos • NF serviço +{{NF_PERC}}%</div>
+            </div>
+            <div class="kpi">
+              <div class="label">Manutenção mensal</div>
+              <div class="value money">{{MENSAL_TOTAL}}</div>
+              <div class="hint">Hospedagem + suporte</div>
+            </div>
+            <div class="kpi">
+              <div class="label">Prazo estimado</div>
+              <div class="value">{{PRAZO}}</div>
+              <div class="hint">{{PERIODO}}</div>
+            </div>
+          </div>
+        </div>
+
+        <aside class="heroSide">
+          <h3>Dados de contato</h3>
+          <div class="row">
+            <div class="kv"><span>Contato</span><b>{{CONTATO_NOME}}</b></div>
+            <div class="kv"><span>Telefone</span><b>{{CONTATO_TEL}}</b></div>
+            <div class="kv"><span>Solução</span><b>{{SOLUCAO}}</b></div>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <!-- PROJETO -->
+    <section class="section">
+      <div class="sectionHd">
+        <h2>Projeto</h2>
+        <div class="tag"><b>Escopo:</b>&nbsp;Gestão ERP</div>
+      </div>
+      <div class="sectionBd">
+        <ul class="list">
+          <li class="li"><div class="dot"></div><div><b>Cadastramento Geral</b><span>Cadastros base e regras iniciais</span></div></li>
+          <li class="li"><div class="dot"></div><div><b>Migração de Dados</b><span>Mapeamento e importação assistida</span></div></li>
+          <li class="li"><div class="dot"></div><div><b>Aplicativo (Vendas/Faturamento)</b><span>Android/iPhone</span></div></li>
+          <li class="li"><div class="dot"></div><div><b>Formação de Preço / Markup</b><span>Regras, impostos e margens</span></div></li>
+          <li class="li"><div class="dot"></div><div><b>Tabela de Preços</b><span>Faixas, condições e vigências</span></div></li>
+          <li class="li"><div class="dot"></div><div><b>Estoque / Separação</b><span>Processo e logística</span></div></li>
+          <li class="li"><div class="dot"></div><div><b>Comercial</b><span>Propostas e pedidos de venda</span></div></li>
+          <li class="li"><div class="dot"></div><div><b>Faturamento</b><span>Emissão NFe</span></div></li>
+          <li class="li"><div class="dot"></div><div><b>Financeiro</b><span>Pagar/Receber + Fluxo de Caixa</span></div></li>
+          <li class="li"><div class="dot"></div><div><b>Compras e Recebimento</b><span>Pedidos, entrada e conferência</span></div></li>
+          <li class="li"><div class="dot"></div><div><b>Importação</b><span>Planejamento, Invoice e DI</span></div></li>
+          <li class="li"><div class="dot"></div><div><b>BI / Dashboards</b><span>Dados gerenciais e indicadores</span></div></li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- INVESTIMENTOS + PAGAMENTO -->
+    <section class="section">
+      <div class="sectionHd">
+        <h2>Investimentos</h2>
+        <div class="tag">Valores sem impostos</div>
+      </div>
+
+      <div class="sectionBd twoCols">
+        <div>
+          <table>
+            <thead>
+              <tr>
+                <th>Descrição</th>
+                <th class="right">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Adesão para solução {{SOLUCAO}} ({{USUARIOS_INICIAIS}} usuários)</td>
+                <td class="right money">{{ADESAO}}</td>
+              </tr>
+              <tr>
+                <td class="muted">Liberação até {{USUARIOS_LIVRES}} usuários sem custo adicional</td>
+                <td class="right money muted">—</td>
+              </tr>
+              <tr>
+                <td>Migração de dados / Mapeamento + Parametrização + Treinamentos + Go-live</td>
+                <td class="right money">{{SERVICOS}}</td>
+              </tr>
+              <tr>
+                <td class="muted">Horas técnicas ({{HORA_VALOR}}) • {{HORAS}} horas</td>
+                <td class="right money muted">incl.</td>
+              </tr>
+              <tr>
+                <td><b>Total</b></td>
+                <td class="right money"><b>{{INVEST_TOTAL}}</b></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="callout">
+          <div class="t">
+            <b>Fluxo de pagamento</b>
+            <span class="pill2">NF +{{NF_PERC}}%</span>
+          </div>
+
+          <table>
+            <tbody>
+              <tr>
+                <td><b>Entrada</b></td>
+                <td class="right money">{{ENTRADA}}</td>
+              </tr>
+              <tr>
+                <td><b>Saldo</b> em {{PARCELAS_QTD}} parcelas (sem juros)</td>
+                <td class="right money">{{PARCELA_VALOR}}</td>
+              </tr>
+              <tr>
+                <td><b>Total líquido</b></td>
+                <td class="right money"><b>{{INVEST_TOTAL}}</b></td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div class="muted" style="margin-top:10px;font-size:12px;">
+            *Se emitir Nota Fiscal de Serviço, acrescentar {{NF_PERC}}%.
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- MANUTENÇÃO -->
+    <section class="section">
+      <div class="sectionHd">
+        <h2>Manutenção mensal</h2>
+        <div class="tag">Reajuste anual: IPC</div>
+      </div>
+
+      <div class="sectionBd twoCols">
+        <div>
+          <table>
+            <thead>
+              <tr>
+                <th>Descrição</th>
+                <th class="right">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Hospedagem na plataforma (até {{USUARIOS_LIVRES}} usuários) • Nuvem + Backup + Atualizações</td>
+                <td class="right money">{{NUVEM}}</td>
+              </tr>
+              <tr>
+                <td>Manutenção/Legislação + Atendimento e suporte (chat/telefone)</td>
+                <td class="right money">{{SUPORTE}}</td>
+              </tr>
+              <tr>
+                <td><b>Total mensal</b></td>
+                <td class="right money"><b>{{MENSAL_TOTAL}}</b></td>
+              </tr>
+              <tr>
+                <td class="muted">Início</td>
+                <td class="right money muted">{{INICIO_MENSAL}}</td>
+              </tr>
+            </tbody>
+          </table>
+          <div class="muted" style="margin-top:10px;font-size:12px;">
+            Valores sem impostos • NF serviço +{{NF_PERC}}%.
+          </div>
+        </div>
+
+        <div class="callout" style="border-color: rgba(0,151,167,.25); background: rgba(0,151,167,.06);">
+          <div class="t">
+            <b style="color: var(--cyan-7);">Inclui</b>
+            <span class="pill2" style="border-color: rgba(0,151,167,.25); background: rgba(0,151,167,.06); color: var(--cyan-7);">
+              Plataforma & App
+            </span>
+          </div>
+
+          <ul style="margin:0; padding:0; list-style:none; display:grid; gap:10px;">
+            <li class="li" style="background:#fff;">
+              <div class="dot" style="background:linear-gradient(135deg,var(--cyan-7),var(--purple-7));"></div>
+              <div><b>ERP + Aplicativo</b><span>Android / iPhone</span></div>
+            </li>
+            <li class="li" style="background:#fff;">
+              <div class="dot" style="background:linear-gradient(135deg,var(--cyan-7),var(--orange-6));"></div>
+              <div><b>Nuvem</b><span>Hospedagem + rotinas de backup</span></div>
+            </li>
+            <li class="li" style="background:#fff;">
+              <div class="dot" style="background:linear-gradient(135deg,var(--orange-6),var(--purple-7));"></div>
+              <div><b>Suporte</b><span>Chat on-line + telefone</span></div>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- PRAZO / CRONOGRAMA -->
+    <section class="section">
+      <div class="sectionHd">
+        <h2>Prazo e cronograma</h2>
+        <div class="tag">{{PRAZO}} • {{PERIODO}}</div>
+      </div>
+
+      <div class="sectionBd twoCols">
+        <div class="timeline">
+          <div class="step">
+            <div class="chip">T1</div>
+            <div><b>Mapeamento do processo</b><span>Levantamento, entendimento do fluxo e requisitos</span></div>
+          </div>
+          <div class="step">
+            <div class="chip">T2</div>
+            <div><b>Parametrização e configuração</b><span>Cadastros, treinamentos, ajustes e testes</span></div>
+          </div>
+          <div class="step">
+            <div class="chip">T3</div>
+            <div><b>Produção (Go-live)</b><span>Virada oficial acompanhada</span></div>
+          </div>
+          <div class="step">
+            <div class="chip">T4</div>
+            <div><b>Manutenção / suporte e hospedagem</b><span>Operação assistida e evolução contínua</span></div>
+          </div>
+        </div>
+
+        <div class="callout" style="border-color: rgba(69,39,160,.25); background: rgba(69,39,160,.06);">
+          <div class="t">
+            <b style="color: var(--purple-7);">Período</b>
+            <span class="pill2" style="border-color: rgba(69,39,160,.25); background: rgba(69,39,160,.06); color: var(--purple-7);">
+              {{PERIODO}}
+            </span>
+          </div>
+          <div class="muted" style="font-size:12px;">
+            O cronograma pode ser ajustado conforme disponibilidade de equipe e dados de migração.
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLA -->
+    <section class="section">
+      <div class="sectionHd">
+        <h2>Atendimento e SLA</h2>
+        <div class="tag">{{ATEND_HORARIO}}</div>
+      </div>
+
+      <div class="sectionBd twoCols">
+        <div class="callout" style="border-color: rgba(244,81,30,.25); background: rgba(244,81,30,.06);">
+          <div class="t">
+            <b style="color: var(--orange-6);">Canais</b>
+            <span class="pill2">Implantação: {{IMPLANTACAO_MESES}} meses</span>
+          </div>
+          <div class="muted" style="font-size:12px;">
+            Telefone, e-mail, chat e WhatsApp (grupo dedicado durante a implantação).
+          </div>
+        </div>
+
+        <div>
+          <table>
+            <thead>
+              <tr>
+                <th>Prioridade</th>
+                <th>Tempo</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td>Crítico (P1)</td><td class="money">{{SLA_P1}}</td></tr>
+              <tr><td>Alto (P2)</td><td class="money">{{SLA_P2}}</td></tr>
+              <tr><td>Médio (P3)</td><td class="money">{{SLA_P3}}</td></tr>
+              <tr><td>Baixo (P4)</td><td class="money">{{SLA_P4}}</td></tr>
+              <tr><td class="muted">Resolução típica</td><td class="muted money">{{SLA_FAIXA}}</td></tr>
+            </tbody>
+          </table>
+          <div class="muted" style="margin-top:10px;font-size:12px;">
+            Suporte em sábados/domingos/feriados: negociado à parte (quando necessário).
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="footer">
+      <div>Gerado automaticamente • Layout branco 2026 • {{SOLUCAO}}</div>
+      <div>Documento comercial — sujeito a validação final</div>
+    </div>
+  </div>
+
+  <script>
+    // DEMO: você vai trocar isso por dados do Vue/API
+    const data = {
+      CODIGO: "2025-05.2005",
+      DATA: "21/05/2025",
+      CLIENTE: "Leonardo",
+      SOLUCAO: "GBS-EGIS",
+      CONTATO_NOME: "Carlos Fernandes",
+      CONTATO_TEL: "(11) 9-9273-7805",
+      NF_PERC: "15",
+
+      USUARIOS_INICIAIS: "02",
+      USUARIOS_LIVRES: "05",
+      ADESAO: "R$ 2.000,00",
+      SERVICOS: "R$ 6.000,00",
+      HORA_VALOR: "R$ 150,00",
+      HORAS: "40",
+      INVEST_TOTAL: "R$ 8.000,00",
+
+      ENTRADA: "R$ 2.000,00",
+      PARCELAS_QTD: "10",
+      PARCELA_VALOR: "R$ 600,00",
+
+      NUVEM: "R$ 400,00",
+      SUPORTE: "R$ 550,00",
+      MENSAL_TOTAL: "R$ 950,00",
+      INICIO_MENSAL: "Julho/2025 (Dia 15)",
+
+      PRAZO: "90 dias",
+      PERIODO: "Maio a Julho/2025",
+
+      ATEND_HORARIO: "08h às 18h (2ª a 6ª)",
+      IMPLANTACAO_MESES: "3",
+      SLA_P1: "15 minutos",
+      SLA_P2: "30 minutos",
+      SLA_P3: "02 horas",
+      SLA_P4: "04 horas",
+      SLA_FAIXA: "P1: 01–03h • P2: 04–08h • P3: 01–02 dias úteis • P4: 03–05 dias úteis"
+    };
+
+    document.body.innerHTML = document.body.innerHTML.replace(/\{\{(\w+)\}\}/g, (_, k) => data[k] ?? "");
+  </script>
+</body>
+</html>
