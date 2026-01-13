@@ -118,25 +118,103 @@
           placeholder="dd/mm/aaaa"
         />
       </div>
-      <div class="col-12 col-sm-4 flex items-center">
-        <q-toggle
-          v-model="exibirComoCards"
-          color="deep-purple-7"
-          checked-icon="view_module"
-          unchecked-icon="view_list"
-          :label="exibirComoCards ? 'cards' : 'grid'"
-          keep-color
-        />
-      </div>
+      <div class="col-12 col-sm-4">
+  <div class="row items-center no-wrap q-gutter-sm">
+    <q-toggle
+      v-model="exibirComoCards"
+      color="deep-purple-7"
+      checked-icon="view_module"
+      unchecked-icon="view_list"
+      :label="exibirComoCards ? 'cards' : 'grid'"
+      keep-color
+    />
+
+    <q-btn
+      dense
+      outline
+      color="red-7"
+      icon="report_problem"
+      label="Rejeições"
+      :disable="loading"
+      @click="abrirGridRejeicoes"
+    />
+
+    <q-btn
+      dense
+      outline
+      color="deep-purple-7"
+      icon="queue"
+      label="Fila Validação"
+      :disable="loading"
+      @click="abrirGridFilaValidacao"
+    />
+  </div>
+</div>
+
+      
     </div>
 
+<!-- RESUMO GERAL -->
+<div class="q-mt-md">
+  <q-card class="resumo-card">
+    <div class="row items-center q-col-gutter-md">
+
+      <div class="col-6 col-md-2">
+        <div class="text-caption text-grey-7">Total Geral (Empresas)</div>
+        <div class="text-h6 text-weight-bold">
+          {{ formatarInteiro(resumoGeral.totalGeral) }}
+        </div>
+      </div>
+
+      <div class="col-6 col-md-2">
+        <div class="text-caption text-grey-7">Empresas (com notas)</div>
+        <div class="text-h6 text-weight-bold text-deep-purple-7">
+          {{ formatarInteiro(resumoGeral.empresasComNotas) }}
+        </div>
+      </div>
+
+      <div class="col-6 col-md-2">
+        <div class="text-caption text-grey-7">Qtd. Notas (Hoje)</div>
+        <div class="text-h6 text-weight-bold text-deep-orange-6">
+          {{ formatarInteiro(resumoGeral.qtdNotas) }}
+        </div>
+      </div>
+
+      <div class="col-6 col-md-2">
+        <div class="text-caption text-grey-7">Qtd. Filas (Hoje)</div>
+        <div class="text-h6 text-weight-bold text-indigo-7">
+          {{ formatarInteiro(resumoGeral.qtdFilas) }}
+        </div>
+      </div>
+
+      <div class="col-6 col-md-2">
+        <div class="text-caption text-grey-7">Qtd. Rejeições (Hoje)</div>
+        <div class="text-h6 text-weight-bold text-red-7">
+          {{ formatarInteiro(resumoGeral.qtdRejeicoes) }}
+        </div>
+      </div>
+
+      <div class="col-6 col-md-2">
+        <div class="text-caption text-grey-7">Valor Total (Hoje)</div>
+        <div class="text-h6 text-weight-bold text-cyan-7">
+          {{ formatarMoeda(resumoGeral.valorTotal) }}
+        </div>
+      </div>
+
+    </div>
+  </q-card>
+</div>
+
+    <!-- Conteúdo principal -->
     <!-- CARDS (entrada) -->
+
     <div class="q-mt-lg">
       <div v-if="exibirComoCards" class="cards-wrapper">
         <div
           v-for="(item, idx) in cards"
           :key="idx"
           class="monitor-card cursor-pointer"
+          :class="classeCard(item)"
           @click="selecionarCard(item)"
         >
           <!-- Sem inventar campos: mostra um resumo baseado nas chaves existentes -->
@@ -166,14 +244,28 @@
 </div>
 
 <div class="row q-col-gutter-sm q-mt-sm items-end">
-  <div class="col-6">
+  <div class="col-6 col-sm-3">
     <div class="text-caption text-grey-7">Qtd. Notas (Hoje)</div>
     <div class="text-subtitle2 text-weight-bold text-deep-orange-6">
       {{ formatarInteiro(item.QtdNotasHoje) }}
     </div>
   </div>
 
-  <div class="col-6 text-right">
+  <div class="col-6 col-sm-3">
+    <div class="text-caption text-grey-7">Qtd. Filas (Hoje)</div>
+    <div class="text-subtitle2 text-weight-bold text-indigo-7">
+      {{ formatarInteiro(item.QtdFilaHoje) }}
+    </div>
+  </div>
+
+  <div class="col-6 col-sm-3">
+    <div class="text-caption text-grey-7">Qtd. Rejeições (Hoje)</div>
+    <div class="text-subtitle2 text-weight-bold text-red-7">
+      {{ formatarInteiro(item.QtdRejeicaoHoje) }}
+    </div>
+  </div>
+
+  <div class="col-6 col-sm-3">
     <div class="text-caption text-grey-7">Valor Total (Hoje)</div>
     <div class="text-subtitle2 text-weight-bold text-cyan-7 valor-direita">
       {{ formatarMoeda(item.VlTotalHoje) }}
@@ -318,6 +410,36 @@ export default {
       cardSelecionado: null,
     };
   },
+
+  computed: {
+  resumoGeral() {
+    const lista = Array.isArray(this.cards) ? this.cards : [];
+
+    const totalGeral = lista.length;
+
+    const empresasComNotas = lista.filter((c) => {
+      const qtd = Number(c?.QtdNotasHoje || 0);
+      return Number.isFinite(qtd) && qtd > 0;
+    }).length;
+
+    const qtdNotas = lista.reduce((acc, c) => {
+      const qtd = Number(c?.QtdNotasHoje || 0);
+      return acc + (Number.isFinite(qtd) ? qtd : 0);
+    }, 0);
+
+    const qtdFilas = lista.reduce((acc, c) => acc + Number(c?.QtdFilaHoje || 0), 0);
+
+    const qtdRejeicoes = lista.reduce((acc, c) => acc + Number(c?.QtdRejeicaoHoje || 0), 0);
+
+
+    const valorTotal = lista.reduce((acc, c) => {
+      return acc + this.normalizarNumero(c?.VlTotalHoje);
+    }, 0);
+
+    return { totalGeral, empresasComNotas, qtdNotas, qtdFilas, qtdRejeicoes, valorTotal };
+  }
+},
+
   created() {
     this.cd_menu =
       Number(this.$route?.meta?.cd_menu || this.$route?.params?.cd_menu || 0) || 0;
@@ -330,6 +452,97 @@ export default {
     onVoltar() {
   // padrão mais seguro: volta uma página
   if (this.$router) this.$router.back();
+},
+
+classeCard(item) {
+  const rej = Number(item?.QtdRejeicaoHoje || 0) > 0;
+  const fila = Number(item?.QtdFilaHoje || 0) > 0;
+
+  // prioridade: rejeição > fila
+  if (rej) return "card-rejeicao";
+  if (fila) return "card-fila";
+  return "";
+},
+
+async abrirGridRejeicoes() {
+  // Rejeição -> cd_parametro 700
+  await this.carregarGridEspecial(700, "Rejeições");
+},
+
+async abrirGridFilaValidacao() {
+  // Fila de validação -> cd_parametro 800
+  await this.carregarGridEspecial(800, "Fila de Validação");
+},
+
+async carregarGridEspecial(cd_parametro, titulo) {
+  this.loading = true;
+
+  try {
+    const payload = [
+      {
+        ic_json_parametro: "S",
+        cd_parametro,
+        cd_usuario: Number(localStorage.cd_usuario || 0),
+        cd_empresa: Number(localStorage.cd_empresa || 0),
+        dt_inicial: this.dt_inicial,
+        dt_final: this.dt_final,
+      },
+    ];
+
+    const resp = await api.post(PROC, payload);
+    const data = resp?.data ?? resp;
+
+    // pega rows independente do formato
+    const recordsets = data?.recordsets;
+    let rows = [];
+
+    if (Array.isArray(recordsets) && recordsets.length) {
+      rows = this.stripStatusRows(recordsets[0] || []);
+    } else {
+      rows = this.stripStatusRows(
+        (data?.recordset) || (data?.rows) || (Array.isArray(data) ? data : [])
+      );
+    }
+
+    // monta colunas com captions
+    const chaves = Object.keys(rows[0] || {});
+    const mapa = chaves.length ? await this.obterMapaCaption(chaves) : {};
+    const columns = this.montarColumnsPorChaves(rows, mapa);
+
+    // substitui as grids atuais por esta
+    this.grids = [
+      {
+        titulo,
+        rows,
+        columns,
+      },
+    ];
+
+    // opcional: força visualização em grid
+    this.exibirComoCards = false;
+
+    // opcional: rolar até a seção de grids (se quiser)
+    // this.$nextTick(() => window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" }));
+  } catch (e) {
+    console.error("Erro ao carregar grid especial:", e);
+  } finally {
+    this.loading = false;
+  }
+},
+
+
+normalizarNumero(valor) {
+  if (valor === null || valor === undefined || valor === "") return 0;
+
+  if (typeof valor === "string") {
+    // troca milhar "." e decimal "," -> padrão JS
+    const v = valor.replace(/\./g, "").replace(",", ".");
+    const n = Number(v);
+    return Number.isFinite(n) ? n : 0;
+  }
+
+  const n = Number(valor);
+  return Number.isFinite(n) ? n : 0;
 },
 
     formatarInteiro(valor) {
@@ -646,6 +859,25 @@ formatarMoeda(valor) {
 .logo-destaque .q-icon {
   font-size: 28px;
   color: rgba(103, 58, 183, 0.75);
+}
+
+.resumo-card {
+  border-radius: 12px;
+  border: 1px solid rgba(0,0,0,0.08);
+  background: #fff;
+  padding: 12px;
+}
+
+/* Fundo bem clarinho quando tem rejeição */
+.card-rejeicao {
+  background: #ffebee !important; /* vermelho bem leve */
+  border: 1px solid rgba(244, 67, 54, 0.25);
+}
+
+/* Fundo bem clarinho quando tem fila */
+.card-fila {
+  background: #f3e5f5 !important; /* roxo bem leve */
+  border: 1px solid rgba(156, 39, 176, 0.25);
 }
 
 </style>
