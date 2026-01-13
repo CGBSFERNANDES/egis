@@ -35,6 +35,15 @@
 
   <q-btn dense color="deep-purple-7" label="Salvar" icon="save" @click="salvarNoLocal" />
   <q-btn dense color="deep-purple-7" label="Limpar" icon="cleaning_services" @click="limparDigitacao" />
+  <q-btn
+  v-if="Number(cd_relatorio || 0) > 0"
+  color="deep-purple-7"
+  icon="description"
+  label="Relatório"
+  :loading="loadingRelatorio"
+  style="margin-left: 5px;"
+  @click="abrirRelatorio" />
+
   <q-btn dense color="deep-purple-7" label="Cancelar" icon="close" @click="cancelarModal" />
   <q-btn dense color="deep-purple-7" label="Confirmar" icon="check" @click="confirmarModal" />
   <q-btn rounded dense color="deep-purple-7" round icon="close" v-close-popup />
@@ -143,6 +152,22 @@
   >
   <q-tooltip>Baixar - Salvar como</q-tooltip>
 </q-btn>
+
+<!-- 📄 Relatório do atributo (igual UnicoFormEspecial) -->
+<q-btn
+  v-if="temRelatorioAtributo(campo)"
+  icon="description"
+  flat
+  round
+  dense
+  class="q-ml-xs"
+  color="deep-purple-7"
+  :disable="!podeRelatorioDoCampo(campo)"
+  :loading="loadingRelatorio"
+  @click.stop="onRelatorioDoCampo(campo)"
+  :title="`Relatório de ${labelCampo(campo)}`"
+/>
+
 
   <!-- Lupa (continua igual) -->
   <q-btn
@@ -502,6 +527,8 @@ export default {
       editingIndex: -1,
       _campoArquivoAtual: null,
       retornoArquivoTexto: '',
+      cd_relatorio: 0,
+      loadingRelatorio: false,
 
     }
   },
@@ -525,7 +552,11 @@ export default {
 
     cdModalBadge () { return Number(this.cdModal || 0) },
 
-metaCampos () {
+    metaCampos () {
+  return Array.isArray(this.meta) ? this.meta : []
+},
+
+metaCamposold () {
   const arr = Array.isArray(this.meta) ? this.meta : []
   const seen = new Set()
   const out = []
@@ -791,7 +822,226 @@ primeiroCampoEditavelNm () {
   },
 
   methods: {
+
+     normalizarValorDocumento (raw) {
+  // null/undefined
+  if (raw === null || raw === undefined) return null
+
+  // string
+  if (typeof raw === 'string') {
+    const s = raw.trim()
+    if (!s) return null
+    // se for número em string, retorna número
+    const n = Number(s)
+    return Number.isNaN(n) ? s : n
+  }
+
+  // number
+  if (typeof raw === 'number') {
+    return raw
+  }
+
+  // boolean (raro)
+  if (typeof raw === 'boolean') {
+    return raw ? 1 : 0
+  }
+
+  // objeto (ex.: q-select)
+  if (typeof raw === 'object') {
+    // padrões comuns
+    if (raw.value !== undefined) return this.normalizarValorDocumento(raw.value)
+    if (raw.id !== undefined) return this.normalizarValorDocumento(raw.id)
+
+    // tenta achar um "cd_*" qualquer
+    const keyCd = Object.keys(raw).find(k => /^cd_/i.test(k))
+    if (keyCd) return this.normalizarValorDocumento(raw[keyCd])
+
+    // fallback: não sei extrair
+    return null
+  }
+
+  return null
+},
+
+podeRelatorioDoCampo (attr) {
+  // tem relatório?
+  const cdRel = Number(attr?.cd_atributo_relatorio ?? attr?.cd_relatorio_atributo ?? 0)
+  if (cdRel <= 0) return false
+
+  // valor do input -> cd_documento
+  const raw = this.valores?.[attr?.nm_atributo]
+  const doc = this.normalizarValorDocumento(raw)
+
+  // regra: habilita apenas se doc != 0
+  if (doc === null) return false
+  if (typeof doc === 'number') return doc !== 0
+  // string: "0" desabilita, resto habilita
+  return String(doc).trim() !== '' && String(doc).trim() !== '0'
+},
+
+
+      temRelatorioAtributo (attr) {
+  // aceita tanto cd_atributo_relatorio quanto cd_atributo_relatorio (se variar o nome)
+  const v = attr?.cd_atributo_relatorio ?? attr?.cd_atributo_relatorio
+  return Number(v || 0) > 0
+},
+
+async onRelatorioDoCampo (attr) {
+  console.log('[onRelatorioDoCampo] attr:', attr)
+
+  const cd_relatorio = Number(attr?.cd_atributo_relatorio ?? this.cd_relatorio ?? 0)
+
+  // pega o valor digitado no campo (normalmente um código/id)
+  const raw = this.valores?.[attr?.nm_atributo]
+  const cd_documento = this.normalizarValorDocumento(raw)
+
+  /*
+  const cd_documento = (raw !== undefined && raw !== null && String(raw).trim() !== '')
+    ? (Number.isNaN(Number(raw)) ? String(raw) : Number(raw))
+    : null
+  */
+
+  console.log('[onRelatorioDoCampo] raw:', raw, 'cd_documento:', cd_documento)
+  console.log('[onRelatorioDoCampo] cd_relatorio:', cd_relatorio, 'cd_documento:', cd_documento)
+
+  await this.onRelatorioGrid({ ...(this.valores || {}) }, { cd_relatorio, cd_documento })
+},
+
+async onRelatorioGrid (registro = {}, opts = {}) {
+  try {
+    const cd_relatorio = Number(opts.cd_relatorio || 0)
+    const cd_documento = (opts.cd_documento !== undefined ? opts.cd_documento : null)
+
+    if (!cd_relatorio) {
+      this.$q?.notify?.({
+        type: 'warning',
+        position: 'center',
+        message: 'Relatório não configurado para este campo.'
+      })
+      return
+    }
+
+    this.loadingRelatorio = true
+
+    const cfg = this.headerBanco
+      ? { headers: { 'x-banco': this.headerBanco } }
+      : undefined
+
+    // mesmo padrão do Unico: payload em array
+    const payload = [{
+      ic_json_parametro: 'S',
+      cd_menu: Number(localStorage.cd_menu || 0),
+      cd_usuario: String(localStorage.cd_usuario || 0),
+      cd_relatorio,
+      cd_documento,
+      id: cd_documento
+    }]
+
+    console.log('[onRelatorioGrid] payload:', payload)
+
+    const { data } = await api.post('/exec/pr_egis_relatorio_padrao', payload, cfg)
+
+    const row = Array.isArray(data) ? (data[0] || null) : (data || null)
+    const html = row?.RelatorioHTML
+
+    if (!html) throw new Error('RelatorioHTML não retornado')
+
+    const win = window.open('about:blank', '_blank')
+    if (!win) throw new Error('Popup bloqueado pelo navegador')
+
+    win.document.open()
+    win.document.write(String(html))
+    win.document.close()
+  } catch (e) {
+    console.error('[onRelatorioGrid] erro:', e)
+    this.$q?.notify?.({
+      type: 'negative',
+      position: 'center',
+      message: 'Erro ao gerar relatório.'
+    })
+  } finally {
+    this.loadingRelatorio = false
+  }
+},
+
+       limparRegistroParaPayload (obj) {
+      const out = { ...(obj || {}) }
+      // remove chaves técnicas (ex.: __rowid)
+      Object.keys(out).forEach(k => { if (String(k).startsWith("__")) delete out[k] })
+      return out
+    },
+
+    extrairIdRegistro (obj) {
+      const o = obj || {}
+      const candidatos = ["id", "cd_documento", "cd_composicao", "cd_item", "cd_registro"]
+      for (const k of candidatos) {
+        const v = o[k]
+        if (v !== undefined && v !== null && String(v).trim() !== "") {
+          const n = Number(v)
+          return Number.isNaN(n) ? String(v) : n
+        }
+      }
+      // fallback: primeiro campo "cd_*" que pareça id
+      const k2 = Object.keys(o).find(k => /^cd_/i.test(k) && (/_id$/i.test(k) || /codigo|chave|documento|registro/i.test(k)))
+      if (k2) {
+        const v = o[k2]
+        const n = Number(v)
+        return Number.isNaN(n) ? String(v) : n
+      }
+      return null
+    },
+
     
+        async abrirRelatorio () {
+      const cdRel = Number(this.cd_relatorio || 0)
+      if (!cdRel) {
+        this.notificar("Este modal não possui relatório configurado (cd_relatorio=0).", "warning")
+        return
+      }
+
+      try {
+        this.loadingRelatorio = true
+
+        const registroLimpo = this.limparRegistroParaPayload(this.valores)
+        const cd_documento = this.extrairIdRegistro(registroLimpo)
+
+        const payload = [{
+          cd_empresa: Number(localStorage.cd_empresa || 0),
+          cd_modulo: Number(localStorage.cd_modulo || 0),
+          cd_usuario: Number(localStorage.cd_usuario || 0),
+          cd_menu: Number(localStorage.cd_menu || 0),
+          dt_inicial: localStorage.dt_inicial,
+          dt_final: localStorage.dt_final,
+          cd_modal: Number(this.cdModal || 0),
+          cd_relatorio: cdRel,
+          cd_documento: cd_documento,
+          id: cd_documento,
+          registro: registroLimpo,
+        }]
+
+        const resp = await api.post("/exec/pr_egis_relatorio_padrao", payload)
+        const data = resp && resp.data
+        const row = Array.isArray(data) ? data[0] : data
+
+        const html = String((row && (row.RelatorioHTML || row.relatoriohtml)) || "")
+        if (!html) throw new Error("RelatorioHTML não retornado")
+
+        const win = window.open("about:blank", "_blank")
+        if (!win) throw new Error("Popup bloqueado pelo navegador")
+        win.document.open()
+        win.document.write(html)
+        win.document.close()
+
+        this.notificar("Relatório gerado com sucesso.", "positive")
+      } catch (e) {
+        // eslint-disable-next-line no-console
+        console.error("[ModalGridComposicao] Erro ao gerar relatório:", e)
+        this.notificar(`Erro ao gerar relatório: ${e && e.message ? e.message : e}`, "negative")
+      } finally {
+        this.loadingRelatorio = false
+      }
+    },
+
     lerArquivoComoTexto (file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader()
@@ -1183,6 +1433,9 @@ async onEnterCampo (campo) {
       this.$set(this.ultimaValidacao, key, '')
       return false
     }
+
+   //this.cd_relatorio = Number(retorno.cd_relatorio || 0)
+
 
     // ✅ usa sua função existente
     if (typeof this.aplicarRetornoUnico === 'function') {
@@ -1750,12 +2003,30 @@ traduzRegistroSelecionado (rowTela) {
         this.meta = Array.isArray(data)
   ? Object.values(
       data.reduce((acc, m) => {
-        if (!m || !m.nm_atributo) return acc
-        if (!acc[m.nm_atributo]) acc[m.nm_atributo] = m
+        const nm = m?.nm_atributo ? String(m.nm_atributo).trim() : ''
+        if (!nm) return acc
+
+        const k = nm.toLowerCase()
+        const atual = acc[k]
+
+        if (!atual) {
+          acc[k] = { ...m }
+          return acc
+        }
+
+        // ✅ mescla: mantém o que já tem e completa com o que vier “melhor”
+        const merged = { ...atual, ...m }
+
+        // 🔥 regra principal: se vier cd_atributo_relatorio > 0, não pode perder
+        const novoRel = Number(m?.cd_atributo_relatorio || 0)
+        if (novoRel > 0) merged.cd_atributo_relatorio = novoRel
+
+        acc[k] = merged
         return acc
       }, {})
     )
   : []
+        console.log('Meta carregado do ModalGridComposicao:', this.meta)  
 
         // Título/subtítulo (se vier no meta)
         const m0 = this.meta[0] || {}
@@ -1846,6 +2117,9 @@ traduzRegistroSelecionado (rowTela) {
 
         const rows = Array.isArray(data) ? data : (data ? [data] : [])
         if (!rows.length) return
+
+
+        this.cd_relatorio = Number(retorno.cd_relatorio || 0)
 
         // 3) Se tiver dados: preenche o objeto no storage e o modal
         //    - se vier 1 linha, assume retorno "único" para preencher o form

@@ -4007,7 +4007,7 @@ findNodeById (nodes, id) {
        ? (Number.isNaN(Number(raw)) ? String(raw) : Number(raw))
        : null;
 
-      console.log('Reatório do Atributo: ', cd_relatorio);
+      console.log('Relatório do Atributo: ', cd_relatorio);
 
       await this.onRelatorioGrid({ ...(this.formData || {}) }, { cd_relatorio, cd_documento });
 
@@ -4274,6 +4274,10 @@ montarHtmlRelatorio(retorno, payload) {
     // 4) tenta localizar registro e abrir modal em Alteração/ Inclusão
     const achou = this.localizarRegistroPorChave(this.cd_chave_pesquisa)
     //
+
+    console.log('registro encontrado na composição ->', achou);
+    //
+    
 
     // ✅ se o menu for GRID, não abre modal: posiciona na grid e pronto
     if (String(this.modo_inicial || 'GRID').toUpperCase() === 'GRID') {
@@ -5082,6 +5086,8 @@ async onSelectionChangedGrid(e) {
   try {
     // chama o mesmo fluxo do clique na linha
     await this.onRowClickPrincipal({ data: row, row: { data: row } })
+    //
+
   } finally {
     this.$nextTick(() => (this._syncSelecionando = false))
   }
@@ -6257,6 +6263,7 @@ async refreshGrid () {
   ) {
     return;
   }
+
   this._dedupRowClick = { key: keyAtual, ts: agora };
   // ==========================================================================
 
@@ -10767,9 +10774,10 @@ console.log('form->', this.form);
 
       // flag: quando cd_tabela > 0, consulta será direta na tabela
       this.cd_tabela = Number(this.gridMeta?.[0]?.cd_tabela) || 0;
+      this.cd_relatorio = this.gridMeta?.[0]?.cd_relatorio || 0;
       
       //
-      this.mostrarAcoes = ( this.cd_tabela > 0 || this.ic_modal_pesquisa==='S' ) ;
+      this.mostrarAcoes = ( this.cd_tabela > 0 || this.ic_modal_pesquisa==='S' || this.cd_relatorio > 0 ); ;
       //
 
       // título da tela
@@ -10932,7 +10940,10 @@ console.log('form->', this.form);
           },
         ],
       } }
+
       else {
+
+        console.log("MONTANDO ACOES PARA MODAL DE PESQUISA", this.cd_relatorio);
 
         colAcoes = {
           type: "buttons",
@@ -11534,6 +11545,9 @@ if (
         // validação de filtros obrigatórios
 
         this.cd_relatorio = this.gridMeta?.[0]?.cd_relatorio || 0;
+
+       // console.log('relatório do menu:', this.cd_relatorio);
+
         const ic_filtro_obrigatorio = this.gridMeta?.[0]?.ic_filtro_obrigatorio;
         const ic_cliente = this.gridMeta?.[0]?.ic_cliente || "N";
         const cd_cliente = localStorage.cd_cliente || Number(sessionStorage.getItem("cd_cliente")) || 0;
