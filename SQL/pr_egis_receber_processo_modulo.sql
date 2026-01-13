@@ -35,7 +35,7 @@ GO
 --                   Modelo de Procedure com Processos
 --
 --Data             : 20.07.2025
---Alteração        : 
+--AlteraÃ§Ã£o        : 
 --
 --
 ------------------------------------------------------------------------------
@@ -48,7 +48,7 @@ create procedure  pr_egis_receber_processo_modulo
 
 as
 
--- ver nível atual
+-- ver nÃ­vel atual
 --SELECT name, compatibility_level FROM sys.databases WHERE name = DB_NAME();
 
 -- se < 130, ajustar:
@@ -65,7 +65,7 @@ as
  
  /* 1) Validar payload - parameros de Entrada da Procedure */
  IF NULLIF(@json, N'') IS NULL OR ISJSON(@json) <> 1
-            THROW 50001, 'Payload JSON inválido ou vazio em @json.', 1;
+            THROW 50001, 'Payload JSON invÃ¡lido ou vazio em @json.', 1;
 
  /* 2) Normalizar: aceitar array[0] ou objeto */
  IF JSON_VALUE(@json, '$[0]') IS NOT NULL
@@ -88,7 +88,7 @@ set @json = replace(
                                     replace(
                                     @json, CHAR(13), ' '),
                                   CHAR(10),' '),
-                                ' ',' '),
+                                'Â ',' '),
                               ':\\\"',':\\"'),
                             '\\\";','\\";'),
                           ':\\"',':\\\"'),
@@ -167,7 +167,7 @@ select
 
  1                                                   as id_registro,
  IDENTITY(int,1,1)                                   as id,
- valores.[key]  COLLATE SQL_Latin1_General_CP1_CI_AI as campo,                     
+ valores.[key]  COLLATE SQL_Latin1_General_CP1_CI_AIÂ as campo,                     
  valores.[value]                                     as valor                    
                     
  into #json                    
@@ -190,6 +190,7 @@ select @cd_cliente             = valor from #json where campo = 'cd_cliente'
 select @cd_vendedor            = valor from #json where campo = 'cd_vendedor'
 select @cd_portador            = valor from #json where campo = 'cd_portador'
 select @cd_conta_banco         = valor from #json where campo = 'cd_conta_banco'
+select @cd_remessa_banco       = valor from #json where campo = 'cd_remessa_banco'
 
 
 --------------------------------------------------------------------------------------
@@ -311,12 +312,12 @@ begin
     cd_documento_receber = @cd_documento_receber
 	
 	delete from Documento_Receber_Pagamento where cd_documento_receber = @cd_documento_receber
-	select 'Exclusão Documento: ' + isnull(@cd_identificacao,'')  as Msg
+	select 'ExclusÃ£o Documento: ' + isnull(@cd_identificacao,'')  as Msg
 	return
 end  
 
 
---Posição de Documentos a Receber---------------------------------------------------------------
+--PosiÃ§Ã£o de Documentos a Receber---------------------------------------------------------------
 
 if @cd_parametro = 10
 begin
@@ -327,7 +328,7 @@ begin
   order by
     isnull(qt_ordem_status, 999), cd_status_documento
 
-    -- Gera o objeto JSON uma única vez--------------------------------------------------------------------
+    -- Gera o objeto JSON uma Ãºnica vez--------------------------------------------------------------------
 
   SELECT @StatusDocumento = (
     SELECT cd_status_documento, nm_status_documento, nm_cor
@@ -417,7 +418,7 @@ from
 
   end
 
-  --Devolução--
+  --DevoluÃ§Ã£o--
 
   if @cd_status_documento = 12
   begin
@@ -514,9 +515,9 @@ drop table #StatusDocumento
         cast(@dt_hoje - d.dt_vencimento_documento as int)
       end                                               as qt_dia_documento,
 
-    --Verifica a Conversão da Moeda
+    --Verifica a ConversÃ£o da Moeda
 
-    --Verifica a Conversão da Moeda
+    --Verifica a ConversÃ£o da Moeda
     --case when isnull(drp.vl_pagamento_documento,0) = 0 then
       case when @cd_moeda <> isnull(d.cd_moeda,1) and @vl_moeda>0
       then
@@ -666,7 +667,7 @@ drop table #StatusDocumento
       d.cd_centro_custo,
       cc.nm_centro_custo,
       (select top 1 sg_semana from semana where cd_semana = DATEPART(dw , d.dt_vencimento_documento)) as dia_semana,
-      case when isnull(d.ic_boleto_documento,'N') = 'S' then 'Sim' else 'Não' end                     as sg_emissao_documento,
+      case when isnull(d.ic_boleto_documento,'N') = 'S' then 'Sim' else 'NÃ£o' end                     as sg_emissao_documento,
 
       --Cheque-------------------------------------------------------------------------------------------------------
       cr.nm_cheque_receber,
@@ -935,9 +936,9 @@ drop table #StatusDocumento
 
        --Pesquisa pelo Pedido de Venda
        and isnull(d.cd_pedido_venda,0) = case when isnull(@cd_pedido_venda,0) = 0 then isnull(d.cd_pedido_venda,0) else isnull(@cd_pedido_venda,0) end
-       --Pesquina pelo Número Bancário
+       --Pesquina pelo NÃºmero BancÃ¡rio
        and isnull(d.cd_banco_documento_recebe,'') = case when @cd_banco_documento_recebe = '' then isnull(d.cd_banco_documento_recebe,'') else isnull(@cd_banco_documento_recebe,'') end 
-       --Pesquisa pela Nota de Saída
+       --Pesquisa pela Nota de SaÃ­da
        and isnull(d.cd_nota_saida,0)    = case when isnull(@cd_nota_saida,0) = 0 then isnull(d.cd_nota_saida,0) else isnull(@cd_nota_saida,0) end
        --Remessa
        and isnull(d.cd_remessa_banco,0) = case when isnull(@cd_remessa_banco,0) = 0 then isnull(d.cd_remessa_banco,0) else isnull(@cd_remessa_banco,0) end
@@ -958,7 +959,7 @@ drop table #StatusDocumento
 end
 
 
---Liberação de Crédito
+--LiberaÃ§Ã£o de CrÃ©dito
 
 if @cd_parametro = 20
 begin
@@ -1049,7 +1050,7 @@ cross apply openjson(root.value) valores
 
    if ISJSON(@dados_registro) <> 1
    begin
-       select 'Lista de registros inválida em dados_registro.' as Msg
+       select 'Lista de registros invÃ¡lida em dados_registro.' as Msg
        return
    end
 
@@ -1072,8 +1073,8 @@ cross apply openjson(root.value) valores
 
 
    -------------------------------------------------------------------
-   -- 3) Aqui a regra de NEGÓCIO da baixa em lote
-   --    Exemplo: só mostrar quais documentos chegaram
+   -- 3) Aqui a regra de NEGÃ“CIO da baixa em lote
+   --    Exemplo: sÃ³ mostrar quais documentos chegaram
    -------------------------------------------------------------------
    --select * from #sel  -- debug
 
@@ -1159,7 +1160,7 @@ cross apply openjson(root.value) valores
  end
 
 
- --Suspensao de Crédito
+ --Suspensao de CrÃ©dito
 
  if @cd_parametro = 70
  begin
@@ -1169,7 +1170,7 @@ cross apply openjson(root.value) valores
  end
 
 
- --seleção de Documentos para o Banco--------------------------------------------------
+ --seleÃ§Ã£o de Documentos para o Banco--------------------------------------------------
  --select * from remessa
 
  if @cd_parametro = 100
@@ -1201,7 +1202,7 @@ cross apply openjson(root.value) valores
  if @cd_parametro = 120
  begin
 
-   --Conta Bancária
+   --Conta BancÃ¡ria
    select @cd_conta_banco              = try_convert(int, valor)         from @DadosModal where campo = 'Conta'
 
    --select @cd_conta_banco
@@ -1220,7 +1221,7 @@ cross apply openjson(root.value) valores
 
    if ISJSON(@dados_registro) <> 1
    begin
-       select 'Lista de registros inválida em dados_registro.' as Msg
+       select 'Lista de registros invÃ¡lida em dados_registro.' as Msg
        return
    end
 
@@ -1236,7 +1237,7 @@ cross apply openjson(root.value) valores
    /*
    select
        IDENTITY(int,1,1)           as id,
-       valores.[key]  COLLATE SQL_Latin1_General_CP1_CI_AI as campo,                     
+       valores.[key]  COLLATE SQL_Latin1_General_CP1_CI_AIÂ as campo,                     
        valores.[value]                                     as valor                    
                     
    into #selDoc                    
@@ -1289,8 +1290,19 @@ cross apply openjson(root.value) valores
    return
  end
     
-/* Padrão se nenhum caso for tratado */
-SELECT CONCAT('Nenhuma ação mapeada para cd_parametro=', @cd_parametro) AS Msg;
+
+ --RelatÃ³rio Remessa de Documentos
+
+ if @cd_parametro = 150
+ begin
+
+   exec pr_egis_relatorio_remessa_documentos @json = @json
+   return
+
+ end
+
+/* PadrÃ£o se nenhum caso for tratado */
+SELECT CONCAT('Nenhuma aÃ§Ã£o mapeada para cd_parametro=', @cd_parametro) AS Msg;
    
  END TRY
     BEGIN CATCH
@@ -1303,7 +1315,7 @@ SELECT CONCAT('Nenhuma ação mapeada para cd_parametro=', @cd_parametro) AS Msg;
 
 
 
-         -- Monta a mensagem (THROW aceita até 2048 chars no 2º parâmetro)
+         -- Monta a mensagem (THROW aceita atÃ© 2048 chars no 2Âº parÃ¢metro)
     SET @fullmsg =
           N'Erro em pr_egis_modelo_procedure ('
         + ISNULL(@errproc, N'SemProcedure') + N':'
@@ -1314,10 +1326,10 @@ SELECT CONCAT('Nenhuma ação mapeada para cd_parametro=', @cd_parametro) AS Msg;
     -- Garante o limite do THROW
     SET @fullmsg = LEFT(@fullmsg, 2048);
 
-    -- Relança com contexto (state 1..255)
+    -- RelanÃ§a com contexto (state 1..255)
     THROW 50000, @fullmsg, 1;
 
-        -- Relança erro com contexto
+        -- RelanÃ§a erro com contexto
         --THROW 50000, CONCAT('Erro em pr_egis_modelo_procedure (',
         --                    ISNULL(@errproc, 'SemProcedure'), ':',
         --                    @errline, ') #', @errnum, ' - ', @errmsg), 1;
@@ -1404,7 +1416,7 @@ GO
 --                "nm_tipo_cobranca": "",
 --                "nm_cliente_grupo": "ENGEKAR",
 --                "nm_vendedor": "",
---                "nm_cidade": "SÃO BERNARDO DO CAMPO",
+--                "nm_cidade": "SÃƒO BERNARDO DO CAMPO",
 --                "sg_estado": "SP",
 --                "cd_cliente": 1737,
 --                "cd_identificacao_nota_saida": 4,
@@ -1429,7 +1441,7 @@ GO
 --                "nm_tipo_cobranca": "",
 --                "nm_cliente_grupo": "ENGEKAR",
 --                "nm_vendedor": "",
---                "nm_cidade": "SÃO BERNARDO DO CAMPO",
+--                "nm_cidade": "SÃƒO BERNARDO DO CAMPO",
 --                "sg_estado": "SP",
 --                "cd_cliente": 1737,
 --                "cd_identificacao_nota_saida": 6,
@@ -1454,7 +1466,7 @@ GO
 --                "nm_tipo_cobranca": "",
 --                "nm_cliente_grupo": "ENGEKAR",
 --                "nm_vendedor": "",
---                "nm_cidade": "SÃO BERNARDO DO CAMPO",
+--                "nm_cidade": "SÃƒO BERNARDO DO CAMPO",
 --                "sg_estado": "SP",
 --                "cd_cliente": 1737,
 --                "cd_identificacao_nota_saida": 5,
@@ -1497,13 +1509,13 @@ exec pr_egis_receber_processo_modulo '[
         "cd_modal": 13,
         "dados_modal": {
             "dt_envio_remessa": "2025-12-23",
-            "nm_portador": "ITAÚ",
+            "nm_portador": "ITAÃš",
             "Conta": "1"
         },
         "dados_registro": [
             {
                 "nm_conta_banco": "",
-                "nm_portador": "ITAÚ",
+                "nm_portador": "ITAÃš",
                 "Vencimento": "2025-10-03",
                 "Status": "S",
                 "CodCliente": 1,
@@ -1513,7 +1525,7 @@ exec pr_egis_receber_processo_modulo '[
                 "VlrDocumento": 10,
                 "IdentDocumento": "10",
                 "Emissao": "2025-09-28",
-                "Observacao": "Vencimento < que 10 dias da emissão.",
+                "Observacao": "Vencimento < que 10 dias da emissÃ£o.",
                 "cd_banco_documento_recebe": "",
                 "cd_digito_bancario": "",
                 "ic_emissao_documento": "N",

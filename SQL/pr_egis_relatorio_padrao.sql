@@ -187,6 +187,13 @@ begin
 	return
 end
 
+--Remessa de Documentos------------------------------------------------------------------------------------------------
+if @cd_relatorio = 423
+begin
+	exec pr_egis_relatorio_remessa_documentos @json = @json
+	return
+end
+
 --Crítica de Lançamento Contábil------------------------------------------------------------------------------------------
 if @cd_relatorio = 407
 begin 
