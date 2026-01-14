@@ -468,6 +468,9 @@ function montaDadosTecnicos (row, meta) {
 
 }
 
+const ENDPOINT_EXEC_SQL = '/exec/pr_egis_sql_exec'
+
+
 export default {
   name: 'ModalGridComposicao',
   components: {
@@ -823,6 +826,138 @@ primeiroCampoEditavelNm () {
 
   methods: {
 
+    montarSqlComParametros (sql) {
+  const s = String(sql || '')
+  if (!s.trim()) return ''
+
+  // encontra tokens do tipo @alguma_coisa
+  const tokens = Array.from(new Set(s.match(/@\w+/g) || []))
+
+  let out = s
+  tokens.forEach(tok => {
+    const valor = this.resolverParametro(tok) // sem o @
+    // se não achou valor, deixa como está (ou você pode forçar NULL)
+    if (valor === null || valor === undefined || String(valor).trim() === '') return
+
+    // se for número: sem aspas; senão: com aspas e escapando
+    const isNum = !Number.isNaN(Number(valor)) && String(valor).trim() !== ''
+    const repl = isNum
+      ? String(Number(valor))
+      : `'${String(valor).replace(/'/g, "''")}'`
+
+    // substitui TODAS as ocorrências desse token
+    out = out.replace(new RegExp(tok.replace('@', '\\@'), 'g'), repl)
+  })
+
+  return out
+},
+
+    resolverParametro (nome) {
+  const key = String(nome || '').replace(/^@/, '').trim()
+  if (!key) return null
+
+  // 1) se existir no componente (data/computed)
+  if (this[key] !== undefined && this[key] !== null && String(this[key]).trim() !== '') {
+    return this[key]
+  }
+
+  // 2) se estiver nos valores do modal
+  if (this.valores?.[key] !== undefined && this.valores?.[key] !== null && String(this.valores[key]).trim() !== '') {
+    return this.valores[key]
+  }
+
+  // 3) localStorage (fallback)
+  const ls = localStorage.getItem(key)
+  if (ls !== null && String(ls).trim() !== '') return ls
+
+  return null
+},
+
+    async onChangeCampo (campo) {
+      if (Number(campo?.ic_tipo_validacao || 0) !== 1) return
+      await this.aplicarValidacaoDoAtributo(campo)
+    },
+
+
+
+async aplicarValidacoesPorTipo (tipo) {
+  const t = Number(tipo || 0)
+
+  const lista = (this.metaCampos || []).filter(a =>
+    Number(a?.ic_tipo_validacao || 0) === t &&
+    String(a?.ds_atributo_validacao || '').trim() !== ''
+  )
+
+  for (const attr of lista) {
+    await this.aplicarValidacaoDoAtributo(attr)
+  }
+},
+
+extrairPrimeiroValor (data) {
+  const row = Array.isArray(data) ? (data[0] || null) : (data || null)
+  if (!row) return null
+
+  if (typeof row === 'string' || typeof row === 'number') return row
+
+  if (typeof row === 'object') {
+    const keys = Object.keys(row)
+    if (!keys.length) return null
+    return row[keys[0]]
+  }
+  return null
+},
+
+async aplicarValidacoesTipo3 () {
+  const lista = (this.metaCampos || []).filter(a =>
+    Number(a?.ic_tipo_validacao || 0) === 3 &&
+    String(a?.ds_atributo_validacao || '').trim() !== ''
+  )
+
+  for (const attr of lista) {
+    await this.aplicarValidacaoDoAtributo(attr)
+  }
+},
+
+
+async aplicarValidacaoDoAtributo (attr) {
+  const sql = String(attr?.ds_atributo_validacao || '').trim()
+  if (!sql) return
+
+  const nm = String(attr?.nm_atributo || '').trim()
+  if (!nm) return
+
+  const data = await this.executarSqlValidacao(sql)
+  const valor = this.extrairPrimeiroValor(data)
+
+  const finalValue =
+    (valor !== undefined && valor !== null && String(valor).trim() !== '')
+      ? (Number.isNaN(Number(valor)) ? String(valor) : Number(valor))
+      : ''
+
+  this.$set(this.valores, nm, finalValue)
+},
+
+    async executarSqlValidacao (sqlText) {
+  const cfg = this.headerBanco
+    ? { headers: { 'x-banco': this.headerBanco } }
+    : undefined
+
+  const sqlFinal = this.montarSqlComParametros(sqlText)
+
+  const payload = [{
+    ic_json_parametro: 'S',
+    cd_menu: Number(localStorage.cd_menu || 0),
+    cd_usuario: String(localStorage.cd_usuario || 0),
+    ds_sql: sqlFinal
+  }]
+
+  console.log('[executarSqlValidacao] ds_sql:', sqlFinal)
+
+  const { data } = await api.post('/exec/pr_egis_sql_exec', payload, cfg)
+  return data
+},
+
+
      normalizarValorDocumento (raw) {
   // null/undefined
   if (raw === null || raw === undefined) return null
@@ -904,7 +1039,13 @@ async onRelatorioDoCampo (attr) {
   console.log('[onRelatorioDoCampo] raw:', raw, 'cd_documento:', cd_documento)
   console.log('[onRelatorioDoCampo] cd_relatorio:', cd_relatorio, 'cd_documento:', cd_documento)
 
-  await this.onRelatorioGrid({ ...(this.valores || {}) }, { cd_relatorio, cd_documento })
+  //await this.onRelatorioGrid({ ...(this.valores || {}) }, { cd_relatorio, cd_documento })
+
+  await this.onRelatorioGrid(
+     { ...(this.valores || {}) },
+     { cd_relatorio, cd_documento, nm_parametro: attr?.nm_atributo } 
+  )
+
 },
 
 async onRelatorioGrid (registro = {}, opts = {}) {
@@ -927,25 +1068,95 @@ async onRelatorioGrid (registro = {}, opts = {}) {
       ? { headers: { 'x-banco': this.headerBanco } }
       : undefined
 
+
+      const nm_parametro = String(opts?.nm_parametro || '').trim()
+
+      const payloadRow = {
+      ic_json_parametro: 'S',
+      cd_menu: Number(localStorage.cd_menu || 0),
+      cd_usuario: String(localStorage.cd_usuario || 0),
+      cd_relatorio
+    }
+
+    // ✅ parâmetro dinâmico: nome do atributo recebe o valor do input
+    if (nm_parametro) {
+      payloadRow[nm_parametro] = cd_documento
+    } else {
+      // fallback (se por algum motivo não vier o nome)
+      payloadRow.cd_documento = cd_documento
+    }
+
+const payload = [payloadRow]
+
+console.log('[onRelatorioGrid] payload:', payload)
+
     // mesmo padrão do Unico: payload em array
+    /*
     const payload = [{
       ic_json_parametro: 'S',
       cd_menu: Number(localStorage.cd_menu || 0),
       cd_usuario: String(localStorage.cd_usuario || 0),
       cd_relatorio,
       cd_documento,
-      id: cd_documento
+      id: cd_documentoth
     }]
+   */
 
-    console.log('[onRelatorioGrid] payload:', payload)
+    console.log('[onRelatorioGrid] payload:', payload, cfg)
 
     const { data } = await api.post('/exec/pr_egis_relatorio_padrao', payload, cfg)
 
+    console.log('[onRelatorioGrid] data:', data)
+
+    //
     const row = Array.isArray(data) ? (data[0] || null) : (data || null)
-    const html = row?.RelatorioHTML
 
-    if (!html) throw new Error('RelatorioHTML não retornado')
+// ✅ 1) casos diretos por nome conhecido
+let html =
+  row?.RelatorioHTML ??
+  row?.RelatorioHtml ??
+  row?.relatoriohtml ??
+  row?.html ??
+  row?.HTML ??
+  null
 
+// ✅ 2) caso específico do seu retorno: chave vazia ''
+if (!html && row && typeof row === 'object' && row[''] != null) {
+  html = row['']
+}
+
+// ✅ 3) fallback geral: pega o PRIMEIRO valor do objeto
+if (!html && row && typeof row === 'object') {
+  const firstVal = Object.values(row)[0]
+  if (typeof firstVal === 'string') html = firstVal
+}
+
+// ✅ 4) fallback: procurar qualquer string grande com cara de html
+if (!html && row && typeof row === 'object') {
+  const candidatos = Object.values(row).map(v => {
+    // tenta converter para string se for algo tipo Buffer/obj
+    if (typeof v === 'string') return v
+    if (v == null) return null
+    try { return String(v) } catch (_) { return null }
+  }).filter(Boolean)
+
+  html = candidatos.find(s =>
+    s.includes('<style') || s.includes('<html') || s.includes('<div') || s.includes('class="report"')
+  ) || null
+}
+
+// ✅ 5) se row vier string direto
+if (!html && typeof row === 'string') {
+  html = row
+}
+
+if (!html) {
+  console.log('[onRelatorioGrid] row:', row)
+  console.log('[onRelatorioGrid] row keys:', row && typeof row === 'object' ? Object.keys(row) : typeof row)
+  throw new Error('RelatorioHTML não retornado (nenhum campo HTML encontrado)')
+}
+
+    //
     const win = window.open('about:blank', '_blank')
     if (!win) throw new Error('Popup bloqueado pelo navegador')
 
@@ -953,12 +1164,21 @@ async onRelatorioGrid (registro = {}, opts = {}) {
     win.document.write(String(html))
     win.document.close()
   } catch (e) {
+
     console.error('[onRelatorioGrid] erro:', e)
-    this.$q?.notify?.({
-      type: 'negative',
-      position: 'center',
-      message: 'Erro ao gerar relatório.'
-    })
+    
+     const msg =
+    e?.response?.data?.message ||
+    e?.response?.data?.error ||
+    (typeof e?.response?.data === 'string' ? e.response.data : '') ||
+    e?.message ||
+    'Erro ao gerar relatório.'
+
+  this.$q?.notify?.({
+    type: 'negative',
+    position: 'center',
+    message: msg
+  })
   } finally {
     this.loadingRelatorio = false
   }
@@ -1336,11 +1556,16 @@ async onBlurCampo (campo) {
   const v = (this.valores && nm in this.valores) ? this.valores[nm] : ''
   const vazio = v === null || v === undefined || String(v).trim() === ''
 
+    if (Number(campo?.ic_tipo_validacao || 0) == 2) {
+       await this.aplicarValidacaoDoAtributo(campo)
+    }
+
   // ✅ Se estiver vazio: NÃO valida e NÃO abre Unico automaticamente
   if (vazio) return
 
   // valida (se tiver regra)
   const ok = await this.validarCampoRegra(campo, 'blur')
+
   if (ok === false) return
   // validação feita
 
@@ -2410,6 +2635,7 @@ removerPorRowId (rowid) {
     // ===== Confirmar final (backend + limpa localStorage) =====
     
    async confirmar () {
+     
      this.loadingConfirmar = true
 
      try {
@@ -2444,6 +2670,7 @@ removerPorRowId (rowid) {
         dados_arquivo: this.dadosArquivo,
 
       }
+
     ]
 
     const cfg = this.headerBanco
@@ -2472,6 +2699,15 @@ if (precisaArquivo && !this.dadosArquivo) {
 
     const resp = await api.post(`/exec/${this.nm_procedimento}`, body, cfg)
     const data = resp ? resp.data : null
+    
+
+
+    // exemplo genérico: ajuste para a sua variável real do confirmar
+    const teveRetorno = Array.isArray(data) ? data.length > 0 : !!data
+
+    if (teveRetorno) {
+       await this.aplicarValidacoesTipo3()
+    }
 
     // Se ic_arquivo_texto='S', joga retorno no textarea
 
@@ -2538,6 +2774,11 @@ if (campoDownload && this.retornoArquivoTexto && 1==2 )  {
   // opcional: já dispara o download automaticamente
   // (se você preferir só deixar o botão disponível, comente a linha abaixo)
   this.baixarArquivoAnexo(campoDownload)
+
+
+  //Retorno de Confirmacao
+  //await this.aplicarValidacoesPorTipo(3)
+  //
 
 }
 
