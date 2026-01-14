@@ -201,6 +201,13 @@ begin
 	return
 end
 
+--Etiqueta de Volume--------------------------------------------------------------------------------------
+if @cd_relatorio = 425
+begin
+	exec pr_egis_etiqueta_volume_nota @json = @json
+	return
+end
+
 --Crítica de Lançamento Contábil------------------------------------------------------------------------------------------
 if @cd_relatorio = 407
 begin 
