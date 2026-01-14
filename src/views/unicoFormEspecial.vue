@@ -178,18 +178,20 @@
         >
         <q-tooltip>Mapa de Atributos</q-tooltip>
         </q-btn>
+
         <q-btn
-          v-if="!isHidden('info')"
+          v-if="false && !isHidden('info')"
           dense
           rounded
           color="deep-purple-7"
           class="q-mt-sm q-ml-sm"          
           icon="info"
           size="lg"
-          @click="onInfoClick && onInfoClick()"
+          @click="onInfoClick"
         >
         <q-tooltip>Informações</q-tooltip>
         </q-btn>
+
 <q-btn
   v-if="filtros && filtros.length"
    dense
@@ -238,6 +240,7 @@
         size="16px"
         text-color="white"
         :label="`${cdMenu || cd_menu}`"
+        @click="onInfoClick && onInfoClick()"
       >
       <q-tooltip>identificação</q-tooltip>
       </q-chip>
