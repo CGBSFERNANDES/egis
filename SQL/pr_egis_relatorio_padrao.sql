@@ -194,6 +194,13 @@ begin
 	return
 end
 
+--Ordem de Separação por Categoria--------------------------------------------------------------------------------------
+if @cd_relatorio = 424
+begin
+	exec pr_egis_relatorio_ordem_separacao_categoria @json = @json
+	return
+end
+
 --Crítica de Lançamento Contábil------------------------------------------------------------------------------------------
 if @cd_relatorio = 407
 begin 
