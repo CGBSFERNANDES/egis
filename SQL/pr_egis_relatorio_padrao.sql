@@ -208,6 +208,13 @@ begin
 	return
 end
 
+--Canhoto de Entrega--------------------------------------------------------------------------------------
+if @cd_relatorio = 428
+begin
+	exec pr_egis_canhoto_entrega_nota_saida @json = @json
+	return
+end
+
 --Crítica de Lançamento Contábil------------------------------------------------------------------------------------------
 if @cd_relatorio = 407
 begin 
