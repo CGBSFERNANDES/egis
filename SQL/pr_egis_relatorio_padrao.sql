@@ -208,6 +208,13 @@ begin
 	return
 end
 
+--Resumo de Comissão por Vendedor----------------------------------------------------------------------------
+if @cd_relatorio = 427
+begin
+	exec pr_egis_pr_egis_resumo_comissao_vendedor_volume_nota @json = @json
+	return
+end
+
 --Crítica de Lançamento Contábil------------------------------------------------------------------------------------------
 if @cd_relatorio = 407
 begin 
