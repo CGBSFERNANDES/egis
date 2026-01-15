@@ -11474,26 +11474,36 @@ if (
 
     },
 
+    ///////////////////////////////////////////////////////////////////////////////////////////////
 
     getCdParametroContexto () {
-  // 1) Prioridade: vem do registro pai (embed/composição)
-  const fromPai = Number(this.registro_pai?.cd_parametro || 0)
-  if (fromPai > 0) return fromPai
 
-  // 2) Se o filtro trouxe (string “200”), aproveita
-  const fromFiltro = Number(this.filtrosValores?.cd_parametro || 0)
-  if (fromFiltro > 0) return fromFiltro
+      // 0) Se o menu tem um parâmetro “fixo”
+      const fromMenu = Number(this.cd_parametro_menu || 0)
+      if (fromMenu > 0) 
+      
+         console.log('cd_parametro vindo do menu (fixo) = ', fromMenu);
 
-  // 3) Se o menu tem um parâmetro “fixo”
-  const fromMenu = Number(this.cd_parametro_menu || 0)
-  if (fromMenu > 0) return fromMenu
+      return fromMenu
+      //
 
-  // 4) fallback geral (caso o app guarde em storage)
-  const fromLS = Number(localStorage.cd_parametro || 0)
-  if (fromLS > 0) return fromLS
+      // 1) Prioridade: vem do registro pai (embed/composição)
+      const fromPai = Number(this.registro_pai?.cd_parametro || 0)
+      if (fromPai > 0) return fromPai
 
-  return 0
-},
+      // 2) Se o filtro trouxe (string “200”), aproveita
+      const fromFiltro = Number(this.filtrosValores?.cd_parametro || 0)
+      if (fromFiltro > 0) return fromFiltro
+
+      // 4) fallback geral (caso o app guarde em storage)
+      const fromLS = Number(localStorage.cd_parametro || 0)
+      if (fromLS > 0) return fromLS
+
+      return 0
+
+    },  
+    ///////////////////////////////////////////////////////////////////////////////////
+
 
     // função principal: monta payload e chama a procedure
 
@@ -11690,7 +11700,8 @@ if (
 
           //
           console.log('payload da consulta:', this.nome_procedure,payloadExec, banco);
-          
+          //
+
           //
           // chama a procedure
           //onsole.log('Chamando procedure:', this.nome_procedure);
