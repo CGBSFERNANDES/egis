@@ -353,3 +353,24 @@
     0 0 4px #512DA8 !important;
   background: #fff !important;
 }
+
+/* painel da tab filha não pode ter recuo/margem */
+.tab-panel-filho{
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* área filha ocupando a tela útil */
+.area-filhas-full{
+  width: 100%;
+  min-height: calc(100vh - 220px); /* ajuste fino se precisar */
+  padding: 0 16px 16px 16px;       /* mesmo alinhamento da grid/tabs */
+  box-sizing: border-box;
+}
+
+/* quando estiver embed, tira “cara de página dentro de página” */
+::v-deep .unico-embed .titulo-normal,
+::v-deep .unico-embed .margin-menu,
+::v-deep .unico-embed .bg-form {
+  display: none !important;
+}

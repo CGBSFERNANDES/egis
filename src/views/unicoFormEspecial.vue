@@ -1,5 +1,6 @@
 <template>
-  <div class="unico-root">
+  <div :class="['unico-root', { 'unico-embed': embedMode }]">
+
     <meta
       name="viewport"
       content="width=device-width,initial-scale=1,user-scalable=no"
@@ -7,22 +8,28 @@
 
     <!-- TOPO no estilo -->
 
-    <div       
+    <div    
+      v-if="!hideChrome"   
       class="row items-center">
       <transition name="slide-fade">
         <!-- título + seta + badge -->
-      <h2 class="content-block col-8 row items-center no-wrap toolbar-scroll" v-show="displayTitle">
+      <h2 
+          v-if="!isEmbeddedClean"
+          class="content-block col-8 row items-center no-wrap toolbar-scroll"
+          v-show="displayTitle">
           <!-- seta voltar -->
           <q-btn            
             flat
             round
             dense
             icon="arrow_back"
-            class="q-mr-sm seta-form"
+            class="q-mr-sm seta-form" 
             aria-label="Voltar"
-            @click="onVoltar"
+            @click="$emit('voltar')"
           />
-          <span :class="ic_modal_pesquisa === 'S' ? 'titulo-modal' : ''">
+          <span
+            v-if="displayTitle"  
+            :class="ic_modal_pesquisa === 'S' ? 'titulo-modal' : ''">
             {{ displayTitle }}
             </span>
 
@@ -41,9 +48,11 @@
   />
 </div>
 
-<slot name="toolbar-left" :engine="this" />
+<template v-if="mostrarToolbar">
+  <slot name="toolbar-left" :engine="this" />
+</template>
 
-<template v-if="!uiLite">
+<template v-if="!uiLite && mostrarToolbar">
 
           <q-btn
             v-if="cd_tabela > 0 && !isHidden('novo')"
@@ -52,7 +61,7 @@
             color="deep-purple-7"
             :class="['q-mt-sm', 'q-ml-sm', cd_tabela != 0 ? 'fo-margin' : '']"
             icon="add"
-            @click="abrirFormEspecial({ modo: 'I', registro: {} })"
+            @click="toolbarNovo"
           >
           <q-tooltip>Novo Registro</q-tooltip>
           </q-btn>
@@ -64,7 +73,7 @@
             color="deep-purple-7"
             :class="['q-mt-sm', 'q-ml-sm']"
             icon="filter_alt"            
-            @click="abrirFiltroSelecao"
+            @click="toolbarFiltros"
           >
           <q-tooltip>Filtros</q-tooltip>
           </q-btn>
@@ -76,7 +85,7 @@
           icon="refresh"
           color="deep-purple-7"
           :class="['q-mt-sm', 'q-ml-sm', cd_tabela === 0 ? 'fo-margin' : '']"
-          @click="onRefreshConsulta"
+          @click="toolbarRefresh"
        >
        <q-tooltip>Atualizar os Dados</q-tooltip>
        </q-btn>
@@ -89,7 +98,7 @@
           class="q-mt-sm q-ml-sm"
           icon="tune"          
           :disable="cd_form_modal <= 0"
-          @click="abrirModalComposicao"
+          @click="toolbarDetalhe"
         >
         <q-tooltip>Detalhe</q-tooltip>
        
@@ -103,7 +112,7 @@
           color="deep-purple-7"
           icon="far fa-file-excel"
           class="q-mt-sm q-ml-sm"          
-          @click="exportarExcel && exportarExcel()"
+          @click="toolbarExcel"
         >
          <q-tooltip>Exportar Excel</q-tooltip>
        </q-btn>
@@ -115,7 +124,7 @@
           color="deep-purple-7"
           class="q-mt-sm q-ml-sm"
           icon="picture_as_pdf"          
-          @click="exportarPDF && exportarPDF()"
+          @click="toolbarPDF"
         >
          <q-tooltip>Exportar PDF</q-tooltip>
         </q-btn>
@@ -126,7 +135,7 @@
           color="deep-purple-7"
           class="q-mt-sm q-ml-sm"
           icon="description"          
-          @click="abrirRelatorio"
+          @click="toolbarRelatorio"
         >
         <q-tooltip>Abrir Relatório</q-tooltip>
         </q-btn>
@@ -138,7 +147,7 @@
         color="deep-purple-7"
         icon="dashboard"        
         class="q-mt-sm q-ml-sm"
-        @click="abrirDashboardDinamico"    
+        @click="toolbarDash"    
       >
       
     <q-tooltip>Dashboard dos dados</q-tooltip>
@@ -153,7 +162,7 @@
       color="deep-purple-7"
       class="q-mt-sm q-ml-sm"
       icon="more_horiz"      
-      @click="abrirMenuProcessos"
+      @click="toolbarProcessos"
      >
      <q-tooltip>Processos</q-tooltip>
      </q-btn>
@@ -164,7 +173,7 @@
            color="deep-purple-7"
            class="q-mt-sm q-ml-sm"
            icon="view_list"                      
-           @click="dlgMapaAtributos = true"
+           @click="toolbarMapaAtributos"
         >
         <q-tooltip>Mapa de Atributos</q-tooltip>
         </q-btn>
@@ -175,9 +184,8 @@
           rounded
           color="deep-purple-7"
           class="q-mt-sm q-ml-sm"          
-          icon="info"
-          
-          @click="onInfoClick"
+          icon="info"          
+          @click="toolbarInfo"
         >
         <q-tooltip>Informações</q-tooltip>
         </q-btn>
@@ -190,7 +198,7 @@
           class="q-mt-sm q-ml-sm"          
           
           icon="filter_alt_off" 
-          @click="drawerFiltros = true"
+          @click="toolbarDrawerFiltros"
 >
 <q-tooltip>Seleção de Filtros</q-tooltip>
         </q-btn>
@@ -230,13 +238,16 @@
         size="16px"
         text-color="white"
         :label="`${cdMenu || cd_menu}`"
-        @click="onInfoClick && onInfoClick()"
+        @click="toolbarInfo"
       >
       <q-tooltip>identificação</q-tooltip>
       </q-chip>
 
       </template>
-      <slot name="toolbar-right" :engine="this" />
+
+      <template v-if="mostrarToolbar">
+         <slot name="toolbar-right" :engine="this" />
+      </template>
 
         </h2>
       </transition>
@@ -1038,6 +1049,7 @@
             porque o grid já está em cima -->
     
         <!-- Painéis dinâmicos -->
+
         <q-tab-panel
           v-for="t in menuTabs"
           :key="`panel_${t.key}`"
@@ -1045,9 +1057,11 @@
           class="q-pa-none tab_principal"
         >
 
-    <div class="area-filhas" :class="{ 'area-filhas-full': takeoverFilhoGrid }">
+    <div class="area-filhas area-filhas-full">
     <UnicoFormEspecial
       :embedMode="true"
+      :hideChrome="true"
+      :hideToolbar="true"
       v-if="t.cd_menu_composicao > 0"
       :cd_menu_entrada="t.cd_menu_composicao"
       :titulo_menu_entrada="t.label"
@@ -1066,6 +1080,7 @@
       </q-tab-panels>
       </div>
     </div>
+
             <!-- CONTROLE PRINCIPAL -->
 
             <!-- ======= MODO TREEVIEW ======= -->
@@ -1248,7 +1263,7 @@
 
         <div
           
-          v-show="!(String(ic_treeview_menu || 'N').toUpperCase() === 'S' && exibirComoTree)"
+          v-show="activeMenuTab === 'principal' && !(String(ic_treeview_menu || 'N').toUpperCase() === 'S' && exibirComoTree)"
           class="grid-scroll-shell">
          <div class="grid-scroll-track">
             <transition name="slide-fade">
@@ -2397,8 +2412,10 @@ export default {
     overrides: { type: Object, default: () => ({}) },
     hooks: { type: Object, default: () => ({}) },
     services: { type: Object, default: () => ({}) },
-    uiPreset: { type: String, default: "full" } // "full" | "lite"
-
+    uiPreset: { type: String, default: "full" }, // "full" | "lite"
+    hideChrome: { type: Boolean, default: false },  // esconde header/toolbar do próprio componente
+    hideToolbar: { type: Boolean, default: false }  // se quiser granularidade
+    
   },
 
   components: {
@@ -2718,6 +2735,34 @@ export default {
   },
 
   computed: {
+
+    isRootInstance () {
+    // raiz = NÃO está em embed
+    return this.embedMode !== true
+  },
+
+  isEmbeddedInstance () {
+    return this.embedMode === true
+  },
+
+    emTabFilha () {
+    return this.activeMenuTab && this.activeMenuTab !== 'principal'
+    },
+
+    mostrarToolbar () {
+    // toolbar aparece SOMENTE na raiz
+    return this.isRootInstance
+  },
+
+  mostrarHeaderInterno () {
+    // header (seta + título) aparece
+    // ❗ SOMENTE quando for embed E for a primeira camada
+    return this.isEmbeddedInstance && !this.hideToolbar
+  },
+
+    isEmbeddedClean () {
+      return this.embedMode && this.hideChrome
+    },
 
     uiLite() {
      return !!this.engineOverrides.ui_lite
@@ -3235,6 +3280,42 @@ dashboardCards() {
   });
 },
 
+getToolbarEngine () {
+  const child = this.getActiveChildRef()
+  return child || this
+},
+
+  getActiveChildRef () {
+    const key = this.activeMenuTab
+    if (!key || key === 'principal') return null
+    const refName = `child_${key}`
+    const comp = this.$refs[refName]
+    // Vue2: ref de v-for pode virar array
+    return Array.isArray(comp) ? comp[0] : comp
+  },
+
+
+  onClickRefresh () {
+    const child = this.getActiveChildRef()
+    if (child && typeof child.consultar === 'function') {
+      child.consultar()
+      return
+    }
+    this.consultar()
+  },
+
+  onClickNovo () {
+    const child = this.getActiveChildRef()
+    if (child && typeof child.abrirFormEspecial === 'function') {
+      child.abrirFormEspecial({ modo: 'I' })
+      return
+    }
+    this.abrirFormEspecial({ modo: 'I' })
+  },
+
+
+
+
  async onSucessoModal () {
     await this.onRefreshConsulta()
     this.limparSelecaoGrid()
@@ -3255,7 +3336,91 @@ dashboardCards() {
     })
   },
 
+toolbarNovo () {
+  const e = this.getToolbarEngine()
+  if (typeof e.abrirFormEspecial === 'function') {
+    e.abrirFormEspecial({ modo: 'I', registro: {} })
+  }
+},
 
+toolbarRefresh () {
+  const e = this.getToolbarEngine()
+  // prioriza seu fluxo normal
+  if (typeof e.onRefreshConsulta === 'function') return e.onRefreshConsulta()
+  if (typeof e.consultar === 'function') return e.consultar()
+},
+
+toolbarFiltros () {
+  const e = this.getToolbarEngine()
+  if (typeof e.abrirFiltroSelecao === 'function') e.abrirFiltroSelecao()
+},
+
+toolbarDetalhe () {
+  const e = this.getToolbarEngine()
+  if (typeof e.abrirModalComposicao === 'function') e.abrirModalComposicao()
+},
+
+toolbarExcel () {
+  const e = this.getToolbarEngine()
+  if (typeof e.exportarExcel === 'function') e.exportarExcel()
+},
+
+toolbarPDF () {
+  const e = this.getToolbarEngine()
+  if (typeof e.exportarPDF === 'function') e.exportarPDF()
+},
+
+toolbarRelatorio () {
+  const e = this.getToolbarEngine()
+  if (typeof e.abrirRelatorio === 'function') e.abrirRelatorio()
+},
+
+toolbarDash () {
+  const e = this.getToolbarEngine()
+  if (typeof e.abrirDashboardDinamico === 'function') e.abrirDashboardDinamico()
+},
+
+toolbarProcessos () {
+  const e = this.getToolbarEngine()
+  if (typeof e.abrirMenuProcessos === 'function') e.abrirMenuProcessos()
+},
+
+toolbarMapaAtributos () {
+  const e = this.getToolbarEngine()
+
+  // se o filho tem o mesmo dialog, abre nele
+  if (e && Object.prototype.hasOwnProperty.call(e, 'dlgMapaAtributos')) {
+    e.dlgMapaAtributos = true
+    return
+  }
+
+  // fallback: abre no pai
+  this.dlgMapaAtributos = true
+},
+
+toolbarDrawerFiltros () {
+  const e = this.getToolbarEngine()
+
+  if (e && Object.prototype.hasOwnProperty.call(e, 'drawerFiltros')) {
+    e.drawerFiltros = true
+    return
+  }
+
+  this.drawerFiltros = true
+},
+
+toolbarInfo () {
+  const e = this.getToolbarEngine()
+
+  // tenta rodar no filho (pra mostrar o cd_menu/infos do filho)
+  if (e && typeof e.onInfoClick === 'function') {
+    e.onInfoClick()
+    return
+  }
+
+  // fallback
+  if (typeof this.onInfoClick === 'function') this.onInfoClick()
+},
 
 
   formatarKpiValor(valor, formato) {
@@ -4410,6 +4575,18 @@ async onClickMenuTab (t) {
     // MUITO IMPORTANTE:
     // se a aba for de edição (ic_grid_menu = 'N'), não faz mais nada
     //if ((t.ic_grid_menu || 'S') !== 'S') return
+  }
+
+
+    // tab filha exige registro pai
+  if (t.cd_menu_composicao > 0 && !this.registroSelecionado) {
+    this.$q.notify({
+      type: 'warning',
+      position: 'top',
+      message: 'Selecione um registro na grade antes de abrir a composição.'
+    })
+    this.activeMenuTab = 'principal'
+    return
   }
 
   this.activeMenuTab = t.key
