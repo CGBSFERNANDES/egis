@@ -251,6 +251,7 @@
   </div>
 
   <dx-data-grid
+  v-if="itensGrid.length"
   :data-source="itensGrid"
   :key-expr="'__rowid'"
   :show-borders="true"
@@ -288,6 +289,7 @@
   </div></template>
 
   <!-- Coluna de Ações -->
+
   <dx-column
     caption="Ações"
     width="80"
@@ -484,6 +486,7 @@ export default {
   DxSummary,
   DxTotalItem
   },
+  
   props: {
     value: { type: Boolean, default: false },
     cdModal: { type: Number, required: true },
@@ -806,13 +809,13 @@ primeiroCampoEditavelNm () {
     },
 
     registrosSelecionados: {
-  deep: true,
-  handler () {
-    // se o modal está aberto e o meta já carregou, reaplica
-    if (this.internalVisible && (this.metaCampos || []).length) {
-      this.aplicarRegistroSelecionado()
-      this.inicializarValoresDoForm()
-    }
+      deep: true,
+      handler () {
+       // se o modal está aberto e o meta já carregou, reaplica
+       if (this.internalVisible && (this.metaCampos || []).length) {
+          this.aplicarRegistroSelecionado()
+          this.inicializarValoresDoForm()
+        }
   }
 },
 
@@ -2323,6 +2326,9 @@ traduzRegistroSelecionado (rowTela) {
           montaDadosTecnicos(row, Array.isArray(this.gridMeta) ? this.gridMeta : [])
         )
 
+        console.log('docsSelecionados:',  docsSelecionados);
+
+
         const body = [
           {
             ic_json_parametro: 'S',
@@ -2338,17 +2344,25 @@ traduzRegistroSelecionado (rowTela) {
 
         console.log('[ModalGridComposicao] carga inicial:', nmProcDados, 'cd_parametro:', cdCargaParametro)
         console.log('body =>', body)
+
         const { data } = await api.post(`/exec/${nmProcDados}`, body, cfg)
 
         const rows = Array.isArray(data) ? data : (data ? [data] : [])
+
+        
+        console.log('[ModalGridComposicao] dados carga inicial recebidos:', rows)
+
         if (!rows.length) return
 
 
-        this.cd_relatorio = Number(retorno.cd_relatorio || 0)
+        this.cd_relatorio = Number(rows.cd_relatorio || 0)
+
+        console.log('[ModalGridComposicao] dados carga inicial recebidos:', rows)
 
         // 3) Se tiver dados: preenche o objeto no storage e o modal
         //    - se vier 1 linha, assume retorno "único" para preencher o form
         //    - se vier N linhas, assume dataset para popular grid
+
         if (rows.length === 1) {
           this.aplicarRetornoInicial(rows[0])
         } else {
@@ -2359,6 +2373,8 @@ traduzRegistroSelecionado (rowTela) {
               item[m.nm_atributo] = r[m.nm_atributo]
             })
             item.__rowid = `${Date.now()}_${Math.random().toString(16).slice(2)}`
+
+            console.log('Item carga inicial:', item)  
             return item
           })
         }
@@ -2392,6 +2408,7 @@ traduzRegistroSelecionado (rowTela) {
         ].filter(Boolean)
 
         let valorEncontrado
+
         for (const c of candidatos) {
           const key = this.normaliza(c)
           if (mapaDados[key] !== undefined) {
@@ -2399,6 +2416,8 @@ traduzRegistroSelecionado (rowTela) {
             break
           }
         }
+
+        console.log('Atributo:', m.nm_atributo, '=> valor encontrado:', valorEncontrado )
 
         if (valorEncontrado !== undefined) {
           this.$set(this.valores, m.nm_atributo, valorEncontrado)
@@ -2449,6 +2468,10 @@ getValorDoRegistro (registro, nmAtributo) {
 
 aplicarRegistroSelecionado () {
   const reg = Array.isArray(this.registrosSelecionados) ? this.registrosSelecionados[0] : null
+
+  console.log('Registro selecionado para aplicar no form:', reg)
+
+
   if (!reg) return
 
   // garante objeto reativo

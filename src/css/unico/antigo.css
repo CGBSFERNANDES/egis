@@ -1,0 +1,1328 @@
+/* Seleção/linha focada laranja */
+.dx-datagrid .dx-row-focused,
+.dx-datagrid .dx-selection,
+.dx-datagrid .dx-selection.dx-row > td {
+  background-color: #ff7043 !important; /* laranja */
+  color: #fff !important;
+}
+
+/* Cabeçalho mais forte e linha alternada suave */
+.dx-datagrid .dx-header-row {
+  background-color: #f6f6f6;
+  font-weight: 600;
+}
+.dx-datagrid .dx-row-alt > td {
+  background-color: #fafafa;
+}
+/* Espaço para não colidir com um footer fixo de ~56px */
+.q-notifications__list--bottom,
+.q-notifications__list--bottom-right,
+.q-notifications__list--bottom-left {
+  margin-bottom: 64px; /* ajuste conforme a altura do rodapé */
+}
+.dx-datagrid .dx-command-select {
+  width: 36px; /* largura do checkbox */
+}
+/* dá respiro dentro do card */
+.dx-card.wide-card.filtros-card {
+  padding: 12px 16px 16px;
+  border-radius: 8px;
+}
+
+/* Compacta o card de filtros */
+.filtros-card {
+  padding: 10px 14px; /* antes era maior */
+  border-radius: 14px;
+  box-shadow: 0 18px 40px rgba(0,0,0,.10);
+}
+
+/* Reduz o espaço entre as colunas sem cortar o padding interno */
+.filtros-wrap {
+  /* controla o gutter real */
+  margin-left: -6px;
+  margin-right: -6px;
+}
+
+/* reativa gutters mesmo se algum reset tiver zerado .row */
+.filtros-row {
+  margin-left: -8px !important;
+  margin-right: -8px !important;
+}
+.filtros-row > [class*="col-"] {
+  padding-left: 8px !important;
+  padding-right: 8px !important;
+}
+
+/* garante que q-input/q-select ocupem toda a coluna */
+.full-w,
+.full-w .q-field,
+.full-w.q-input,
+.full-w.q-select {
+  width: 100%;
+}
+
+/* se algum CSS global removeu espaçamento vertical do q-field, repõe */
+.filtros-row .q-field {
+  margin-top: 4px;
+  margin-bottom: 4px;
+}
+
+
+/* aumenta a altura (min-height) dos campos e alinha os ícones lateral/append */
+.filtro-item .q-field--filled .q-field__control,
+.filtro-item .q-field--outlined .q-field__control {
+  min-height: 56px; /* ajuste aqui: 48px, 56px, 64px... */
+  padding-top: 10px; /* espaço pro label empilhado */
+  padding-bottom: 6px;
+}
+
+.filtro-item .q-field__marginal {
+  height: 56px; /* mantém os ícones com a mesma altura */
+}
+
+/* se quiser dar um respiro vertical entre linhas no mobile */
+.filtro-item {
+  /* ajusta respiro interno do campo */
+  padding: 4px 2px;
+  padding-left: 6px;
+  padding-right: 6px;
+  margin-bottom: 12px;
+}
+
+/* opcional: deixa o label um pouco mais forte/visível */
+.filtro-item .q-field__label {
+  font-weight: 600;
+}
+
+/* Ícones (prepend/append) menos “folgados” */
+.filtro-item .q-field__prepend,
+.filtro-item .q-field__append {
+  padding-left: 6px;
+  padding-right: 6px;
+}
+
+/* Linha do botão com pouco espaço acima */
+.filtros-actions {
+  margin-top: 8px;
+  padding-left: 2px;
+}
+
+.filters-grid {
+  display: grid;
+  /*grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); */
+  grid-template-columns: repeat(12, 1fr);
+  grid-column-gap: 12px; /* horizontal gap menor */
+  grid-row-gap: 10px; /* vertical gap menor */
+}
+
+.filter-grid > div {
+  grid-column: span 12; /* default: 1 por linha no mobile */
+}
+
+/* cada filtro ocupa 4 colunas em desktop, 12 no mobile */
+.filter-item {
+  grid-column: span 12;
+}
+
+/* altura visual dos inputs “filled” do Quasar */
+.q-field--filled .q-field__control {
+  min-height: 64px; /* aumenta a “altura” do campo */
+  padding-top: 8px;
+  padding-bottom: 6px;
+}
+:deep(.q-field--filled .q-field__control) {
+  background: #ffffff !important;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.06);
+}
+:deep(.q-field--filled .q-field__control:before) {
+  background: #ffffff !important;
+  opacity: 1 !important;
+}
+:deep(.q-field--filled .q-field__control:after) {
+  background: transparent !important;
+}
+:deep(.q-field--filled .q-field__native),
+:deep(.q-field--filled .q-field__label) {
+  color: #1f2937 !important;
+}
+
+.dx-card.wide-card {
+  padding: 12px 12px; /* sutil e consistente */
+  border-radius: 8px;
+}
+
+.espaco {
+  padding-top: 200px;
+  margin-top: 100px;
+}
+
+@media (min-width: 768px) {
+  .filter-grid > div {
+    grid-column: span 6; /* 2 por linha no tablet */
+  }
+}
+
+@media (min-width: 1200px) {
+  .filter-grid > div {
+    grid-column: span 4; /* 3 por linha no desktop */
+  }
+}
+
+.leitura-azul {
+  background-color: #e0f7fa !important;
+  color: #00838f;
+}
+/* pode ser global ou no <style scoped> do SFC */
+.leitura-azul .q-field__control {
+  background: #e0f7fa !important;
+}
+.leitura-azul .q-field__native,
+.leitura-azul .q-field__label {
+  color: #00838f !important;
+}
+
+.viewport {
+  overflow: hidden;
+  width: 100%;
+}
+.track {
+  display: flex;
+  width: 200%;
+  transition: transform 0.3s ease;
+}
+.pane {
+  width: 50%;
+  padding: 8px;
+}
+
+.hshell {
+  width: 100%;
+  overflow: hidden; /* oculta o painel fora de vista */
+  position: relative;
+  min-height: 320px; /* ajuste: garante altura para a grid */
+}
+
+.htrack {
+  display: flex;
+  width: 200%; /* 2 painéis de 100% cada */
+  transition: transform 0.25s ease;
+}
+
+.hpanel {
+  flex: 0 0 100%; /* cada painel ocupa 100% da largura da hshell */
+  width: 100%;
+  box-sizing: border-box;
+  padding: 8px 8px 0;
+}
+
+.filtros-container {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: white;
+  padding: 8px 0;
+  border-bottom: 1px solid #ddd;
+}
+
+.grid-top{
+  flex: 0 0 auto;        /* fica no tamanho do conteúdo */
+}
+
+/* grid vira conteúdo normal da página (sem viewport/scroll interno) */
+.grid-body{
+  flex: 0 0 auto;      /* não força ocupar "resto" */
+  min-height: auto;
+  overflow: visible;   /* deixa a página rolar */
+}
+
+/* shell/track não podem "cortar" conteúdo */
+.grid-scroll-shell {
+  overflow: visible;
+  white-space: normal;
+  width: 100%;
+  position: relative;
+  padding: 0 16px 18px 16px; /* coloca padding dos dois lados (alinha com tabs) */
+  box-sizing: border-box;
+  display: block;      /* não precisa flex aqui */
+  min-height: auto;
+}
+
+.grid-scroll-track {
+  position: relative;
+  white-space: normal; /* importante: não forçar nowrap */
+  display: block;
+  width: 100%;
+  min-width: 0;
+  height: auto;
+  overflow: visible;
+}
+
+/* NÃO prenda altura do grid */
+.grid-scroll-shell .dx-datagrid,
+.grid-scroll-track .dx-datagrid {
+  height: auto !important;
+  width: 100% !important;
+}
+
+.dx-datagrid-rowsview {
+  padding-right: 8px;
+  padding-bottom: 4px;
+}
+
+.arrow-btn {
+  position: fixed;
+  top: 20%;
+  margin-left: 5px;
+  margin-right: 5px;
+  transform: translateY(40%);
+  z-index: 2000;
+}
+
+.arrow-btn.left {
+  left: 60px;
+}
+
+.arrow-btn.right {
+  right: 10px;
+}
+
+/* escopo local do componente */
+.q-tabs__content {
+  border-bottom: 2px solid var(--q-color-deep-orange-9);
+  margin-bottom: 6px;
+}
+
+/* garante que o footer da DevExtreme apareça e não “cole” errado */
+
+.dx-datagrid-total-footer,
+.dx-datagrid-pager {
+  position: sticky;
+  bottom: 0;
+  background: #fff;
+  z-index: 2;
+}
+
+.fab-down {
+  position: sticky; /* gruda no fim da área scrollável */
+  bottom: 12px;
+  float: right;
+  margin-right: 12px;
+  z-index: 5;
+}
+.margin-menu {
+  position: absolute; right: 25px;
+  top: 20px;
+ 
+}
+.bg-form {
+  position: absolute; top: 10px;
+  margin-right: 1px;
+  align-items: right;
+}
+.fo-margin {
+  margin-left: 40px;
+}
+.fo-margin-direita {
+  margin-right: 40px;
+}
+/* Ícone roxo no botão de processo */
+::v-deep .btn-processo-menu .dx-link-icon .dx-button-content .dx-icon{
+  color: #5e35b1; /* deep-purple-7 */
+}
+/* Se quiser o fundo do botão com um roxo clarinho: */
+::v-deep .btn-processo-menu .dx-link .dx-button-content {
+  background-color: #ede7f6;
+  border-radius: 9999px;
+  padding: 2px 4px;
+}
+
+.my-notify {
+  font-size: 1.4rem;     /* aumenta o texto */
+  padding: 20px;         /* mais espaço interno */
+  border-radius: 8px;    /* cantos arredondados */
+  text-align: center;    /* centraliza o texto */
+}
+
+.tabs-form {
+  width: 100%;
+}
+
+.tabsheets-form {
+  width: 100%;
+  background: linear-gradient(90deg, rgba(123, 31, 162, 0.1), rgba(0, 172, 193, 0.08));
+  border-radius: 14px;
+  padding: 6px 8px;
+}
+
+.tabsheets-form .q-tabs__content {
+  gap: 8px;
+  align-items: center;
+  width: 100%;
+  justify-content: center; 
+}
+
+.tabsheets-form .q-tab {
+  flex: 1 1 0;
+  min-width: 0;
+  justify-content: center;
+  text-align: center;
+  color: #3f2b96;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  font-size: 15px;
+  min-height: 46px;
+  line-height: 1.2;
+  border-radius: 12px;
+  transition: all 0.18s ease;  
+  display: flex;
+  align-items: center;      /* centraliza vertical */
+  justify-content: center;  /* centraliza horizontal */ 
+}
+.tabsheets-form .q-tab:hover {
+  background: rgba(0, 172, 193, 0.12);
+  color: #4a148c;
+}
+.tabsheets-form .q-tab.q-tab--active {
+  color: #fff;
+  background: linear-gradient(135deg, #6a1b9a, #00838f);
+  box-shadow: 0 12px 30px rgba(123, 31, 162, 0.18);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+}
+.tabsheets-form :deep(.q-tab__label) {
+  width: 100%;
+  text-align: center;
+  letter-spacing: 0.06em;
+  color: inherit;
+}
+
+.tabsheets-form .q-tab__indicator {
+  height: 5px;
+  border-radius: 6px;
+  background: linear-gradient(90deg, #f4511e, #00acc1);
+}
+
+/* centraliza o conteúdo do tab (ícone + label) */
+.tabsheets-form__tab .q-tab__content {
+  
+  justify-content: center;   /* eixo principal */
+  align-items: center;       /* eixo cruzado */
+  width: 100%;
+}
+
+/* centraliza o texto do label */
+.tabsheets-form__tab .q-tab__label {
+  width: 100%;
+  text-align: center;
+}
+
+.dlg-form-card__hero {
+  background: linear-gradient(120deg, #7b1fa2, #00acc1 55%, #f4511e);
+  color: #fff;
+  border-radius: 18px 18px 12px 12px;
+  box-shadow: 0 18px 44px rgba(123, 31, 162, 0.25);
+  margin: 0 14px 6px;
+  padding: 12px 18px 12px;
+  align-items: center;
+}
+
+.dlg-form-card__hero-main {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin-top: -15px;
+}
+
+.dlg-form-card__hero-icon {
+  width: 82px;
+  height: 82px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.28), rgba(255, 255, 255, 0.08));
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.22);
+}
+.dlg-form-card__hero-icon .q-icon {
+  font-weight: 900;
+  opacity: 0.95;
+  box-shadow: 0 16px 38px rgba(123, 31, 162, 0.25);
+  margin: 0;
+  padding: 0;
+  font-size: 38px;
+  display: grid;
+  place-items: center;
+}
+.dlg-form-card__title {
+  margin-top: 2px;
+}
+
+.dlg-form-card__eyebrow {
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 800;
+  opacity: 0.9;
+}
+
+.dlg-form-card__title {
+  font-size: 22px;
+  line-height: 30px;
+  font-weight: 800;
+}
+
+.dlg-form-card__close {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+
+
+.dlg-form-card__title {
+  font-size: 22px;
+  line-height: 30px;
+  font-weight: 800;
+}
+
+.dlg-form-card__close {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.dlg-form-card__divider {
+  margin: 0 18px;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0), rgba(255, 255, 255, 0.6), rgba(255, 255, 255, 0));
+  height: 2px;
+} 
+
+.dlg-form-card {
+  width: 100vw; 
+  height: 100vh;
+  max-width: 100vw;
+  max-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* essa é a área central que deve rolar, não o card inteiro */
+.dlg-form-card__body {
+  flex: 1 1 auto;
+  overflow-y: auto;
+}
+
+.acoes-grid-color-wrapper {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  justify-content: center;
+}
+
+.acoes-grid-color-dot {
+  display: inline-block;      /* 👈 ESSENCIAL */
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  /* opcional: borda pra ver bem o círculo */
+  border: 1px solid rgba(0, 0, 0, 0.2);
+}
+
+.dx-datagrid .acoes-grid-color-dot {
+  width: 20px;
+  height: 10px;
+}
+
+.acoes-grid-legenda {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.acoes-grid-legenda-titulo {
+  font-weight: 600;
+  margin-top: 6px;
+  margin-right: 4px;
+  margin-left: 16px;
+}
+
+.acoes-grid-legenda-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  margin-top: 6px;
+}
+
+.acoes-grid-legenda-text {
+  white-space: nowrap;
+}
+
+.dx-datagrid .dx-row .acoes-grid-color-cell {
+  background-color: #ffffff !important;
+}
+
+/* primeira coluna da grid (Legenda) SEMPRE branca */
+.dx-datagrid-rowsview .dx-row > td:first-child {
+  background-color: #ffffff !important;
+}
+
+/* mesma coisa quando a linha está selecionada / focada / hover */
+.dx-datagrid-rowsview .dx-row.dx-selection > td:first-child,
+.dx-datagrid-rowsview .dx-row.dx-row-focused > td:first-child,
+.dx-datagrid-rowsview .dx-row.dx-state-hover > td:first-child {
+  background-color: #ffffff !important;
+}
+
+.tam-icon .q-icon {
+  font-size: 16px;
+  width: 16px;
+  height: 16px; /* ajuda em caso de SVG/inline-block */
+  line-height: 16px;
+}
+
+.titulo-modal {
+  font-size: 28px;
+  line-height: 32px;
+  font-weight: 600;
+}
+
+.titulo-normal {
+  font-size: 64px; /* ou o que você já usa */
+  line-height: 64px;
+  font-weight: 300;
+
+  
+}
+.titulo-modal {
+  white-space: normal;
+  word-break: break-word;
+}
+
+.btn-selecionar-modal .dx-button {
+  background: #673ab7 !important; /* deep-purple */
+  border-color: #673ab7 !important;
+  color: #fff !important;
+}
+.btn-selecionar-modal .dx-icon {
+  color: #fff !important;
+}
+
+/* Mantém ambos na mesma linha e com espaçamento */
+.no-wrap {
+  flex-wrap: nowrap;
+}
+
+
+.toolbar-scroll {
+  overflow-x: auto;
+  white-space: nowrap;
+}
+
+.seta-form {
+  margin-left: 10px;
+  color: #512da8
+}
+
+.tab_principal {
+  margin-left: 200px;
+}
+
+
+/* largura padrão do bloco de lookup */
+.lookup-desc {
+  min-width: 520px;
+}
+
+.lookup-cod {
+  width: 190px;
+  max-width: 240px;
+}
+
+/* ===== LOOKUP (pesquisa/seleção) ===== */
+/* Como o style é scoped, precisamos de :deep para atingir o DOM interno do Quasar */
+
+
+/* ===== READONLY/AUTONUM (sem edição) ===== */
+.leitura-azul.q-field--filled .q-field__control {
+  background: #e0f7fa !important;
+}
+
+.leitura-azul .q-field__native,
+.leitura-azul .q-field__label,
+.leitura-azul .q-field__append .q-icon,
+.leitura-azul .q-field__prepend .q-icon {
+  color: #00838f !important;
+}
+
+/* ===== LOOKUP (azul claro) - precisa :deep por causa do scoped ===== */
+
+/* Fundo azul claro no filled */
+:deep(.campo-azul.q-field--filled .q-field__control) {
+  background-color: rgba(0, 172, 193, 0.08) !important;
+}
+
+/* Tira overlay escuro do filled (hover/focus) */
+:deep(.campo-azul.q-field--filled .q-field__control:before),
+:deep(.campo-azul.q-field--filled .q-field__control:after) {
+  background: transparent !important;
+}
+
+/* Texto/label */
+:deep(.campo-azul .q-field__label),
+:deep(.campo-azul .q-field__native) {
+  color: #008ba3 !important;
+}
+
+/* Ícones (lupa / append) */
+:deep(.campo-azul .q-field__append .q-icon),
+:deep(.campo-azul .q-field__prepend .q-icon) {
+  color: #008ba3 !important;
+}
+
+.takeover-grid .area-filhas {
+  height: calc(100vh - 0px) !important;
+}
+
+.area-filhas-full {
+  position: relative;
+  width: 100%;
+  height: calc(100vh - 0px);
+}
+
+/* se seu layout tiver paddings/margens do pai, zera quando takeover */
+.takeover-grid {
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+/* se existir algum container interno limitando altura, ajuda */
+.takeover-grid .content,
+.takeover-grid .content-block,
+.takeover-grid .q-page,
+.takeover-grid .q-card {
+  height: 100% !important;
+}
+
+
+.area-filhas-full {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: calc(100vh - 0px);
+}
+
+.tree-card{
+  border-radius: 16px;
+  padding: 10px 12px;
+}
+
+.tree-title{
+  font-weight: 800;
+  color: #2b2b2b;
+}
+
+.tree-subtitle{
+  font-size: 12px;
+  color: rgba(0,0,0,.55);
+  margin-top: 2px;
+}
+
+.dlg-form-premium {
+  padding: 18px;
+}
+
+/* =========================================================
+   PREMIUM DIALOG - SÓ afeta o QDialog com content-class="dlg-form-branco"
+   ========================================================= */
+
+:deep(.q-dialog__inner.dlg-form-branco) {
+  --pf-text: #0f172a;
+  --pf-muted: rgba(15, 23, 42, 0.62);
+
+  --pf-line: rgba(15, 23, 42, 0.12);
+  --pf-line2: rgba(15, 23, 42, 0.20);
+
+  --pf-brand: #7b1fa2;          /* purple-7 */
+  --pf-brand-soft: rgba(123, 31, 162, 0.14);
+  --pf-highlight: #00acc1;      /* cyan-6 */
+  --pf-hover: rgba(0, 172, 193, 0.08);
+
+  --pf-required: #f4511e;       /* deep-orange-6 */
+  --pf-required-soft: rgba(244, 81, 30, 0.14);
+
+  --pf-readonly: rgba(2, 6, 23, 0.05);
+
+  --pf-radius: 14px;
+  --pf-ring: 0 0 0 4px rgba(0, 172, 193, 0.18);
+  --pf-shadow: 0 20px 48px rgba(15, 23, 42, 0.12);
+
+  background: linear-gradient(135deg, rgba(123, 31, 162, 0.06), rgba(0, 172, 193, 0.05)) !important;
+}
+
+/* Card do dialog com presença */
+:deep(.q-dialog__inner.dlg-form-branco .q-card) {
+  background: #fff !important;
+  border-radius: 18px !important;
+  box-shadow: var(--pf-shadow) !important;
+  border: 1px solid rgba(123, 31, 162, 0.08);
+}
+
+/* =========================================================
+   CAMPOS - funciona para FILLED e OUTLINED
+   ========================================================= */
+
+/* Base do control */
+:deep(.q-dialog__inner.dlg-form-branco .q-field .q-field__control) {
+  border-radius: var(--pf-radius) !important;
+  box-shadow: inset 0 0 0 1px var(--pf-line) !important;
+  transition: transform .12s ease, box-shadow .15s ease, background-color .15s ease;
+}
+
+/* FILLED: o fundo de verdade está no :before */
+:deep(.q-dialog__inner.dlg-form-branco .q-field--filled .q-field__control:before) {
+  opacity: 1 !important;
+  background: #fff !important;
+  transition: background-color .15s ease;
+}
+:deep(.q-dialog__inner.dlg-form-branco .q-field--filled .q-field__control) {
+  background: #fff !important;
+  box-shadow: inset 0 0 0 1px var(--pf-line) !important;
+}
+
+/* FILLED: remove underline/overlay padrão */
+:deep(.q-dialog__inner.dlg-form-branco .q-field--filled .q-field__control:after) {
+  opacity: 0 !important;
+  background: transparent !important;
+}
+
+/* Label e texto */
+:deep(.q-dialog__inner.dlg-form-branco .q-field__label) {
+  color: var(--pf-muted) !important;
+  font-weight: 650;
+}
+:deep(.q-dialog__inner.dlg-form-branco .q-field__native),
+:deep(.q-dialog__inner.dlg-form-branco .q-field__input) {
+  color: var(--pf-text) !important;
+}
+
+/* Hover */
+:deep(.q-dialog__inner.dlg-form-branco .q-field:hover .q-field__control) {
+  transform: translateY(-1px);
+  box-shadow: inset 0 0 0 1px var(--pf-line2) !important;
+}
+:deep(.q-dialog__inner.dlg-form-branco .q-field--filled:hover .q-field__control:before) {
+  background: var(--pf-hover) !important;
+}
+
+/* Focus */
+:deep(.q-dialog__inner.dlg-form-branco .q-field--focused .q-field__control) {
+  transform: translateY(-1px);
+  box-shadow: inset 0 0 0 1px rgba(0, 172, 193, 0.68), var(--pf-ring) !important;
+}
+:deep(.q-dialog__inner.dlg-form-branco .q-field--filled.q-field--focused .q-field__control:before) {
+  background: var(--pf-brand-soft) !important;
+}
+
+/* Required */
+:deep(.q-dialog__inner.dlg-form-branco .q-field--required .q-field__control) {
+  box-shadow: inset 0 0 0 1px rgba(244, 81, 30, 0.48) !important;
+}
+:deep(.q-dialog__inner.dlg-form-branco .q-field--filled.q-field--required .q-field__control:before) {
+  background: var(--pf-required-soft) !important;
+}
+:deep(.q-dialog__inner.dlg-form-branco .q-field--required .q-field__label:after) {
+  color: var(--pf-required) !important;
+  font-weight: 900;
+}
+
+/* Readonly/Disabled */
+:deep(.q-dialog__inner.dlg-form-branco .q-field--readonly .q-field__control:before),
+:deep(.q-dialog__inner.dlg-form-branco .q-field--disabled .q-field__control:before) {
+  background: var(--pf-readonly) !important;
+}
+:deep(.q-dialog__inner.dlg-form-branco .q-field--readonly .q-field__control),
+:deep(.q-dialog__inner.dlg-form-branco .q-field--disabled .q-field__control) {
+  opacity: 1 !important;
+}
+
+/* Ícones */
+:deep(.q-dialog__inner.dlg-form-branco .q-field__append .q-icon),
+:deep(.q-dialog__inner.dlg-form-branco .q-field__prepend .q-icon) {
+  color: rgba(15, 23, 42, 0.55) !important;
+  transition: transform .12s ease, color .15s ease;
+}
+:deep(.q-dialog__inner.dlg-form-branco .q-field:hover .q-field__append .q-icon),
+:deep(.q-dialog__inner.dlg-form-branco .q-field:hover .q-field__prepend .q-icon) {
+  color: var(--pf-brand) !important;
+  transform: scale(1.07);
+}
+
+/* =========================================================
+   FIX FUNDO DOS INPUTS (tirar o cinza de vez)
+   APLICA SÓ no dialog com content-class="dlg-form-branco"
+   ========================================================= */
+
+:deep(.q-dialog__inner.dlg-form-branco .q-field--filled .q-field__control),
+:deep(.q-dialog__inner.dlg-form-branco .q-field--outlined .q-field__control),
+:deep(.q-dialog__inner.dlg-form-branco .q-field--standout .q-field__control) {
+  background: #ffffff !important; /* evita cinza no control */
+}
+
+/* FILLED: fundo real é o :before */
+:deep(.q-dialog__inner.dlg-form-branco .q-field--filled .q-field__control:before) {
+  opacity: 1 !important;
+  background: #ffffff !important; /* branco de verdade */
+}
+
+/* OUTLINED/STANDOUT às vezes não usam :before como fundo, então garante também */
+:deep(.q-dialog__inner.dlg-form-branco .q-field--outlined .q-field__control),
+:deep(.q-dialog__inner.dlg-form-branco .q-field--standout .q-field__control) {
+  background-color: #ffffff !important;
+}
+
+/* alguns componentes colocam “tinta” no input interno */
+:deep(.q-dialog__inner.dlg-form-branco .q-field__native),
+:deep(.q-dialog__inner.dlg-form-branco .q-field__input) {
+  background: transparent !important;
+}
+
+/* se existir efeito de “hover cinza” vindo de overlay do Quasar */
+:deep(.q-dialog__inner.dlg-form-branco .q-field__control:after) {
+  background: transparent !important;
+}
+
+/* fundo suave no body do dialog pra dar contraste com os inputs brancos */
+:deep(.q-dialog__inner.dlg-form-branco .dlg-form-card__body) {
+  background: #ffffff !important;
+  padding: 18px !important;
+}
+
+/* inputs com mais “cara de app” */
+:deep(.q-dialog__inner.dlg-form-branco .q-field .q-field__control) {
+  box-shadow: inset 0 0 0 1px rgba(15,23,42,.12) !important;
+}
+:deep(.q-dialog__inner.dlg-form-branco .q-field--focused .q-field__control) {
+  box-shadow: inset 0 0 0 1px rgba(0,172,193,.68), 0 0 0 4px rgba(123,31,162,.16) !important;
+}
+
+:deep(.dlg-form-card__body .q-field) {
+  background: #ffffff !important;
+  border-radius: 14px;
+}
+:deep(.dlg-form-card__body .q-field__control) {
+  background: #ffffff !important;
+  box-shadow: inset 0 0 0 1px rgba(15,23,42,.10) !important;
+}
+:deep(.dlg-form-card__body .q-field--filled .q-field__control),
+:deep(.dlg-form-card__body .q-field--outlined .q-field__control),
+:deep(.dlg-form-card__body .q-field--standout .q-field__control) {
+  background: #ffffff !important;
+}
+:deep(.dlg-form-card__body .q-field__control:before),
+:deep(.dlg-form-card__body .q-field__control:after) {
+  background: transparent !important;
+}
+:deep(.dlg-form-card__body .q-field__label) {
+  color: #455a64 !important;
+  font-weight: 650;
+}
+:deep(.dlg-form-card__body .q-field__native),
+:deep(.dlg-form-card__body .q-field__input) {
+  color: #1f2937 !important;
+}
+:deep(.dlg-form-card__body .q-field__append) {
+  order: 2;
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+:deep(.dlg-form-card__body .q-field__prepend) {
+  order: 1;
+}
+:deep(.dlg-form-card__body .q-field__append .q-icon),
+:deep(.dlg-form-card__body .q-field__prepend .q-icon) {
+  color: #607d8b !important;
+}
+
+/* organiza os ícones do select: seta antes do botão de limpar */
+:deep(.dlg-form-card__body .q-select .q-field__append .q-icon.q-select__dropdown-icon) {
+  order: 1;
+}
+:deep(.dlg-form-card__body .q-select .q-field__append .q-icon.q-field__focusable-action) {
+  order: 2;
+}
+:deep(.dlg-form-card__body .q-select .q-field__append .q-icon:not(.q-select__dropdown-icon):not(.q-field__focusable-action)) {
+  order: 3;
+}
+
+/* =========================================================
+   MODAL PREMIUM: só afeta o QDialog com content-class="dlg-form-branco"
+   ========================================================= */
+:global(.dlg-form-branco) {
+  --pf-text: #0f172a;
+  --pf-muted: rgba(15, 23, 42, 0.62);
+
+  --pf-line: rgba(15, 23, 42, 0.12);
+  --pf-line2: rgba(15, 23, 42, 0.20);
+
+  --pf-brand: #7b1fa2;
+  --pf-brand-soft: rgba(123, 31, 162, 0.14);
+  --pf-highlight: #00acc1;
+  --pf-hover: rgba(0, 172, 193, 0.08);
+
+  --pf-required: #f4511e;
+  --pf-required-soft: rgba(244, 81, 30, 0.14);
+  --pf-readonly: rgba(2, 6, 23, 0.05);
+
+
+  --pf-brand: #7b1fa2;
+  --pf-brand-soft: rgba(123, 31, 162, 0.14);
+  --pf-highlight: #00acc1;
+  --pf-hover: rgba(0, 172, 193, 0.08);
+
+  --pf-required: #f4511e;
+  --pf-required-soft: rgba(244, 81, 30, 0.14);
+  --pf-readonly: rgba(2, 6, 23, 0.05);
+
+  --pf-radius: 14px;
+  --pf-ring: 0 0 0 4px rgba(0, 172, 193, 0.18);
+  --pf-shadow: 0 20px 48px rgba(15, 23, 42, 0.12);
+}
+
+/* Card do dialog com presença */
+:global(.dlg-form-branco .q-card) {
+  background: #fff !important;
+  border-radius: 18px !important;
+  box-shadow: var(--pf-shadow) !important;
+  border: 1px solid rgba(123, 31, 162, 0.08);
+}
+
+/* Base do campo (filled/outlined) */
+:global(.dlg-form-branco .q-field .q-field__control) {
+  border-radius: var(--pf-radius) !important;
+  box-shadow: inset 0 0 0 1px var(--pf-line) !important;
+  transition: transform .12s ease, box-shadow .15s ease, background-color .15s ease;
+}
+
+/* >>> O FUNDO do FILLED é o :before. Se não setar aqui, fica cinza. */
+:global(.dlg-form-branco .q-field--filled .q-field__control:before) {
+  opacity: 1 !important;
+  background: #ffffff !important;
+}
+
+/* Remove underline/overlay padrão do filled (pra não “sujar” a cor) */
+:global(.dlg-form-branco .q-field--filled .q-field__control:after) {
+  opacity: 0 !important;
+  background: transparent !important;
+}
+
+/* Texto e label */
+:global(.dlg-form-branco .q-field__label) {
+  color: var(--pf-muted) !important;
+  font-weight: 650;
+}
+:global(.dlg-form-branco .q-field__native),
+:global(.dlg-form-branco .q-field__input) {
+  color: var(--pf-text) !important;
+}
+
+/* Hover */
+:global(.dlg-form-branco .q-field:hover .q-field__control) {
+  transform: translateY(-1px);
+  box-shadow: inset 0 0 0 1px var(--pf-line2) !important;
+}
+:global(.dlg-form-branco .q-field--filled:hover .q-field__control:before) {
+  background: var(--pf-hover) !important;
+}
+
+/* Focus (efeito “uix”) */
+:global(.dlg-form-branco .q-field--focused .q-field__control) {
+  transform: translateY(-1px);
+  box-shadow: inset 0 0 0 1px rgba(0, 172, 193, 0.68), var(--pf-ring) !important;
+}
+:global(.dlg-form-branco .q-field--filled.q-field--focused .q-field__control:before) {
+  background: var(--pf-brand-soft) !important;
+}
+
+/* Ícones */
+:global(.dlg-form-branco .q-field__append .q-icon),
+:global(.dlg-form-branco .q-field__prepend .q-icon) {
+  color: rgba(15, 23, 42, 0.55) !important;
+  transition: transform .12s ease, color .15s ease;
+}
+:global(.dlg-form-branco .q-field:hover .q-field__append .q-icon),
+:global(.dlg-form-branco .q-field:hover .q-field__prepend .q-icon) {
+  color: var(--pf-brand) !important;
+  transform: scale(1.07);
+}
+
+
+.unico-root{
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* O container principal que envolve a grid precisa poder "crescer" */
+.grid-scroll-shell{
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Onde a grid fica */
+.grid-body{
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.grid-shell-outer{
+  width: 100%;
+}
+
+.grid-top-outer{
+  width: 100%;
+}
+
+.no-records {
+  height: 100%;
+  min-height: 240px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.no-records__card {
+  width: min(680px, 100%);
+  background: #FBE9E7; /* deep-orange-100 */
+  border: 1px solid #FFAB91;
+  border-left: 6px solid #F4511E; /* deep-orange-600 */
+  border-radius: 14px;
+  box-shadow: 0 14px 32px rgba(81, 45, 168, 0.18);
+  padding: 20px 22px;
+}
+
+.no-records__title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+  font-size: 19px;
+  font-weight: 800;
+  color: #512DA8; /* deep-purple-700 */
+}
+
+.no-records__icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #F4511E; /* deep-orange-600 */
+  color: #ffffff;
+  font-weight: 900;
+  font-size: 18px;
+  box-shadow: 0 4px 10px rgba(244, 81, 30, 0.4);
+}
+
+.no-records__text {
+  margin: 0 0 10px 0;
+  font-size: 14.5px;
+  color: #424242;
+  line-height: 1.55;
+}
+
+.no-records__hint {
+  margin: 0;
+  font-size: 13.5px;
+  color: #009688; /* teal-500 */
+  font-weight: 600;
+}
+
+.filtro-item .q-field__control {
+  border-radius: 14px;
+}
+
+/* KPI */
+.kpi-row{
+  display:grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 12px;
+  margin: 10px 0 12px 15px;
+}
+.kpi{
+  border-radius: 18px;
+  padding: 14px 16px;
+  background: #fff;
+  border: 1px solid rgba(0,0,0,.08);
+  box-shadow: 0 8px 18px rgba(0,0,0,.06);
+}
+.kpi-title{
+  font-size: 12px;
+  opacity: .75;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: .4px;
+}
+.kpi-value{
+  margin-top: 6px;
+  font-size: 22px;
+  font-weight: 950;
+}
+.kpi-sub{
+  margin-top: 4px;
+  font-size: 12px;
+  opacity: .70;
+  font-weight: 800;
+}
+
+
+/* Cards */
+/* container */
+.cards-wrapper{
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 18px;
+  margin-left: 15px;
+  padding-right: 15px;
+  align-items: stretch;
+}
+
+/* o card (q-card / dx-card / div) */
+.cards-wrapper >>> .card-unico{
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  position: relative;
+  border-radius: 18px;
+  background: linear-gradient(145deg, rgba(91,42,165,0.12), rgba(239,239,255,0.65));
+  border: 1px solid rgba(91,42,165,0.16);
+  box-shadow: 0 16px 38px rgba(44,19,90,.12);
+  overflow: hidden;
+  min-height: 260px;
+  transition: transform .22s ease, box-shadow .22s ease, border-color .22s ease;
+}
+
+.cards-wrapper >>> .card-unico::after{
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(circle at 20% 20%, rgba(255,255,255,.45), transparent 35%),
+              radial-gradient(circle at 80% 0%, rgba(255,255,255,.28), transparent 40%);
+  opacity: .9;
+  transition: opacity .22s ease;
+}
+
+.cards-wrapper >>> .card-unico:hover{
+  transform: translateY(-6px);
+  box-shadow: 0 22px 46px rgba(44,19,90,.16);
+  border-color: rgba(91,42,165,0.35);
+}
+
+.cards-wrapper >>> .card-unico:hover::after{
+  opacity: 1;
+}
+
+/* topo central */
+.cards-wrapper >>> .card-topo{
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 18px 18px 8px 18px;
+  text-align: center;
+}
+
+/* bolinha do M */
+.cards-wrapper >>> .logo-unico{
+  width: 78px;
+  height: 78px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  margin: 0 auto 6px auto;
+  border: 1px solid rgba(91,42,165,.20);
+  background: radial-gradient(circle at 30% 30%, rgba(128,90,213,.18), rgba(128,90,213,.06));
+  box-shadow: 0 10px 24px rgba(91,42,165,.18);
+}
+.cards-wrapper >>> .logo-letter{
+  font-weight: 900;
+  font-size: 28px;
+  color: #5b2aa5;
+}
+
+.cards-wrapper >>> .card-unico-body{
+  position: relative;
+  padding: 18px 18px 20px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  z-index: 1;
+}
+
+.cards-wrapper >>> .card-unico-body .text-subtitle1{
+  font-weight: 800;
+  text-align: center;
+  color: #2e1957;
+}
+
+/* corpo (campos) */
+.cards-wrapper >>> .card-campos{
+  padding: 8px 22px 10px 22px;
+  line-height: 1.65;
+  font-size: 13px;
+  color: #3d3552;
+}
+.cards-wrapper >>> .card-campos b{
+  font-weight: 900;
+}
+
+/* ação (botão ABRIR) sempre embaixo e central */
+.cards-wrapper >>> .card-actions{
+  margin-top: auto;
+  padding: 10px 12px 14px 12px;
+  display: flex;
+  justify-content: center;
+}
+
+.cards-wrapper >>> .card-actions .q-btn{
+  min-width: 120px;
+  box-shadow: 0 10px 22px rgba(91,42,165,.25);
+}
+
+.grid-align-x {
+  padding-left: 16px;
+  padding-right: 16px;
+}
+
+/* 1) aumenta respiro do lado direito e embaixo do "card" da grid */
+:deep(#grid-padrao.dx-card.wide-card) {
+  padding-right: 22px !important;
+  padding-bottom: 18px !important;
+}
+
+/* 2) dá respiro interno na área rolável (linhas) — evita scrollbar colada */
+:deep(#grid-padrao .dx-datagrid-rowsview) {
+  padding-right: 14px !important;
+  padding-bottom: 10px !important;
+}
+
+/* espaço extra abaixo do total/footer/pager */
+:deep(#grid-padrao .dx-datagrid-total-footer) {
+  padding-bottom: 10px !important;
+}
+
+:deep(#grid-padrao .dx-datagrid-pager) {
+  padding-bottom: 10px !important;
+}
+
+/* cria uma "margem" final para o conteúdo não encostar no footer */
+:deep(#grid-padrao .dx-datagrid-content) {
+  padding-bottom: 14px !important;
+}
+

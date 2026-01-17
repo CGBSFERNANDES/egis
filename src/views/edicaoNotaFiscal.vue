@@ -1172,10 +1172,10 @@
 	              color="deep-purple-7"
 	              icon="save"
 	              outline
-	              label="Salvar (próximo passo)"
+	              label="Salvar"
 	              disable
 	            >
-	              <q-tooltip>Nesta micro-tarefa estamos só exibindo/alternando. O salvar entra no próximo passo.</q-tooltip>
+	              <q-tooltip>Atualização da Nota Fiscal de Serviços !</q-tooltip>
 	            </q-btn>
 	          </div>
 	        </q-card-section>
@@ -1250,6 +1250,8 @@
 <script>
 
 import api from "@/boot/axios";
+
+
 import { getInfoDoMenu, getPayloadTabela } from "@/services";
 import { mapColumnsFromDB, fetchMapaAtributo  } from '@/services/mapaAtributo';
 import UnicoFormEspecial from '@/views/unicoFormEspecial.vue' // ajuste o caminho se for outro
@@ -1579,6 +1581,7 @@ itemSelecionadoId: null,
         }]
 
         const resp = await api.post('/exec/pr_nfse_xml_listar', body, cfg)
+
         const rows = this.resolveRows(resp && resp.data)
         this.nfseListaRaw = Array.isArray(rows) ? rows : []
         this.nfseListaOptions = this.nfseListaRaw.map(r => ({
@@ -2418,18 +2421,34 @@ parseCOFINS (cofinsNode, ns) {
 
 
     // 3) Salvar edição (payload normalizado) - opcional, você pode manter só o fluxo da procedure
+    
     async salvarEdicao () {
       this.loadingSalvar = true
       try {
-        const payload = {
+          const payload = [{
           nfe: this.nfe,
           emit: this.emit,
           dest: this.dest,
           totais: this.totais,
           infAdic: this.infAdic,
-          itens: this.itens
-        }
-        await api.post('/api/nfe/edicao/salvar', payload)
+          itens: this.itens,
+          cd_parametro: 100,
+          ic_json_parametro: 'S'
+        }]
+
+        const cfg = this.headerBanco
+          ? { headers: { 'x-banco': this.headerBanco } }
+          : undefined
+
+    
+        //await api.post('/api/nfe/edicao/salvar', payload)
+      
+        //quando for NFSE
+
+        const resp = await api.post('/exec/pr_egis_recebimento_processo_modulo', body, cfg)
+
+
+
         this.notify('Edição salva.', 'positive')
       } catch (e) {
         this.notify('Erro ao salvar: ' + this.errMsg(e), 'negative')

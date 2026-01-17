@@ -1,0 +1,377 @@
+/* Espaço para não colidir com um footer fixo de ~56px */
+.q-notifications__list--bottom,
+.q-notifications__list--bottom-right,
+.q-notifications__list--bottom-left {
+  margin-bottom: 64px; /* ajuste conforme a altura do rodapé */
+}
+
+/* dá respiro dentro do card */
+.dx-card.wide-card.filtros-card {
+  padding: 12px 16px 16px;
+  border-radius: 8px;
+}
+
+/* Compacta o card de filtros */
+.filtros-card {
+  padding: 10px 14px; /* antes era maior */
+  border-radius: 14px;
+  box-shadow: 0 18px 40px rgba(0,0,0,.10);
+}
+
+/* Reduz o espaço entre as colunas sem cortar o padding interno */
+.filtros-wrap {
+  margin-left: -6px;
+  margin-right: -6px;
+}
+
+/* reativa gutters mesmo se algum reset tiver zerado .row */
+.filtros-row {
+  margin-left: -8px !important;
+  margin-right: -8px !important;
+}
+.filtros-row > [class*="col-"] {
+  padding-left: 8px !important;
+  padding-right: 8px !important;
+}
+
+/* garante que q-input/q-select ocupem toda a coluna */
+.full-w,
+.full-w .q-field,
+.full-w.q-input,
+.full-w.q-select {
+  width: 100%;
+}
+
+/* se algum CSS global removeu espaçamento vertical do q-field, repõe */
+.filtros-row .q-field {
+  margin-top: 4px;
+  margin-bottom: 4px;
+}
+
+/* aumenta a altura (min-height) dos campos e alinha os ícones lateral/append */
+.filtro-item .q-field--filled .q-field__control,
+.filtro-item .q-field--outlined .q-field__control {
+  min-height: 56px;
+  padding-top: 10px;
+  padding-bottom: 6px;
+}
+
+.filtro-item .q-field__marginal {
+  height: 56px;
+}
+
+.filtro-item {
+  padding: 4px 2px;
+  padding-left: 6px;
+  padding-right: 6px;
+  margin-bottom: 12px;
+}
+
+.filtro-item .q-field__label {
+  font-weight: 600;
+}
+
+.filtro-item .q-field__prepend,
+.filtro-item .q-field__append {
+  padding-left: 6px;
+  padding-right: 6px;
+}
+
+.filtros-actions {
+  margin-top: 8px;
+  padding-left: 2px;
+}
+
+.filters-grid {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  grid-column-gap: 12px;
+  grid-row-gap: 10px;
+}
+
+.filter-grid > div {
+  grid-column: span 12;
+}
+
+.filter-item {
+  grid-column: span 12;
+}
+
+/* altura visual dos inputs “filled” do Quasar */
+.q-field--filled .q-field__control {
+  min-height: 64px;
+  padding-top: 8px;
+  padding-bottom: 6px;
+}
+:deep(.q-field--filled .q-field__control) {
+  background: #ffffff !important;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.06);
+}
+:deep(.q-field--filled .q-field__control:before) {
+  background: #ffffff !important;
+  opacity: 1 !important;
+}
+:deep(.q-field--filled .q-field__control:after) {
+  background: transparent !important;
+}
+:deep(.q-field--filled .q-field__native),
+:deep(.q-field--filled .q-field__label) {
+  color: #1f2937 !important;
+}
+
+.dx-card.wide-card {
+  padding: 12px 12px;
+  border-radius: 8px;
+}
+
+.espaco {
+  padding-top: 200px;
+  margin-top: 100px;
+}
+
+@media (min-width: 768px) {
+  .filter-grid > div { grid-column: span 6; }
+}
+
+@media (min-width: 1200px) {
+  .filter-grid > div { grid-column: span 4; }
+}
+
+.leitura-azul {
+  background-color: #e0f7fa !important;
+  color: #00838f;
+}
+.leitura-azul .q-field__control {
+  background: #e0f7fa !important;
+}
+.leitura-azul .q-field__native,
+.leitura-azul .q-field__label {
+  color: #00838f !important;
+}
+
+/* READONLY/AUTONUM (sem edição) */
+.leitura-azul.q-field--filled .q-field__control {
+  background: #e0f7fa !important;
+}
+.leitura-azul .q-field__native,
+.leitura-azul .q-field__label,
+.leitura-azul .q-field__append .q-icon,
+.leitura-azul .q-field__prepend .q-icon {
+  color: #00838f !important;
+}
+
+/* LOOKUP (azul claro) - precisa :deep por causa do scoped */
+:deep(.campo-azul.q-field--filled .q-field__control) {
+  background-color: rgba(0, 172, 193, 0.08) !important;
+}
+:deep(.campo-azul.q-field--filled .q-field__control:before),
+:deep(.campo-azul.q-field--filled .q-field__control:after) {
+  background: transparent !important;
+}
+:deep(.campo-azul .q-field__label),
+:deep(.campo-azul .q-field__native) {
+  color: #008ba3 !important;
+}
+:deep(.campo-azul .q-field__append .q-icon),
+:deep(.campo-azul .q-field__prepend .q-icon) {
+  color: #008ba3 !important;
+}
+
+/* no-records */
+.no-records {
+  height: 100%;
+  min-height: 240px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.no-records__card {
+  width: min(680px, 100%);
+  background: #FBE9E7;
+  border: 1px solid #FFAB91;
+  border-left: 6px solid #F4511E;
+  border-radius: 14px;
+  box-shadow: 0 14px 32px rgba(81, 45, 168, 0.18);
+  padding: 20px 22px;
+}
+
+.no-records__title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+  font-size: 19px;
+  font-weight: 800;
+  color: #512DA8;
+}
+
+.no-records__icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #F4511E;
+  color: #ffffff;
+  font-weight: 900;
+  font-size: 18px;
+  box-shadow: 0 4px 10px rgba(244, 81, 30, 0.4);
+}
+
+.no-records__text {
+  margin: 0 0 10px 0;
+  font-size: 14.5px;
+  color: #424242;
+  line-height: 1.55;
+}
+
+.no-records__hint {
+  margin: 0;
+  font-size: 13.5px;
+  color: #009688;
+  font-weight: 600;
+}
+
+/* KPI */
+.kpi-row{
+  display:grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 12px;
+  margin: 10px 0 12px 15px;
+}
+.kpi{
+  border-radius: 18px;
+  padding: 14px 16px;
+  background: #fff;
+  border: 1px solid rgba(0,0,0,.08);
+  box-shadow: 0 8px 18px rgba(0,0,0,.06);
+}
+.kpi-title{
+  font-size: 12px;
+  opacity: .75;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: .4px;
+}
+.kpi-value{
+  margin-top: 6px;
+  font-size: 22px;
+  font-weight: 950;
+}
+.kpi-sub{
+  margin-top: 4px;
+  font-size: 12px;
+  opacity: .70;
+  font-weight: 800;
+}
+
+/* Cards */
+.cards-wrapper{
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 18px;
+  margin-left: 15px;
+  padding-right: 15px;
+  align-items: stretch;
+}
+
+.cards-wrapper >>> .card-unico{
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  position: relative;
+  border-radius: 18px;
+  background: linear-gradient(145deg, rgba(91,42,165,0.12), rgba(239,239,255,0.65));
+  border: 1px solid rgba(91,42,165,0.16);
+  box-shadow: 0 16px 38px rgba(44,19,90,.12);
+  overflow: hidden;
+  min-height: 260px;
+  transition: transform .22s ease, box-shadow .22s ease, border-color .22s ease;
+}
+
+.cards-wrapper >>> .card-unico::after{
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(circle at 20% 20%, rgba(255,255,255,.45), transparent 35%),
+              radial-gradient(circle at 80% 0%, rgba(255,255,255,.28), transparent 40%);
+  opacity: .9;
+  transition: opacity .22s ease;
+}
+
+.cards-wrapper >>> .card-unico:hover{
+  transform: translateY(-6px);
+  box-shadow: 0 22px 46px rgba(44,19,90,.16);
+  border-color: rgba(91,42,165,0.35);
+}
+
+.cards-wrapper >>> .card-unico:hover::after{
+  opacity: 1;
+}
+
+.cards-wrapper >>> .card-topo{
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 18px 18px 8px 18px;
+  text-align: center;
+}
+
+.cards-wrapper >>> .logo-unico{
+  width: 78px;
+  height: 78px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  margin: 0 auto 6px auto;
+  border: 1px solid rgba(91,42,165,.20);
+  background: radial-gradient(circle at 30% 30%, rgba(128,90,213,.18), rgba(128,90,213,.06));
+  box-shadow: 0 10px 24px rgba(91,42,165,.18);
+}
+.cards-wrapper >>> .logo-letter{
+  font-weight: 900;
+  font-size: 28px;
+  color: #5b2aa5;
+}
+
+.cards-wrapper >>> .card-unico-body{
+  position: relative;
+  padding: 18px 18px 20px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  z-index: 1;
+}
+
+.cards-wrapper >>> .card-unico-body .text-subtitle1{
+  font-weight: 800;
+  text-align: center;
+  color: #2e1957;
+}
+
+.cards-wrapper >>> .card-campos{
+  padding: 8px 22px 10px 22px;
+  line-height: 1.65;
+  font-size: 13px;
+  color: #3d3552;
+}
+.cards-wrapper >>> .card-campos b{
+  font-weight: 900;
+}
+
+.cards-wrapper >>> .card-actions{
+  margin-top: auto;
+  padding: 10px 12px 14px 12px;
+  display: flex;
+  justify-content: center;
+}
+
+.cards-wrapper >>> .card-actions .q-btn{
+  min-width: 120px;
+  box-shadow: 0 10px 22px rgba(91,42,165,.25);
+}

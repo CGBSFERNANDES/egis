@@ -1,9 +1,6 @@
 ﻿<template>
   <div style="background: white">
-    <meta
-      name="viewport"
-      content="width=device-width,initial-scale=1,user-scalable=no"
-    />
+    <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no" />
     <div class="row items-center margin1">
       <div v-if="ic_mostra_titulo">
         <transition name="slide-fade">
@@ -31,14 +28,7 @@
             icon="info"
           />
         </transition>
-        <q-btn
-          style="float: right"
-          round
-          flat
-          color="black"
-          @click="popClickData()"
-          icon="event"
-        />
+        <q-btn style="float: right" round flat color="black" @click="popClickData()" icon="event" />
       </div>
     </div>
     <div>
@@ -88,13 +78,13 @@
     <div class="margin1 borda-bloco shadow-2">
       <div class="row">
         <div class="margin1 col" style="font-weight: bold">
-          {{ "Simples" }}
+          {{ 'Simples' }}
           <q-toggle
             v-model="tipo_pesquisa_produto"
             :false-value="'N'"
             :true-value="'S'"
             color="orange-9"
-          />{{ "Completa" }}
+          />{{ 'Completa' }}
         </div>
       </div>
       <transition name="slide-fade">
@@ -200,11 +190,7 @@
                   icon="search"
                   @click="onVerificaPesquisaProduto()"
                 >
-                  <q-tooltip
-                    anchor="bottom middle"
-                    self="top middle"
-                    :offset="[10, 10]"
-                  >
+                  <q-tooltip anchor="bottom middle" self="top middle" :offset="[10, 10]">
                     Pesquisar
                   </q-tooltip>
                 </q-btn>
@@ -237,11 +223,7 @@
                 icon="search"
                 @click="onVerificaPesquisaProduto()"
               >
-                <q-tooltip
-                  anchor="bottom middle"
-                  self="top middle"
-                  :offset="[10, 10]"
-                >
+                <q-tooltip anchor="bottom middle" self="top middle" :offset="[10, 10]">
                   Pesquisar
                 </q-tooltip>
               </q-btn>
@@ -292,11 +274,7 @@
           <DxEditing :allow-updating="false" mode="cell" />
           <DxPaging :enable="true" :page-size="10" />
 
-          <DxStateStoring
-            :enabled="false"
-            type="localStorage"
-            storage-key="storage"
-          />
+          <DxStateStoring :enabled="false" type="localStorage" storage-key="storage" />
           <DxSelection mode="single" />
           <DxPager
             :show-page-size-selector="true"
@@ -305,17 +283,19 @@
           />
           <DxFilterRow :visible="false" />
           <DxHeaderFilter :visible="true" :allow-search="true" />
-          <DxSearchPanel
-            :visible="temPanel"
-            :width="300"
-            placeholder="Procurar..."
-          />
+          <DxSearchPanel :visible="temPanel" :width="300" placeholder="Procurar..." />
           <DxFilterPanel :visible="true" />
           <DxColumnFixing :enabled="true" />
           <DxColumnChooser :enabled="true" mode="select" />
         </dx-data-grid>
       </div>
     </transition>
+    <!-- Produto Selecionado -->
+    <div class="margin1" v-if="produto.Produto && produto.cd_produto">
+      <q-chip class="bg-orange-9" text-color="white">{{
+        `${produto.Produto} (${produto.cd_produto})`
+      }}</q-chip>
+    </div>
     <!-- TABS -->
     <div v-if="ic_cadastro">
       <q-tabs
@@ -391,12 +371,7 @@
           <!--  -->
           <!-- Cadastro de Produto Simplificado -->
           <div class="row justify-evenly items-center">
-            <q-input
-              dense
-              class="umTercoTela margin1"
-              v-model="produto.nm_produto"
-              label="Produto"
-            >
+            <q-input dense class="umTercoTela margin1" v-model="produto.Produto" label="Produto">
               <template v-slot:prepend>
                 <q-icon name="store" />
               </template>
@@ -457,12 +432,7 @@
               </template>
             </q-select>
 
-            <q-input
-              dense
-              class="umTercoTela margin1"
-              v-model="produto.nm_fantasia_produto"
-              label="Fantasia"
-            >
+            <q-input dense class="umTercoTela margin1" v-model="produto.Fantasia" label="Fantasia">
               <template v-slot:prepend>
                 <q-icon name="business" />
               </template>
@@ -526,7 +496,7 @@
             <q-input
               dense
               class="umTercoTela margin1"
-              v-model="produto.vl_produto"
+              v-model="produto.VL_PRODUTO"
               @blur="FormataValor()"
               label="Valor"
             >
@@ -590,6 +560,26 @@
               :false-value="'N'"
               :true-value="'S'"
               label="Apresenta na Lista de Preço"
+            />
+
+            <q-input
+              dense
+              class="umTercoTela margin1"
+              v-model="produto.vl_custo_produto"
+              label="Preço de Custo"
+            >
+              <template v-slot:prepend>
+                <q-icon name="attach_money" />
+              </template>
+            </q-input>
+
+            <q-toggle
+              class="umTercoTela margin1"
+              v-model="ic_compra_produto"
+              color="orange-9"
+              :false-value="'N'"
+              :true-value="'S'"
+              label="Produto para Compra"
             />
           </div>
           <div class="row justify-evenly items-center">
@@ -909,6 +899,7 @@
           </div>
 
           <q-bar
+            v-if="['334', '277', '261'].find((empresa) => empresa == cd_empresa)"
             dense
             :class="'bg-' + color + ' text-white text-h5 text-center'"
             style="
@@ -922,7 +913,7 @@
             {{ `Entrada` }}
           </q-bar>
 
-          <div class="row">
+          <div v-if="['334', '277', '261'].find((empresa) => empresa == cd_empresa)" class="row">
             <q-select
               dense
               class="umTercoTela margin1"
@@ -966,7 +957,7 @@
               </template>
             </q-select>
           </div>
-          <div class="row">
+          <div v-if="['334', '277', '261'].find((empresa) => empresa == cd_empresa)" class="row">
             <q-select
               dense
               class="umTercoTela margin1"
@@ -1010,7 +1001,7 @@
               </template>
             </q-select>
           </div>
-          <div class="row">
+          <div v-if="['334', '277', '261'].find((empresa) => empresa == cd_empresa)" class="row">
             <q-select
               dense
               class="metadeTela margin1"
@@ -1041,7 +1032,7 @@
               </template>
             </q-select>
           </div>
-          <div class="row">
+          <div v-if="['334', '277', '261'].find((empresa) => empresa == cd_empresa)" class="row">
             <q-input
               dense
               class="margin1 umTercoTela"
@@ -1088,7 +1079,7 @@
             </q-input> -->
           </div>
 
-          <div class="row">
+          <div v-if="['334', '277', '261'].find((empresa) => empresa == cd_empresa)" class="row">
             <q-select
               dense
               class="umQuartoTela margin1"
@@ -1200,11 +1191,7 @@
                 <DxEditing :allow-updating="false" mode="cell" />
                 <DxPaging :enable="true" :page-size="10" />
 
-                <DxStateStoring
-                  :enabled="false"
-                  type="localStorage"
-                  storage-key="storage"
-                />
+                <DxStateStoring :enabled="false" type="localStorage" storage-key="storage" />
                 <DxSelection mode="single" />
                 <DxPager
                   :show-page-size-selector="true"
@@ -1213,11 +1200,7 @@
                 />
                 <DxFilterRow :visible="false" />
                 <DxHeaderFilter :visible="true" :allow-search="true" />
-                <DxSearchPanel
-                  :visible="temPanel"
-                  :width="300"
-                  placeholder="Procurar..."
-                />
+                <DxSearchPanel :visible="temPanel" :width="300" placeholder="Procurar..." />
                 <DxFilterPanel :visible="true" />
                 <DxColumnFixing :enabled="true" />
                 <DxColumnChooser :enabled="true" mode="select" />
@@ -1254,18 +1237,10 @@
 
               <DxGrouping :auto-expand-all="true" />
               <DxExport :enabled="true" />
-              <DxEditing
-                :allow-updating="false"
-                :allow-deleting="true"
-                mode="cell"
-              />
+              <DxEditing :allow-updating="false" :allow-deleting="true" mode="cell" />
               <DxPaging :enable="true" :page-size="10" />
 
-              <DxStateStoring
-                :enabled="false"
-                type="localStorage"
-                storage-key="storage"
-              />
+              <DxStateStoring :enabled="false" type="localStorage" storage-key="storage" />
               <DxSelection mode="single" />
               <DxPager
                 :show-page-size-selector="true"
@@ -1274,11 +1249,7 @@
               />
               <DxFilterRow :visible="false" />
               <DxHeaderFilter :visible="true" :allow-search="true" />
-              <DxSearchPanel
-                :visible="temPanel"
-                :width="300"
-                placeholder="Procurar..."
-              />
+              <DxSearchPanel :visible="temPanel" :width="300" placeholder="Procurar..." />
               <DxFilterPanel :visible="true" />
               <DxColumnFixing :enabled="true" />
               <DxColumnChooser :enabled="true" mode="select" />
@@ -1353,9 +1324,7 @@
                 @click="maximizedToggle = false"
                 :disable="!maximizedToggle"
               >
-                <q-tooltip
-                  v-if="maximizedToggle"
-                  content-class="bg-white text-primary"
+                <q-tooltip v-if="maximizedToggle" content-class="bg-white text-primary"
                   >Minimize</q-tooltip
                 >
               </q-btn>
@@ -1366,27 +1335,18 @@
                 @click="maximizedToggle = true"
                 :disable="maximizedToggle"
               >
-                <q-tooltip
-                  v-if="!maximizedToggle"
-                  content-class="bg-white text-primary"
+                <q-tooltip v-if="!maximizedToggle" content-class="bg-white text-primary"
                   >Maximize</q-tooltip
                 >
               </q-btn>
               <q-btn dense flat icon="close" v-close-popup>
-                <q-tooltip content-class="bg-white text-primary"
-                  >Close</q-tooltip
-                >
+                <q-tooltip content-class="bg-white text-primary">Close</q-tooltip>
               </q-btn>
             </div>
           </q-bar>
           <q-space />
 
-          <embed
-            v-bind:src="onClickArquivo()"
-            v-if="ativaPDF"
-            width="100%"
-            height="100%"
-          />
+          <embed v-bind:src="onClickArquivo()" v-if="ativaPDF" width="100%" height="100%" />
         </q-card>
       </q-dialog>
     </div>
@@ -1397,14 +1357,7 @@
           <q-card-section class="row items-center q-pb-none">
             <div class="text-h6">Seleção de Data</div>
             <q-space />
-            <q-btn
-              icon="close"
-              @click="popClickData()"
-              flat
-              round
-              dense
-              v-close-popup
-            />
+            <q-btn icon="close" @click="popClickData()" flat round dense v-close-popup />
           </q-card-section>
 
           <selecaoData :cd_volta_home="1"> </selecaoData>
@@ -1424,9 +1377,7 @@
             Deseja realmente pesquisar todos os produtos?
           </q-bar>
           <q-separator class="margin1" />
-          <div class="text-center text-subtitle2">
-            Essa pesquisa pode demorar!
-          </div>
+          <div class="text-center text-subtitle2">Essa pesquisa pode demorar!</div>
           <br />
           <div class="row items-center">
             <q-btn
@@ -1477,53 +1428,53 @@ import {
   DxStateStoring,
   DxSearchPanel,
   DxEditing,
-} from "devextreme-vue/data-grid";
+} from 'devextreme-vue/data-grid'
 
-import { DxForm } from "devextreme-vue/form";
+import { DxForm } from 'devextreme-vue/form'
 
-import DxButton from "devextreme-vue/button";
-import { DxPopup } from "devextreme-vue/popup";
-import { exportDataGrid } from "devextreme/excel_exporter";
-import ExcelJS from "exceljs";
-import saveAs from "file-saver";
-import ptMessages from "devextreme/localization/messages/pt.json";
-import { locale, loadMessages } from "devextreme/localization";
-import config from "devextreme/core/config";
-import notify from "devextreme/ui/notify";
+import DxButton from 'devextreme-vue/button'
+import { DxPopup } from 'devextreme-vue/popup'
+import { exportDataGrid } from 'devextreme/excel_exporter'
+import ExcelJS from 'exceljs'
+import saveAs from 'file-saver'
+import ptMessages from 'devextreme/localization/messages/pt.json'
+import { locale, loadMessages } from 'devextreme/localization'
+import config from 'devextreme/core/config'
+import notify from 'devextreme/ui/notify'
 
-import selecaoData from "../views/selecao-periodo.vue";
+import selecaoData from '../views/selecao-periodo.vue'
 
-import Procedimento from "../http/procedimento";
-import Menu from "../http/menu";
-import Incluir from "../http/incluir_registro";
-import funcao from "../http/funcoes-padroes.js";
+import Procedimento from '../http/procedimento'
+import Menu from '../http/menu'
+import Incluir from '../http/incluir_registro'
+import funcao from '../http/funcoes-padroes.js'
 
-import Lookup from "../http/lookup";
+import Lookup from '../http/lookup'
 
-import "whatwg-fetch";
+import 'whatwg-fetch'
 
-import Docxtemplater from "docxtemplater";
+import Docxtemplater from 'docxtemplater'
 
-import PizZip from "pizzip";
-import PizZipUtils from "pizzip/utils/index.js";
+import PizZip from 'pizzip'
+import PizZipUtils from 'pizzip/utils/index.js'
 
 function loadFile(url, callback) {
-  PizZipUtils.getBinaryContent(url, callback);
+  PizZipUtils.getBinaryContent(url, callback)
 }
 
-var filename = "DataGrid.xlsx";
-var filenametxt = "Arquivo.txt";
-var filenamedoc = "Arquivo.docx";
-var filenamexml = "Arquivo.xml";
+var filename = 'DataGrid.xlsx'
+var filenametxt = 'Arquivo.txt'
+var filenamedoc = 'Arquivo.docx'
+var filenamexml = 'Arquivo.xml'
 
-var dados = [];
-var sParametroApi = "";
+var dados = []
+var sParametroApi = ''
 
-const dataGridRef = "dataGrid";
+const dataGridRef = 'dataGrid'
 
 export default {
   props: {
-    cad_produto: { type: String, default: "" },
+    cad_produto: { type: String, default: '' },
     ic_cadastro: { type: Boolean, default: true },
     ic_mostra_titulo: { type: Boolean, default: true },
     ic_mostra_selecao_data: { type: Boolean, default: true },
@@ -1531,146 +1482,153 @@ export default {
   },
   watch: {
     ic_estoque_caixa_produto(a) {
-      if (a == "S") {
-        this.produto.ic_estoque_caixa_produto = "S";
-      } else if (a == "N") {
-        this.produto.ic_estoque_caixa_produto = "N";
+      if (a == 'S') {
+        this.produto.ic_estoque_caixa_produto = 'S'
+      } else if (a == 'N') {
+        this.produto.ic_estoque_caixa_produto = 'N'
       }
     },
     ic_lista_preco_caixa_produto(a) {
-      if (a == "S") {
-        this.produto.ic_lista_preco_caixa_produto = "S";
-      } else if (a == "N") {
-        this.produto.ic_lista_preco_caixa_produto = "N";
+      if (a == 'S') {
+        this.produto.ic_lista_preco_caixa_produto = 'S'
+      } else if (a == 'N') {
+        this.produto.ic_lista_preco_caixa_produto = 'N'
+      }
+    },
+    ic_compra_produto(a) {
+      if (a == 'S') {
+        this.produto.ic_compra_produto = 'S'
+      } else if (a == 'N') {
+        this.produto.ic_compra_produto = 'N'
       }
     },
     ic_substrib_produto_saida(a) {
-      if (a == "S") {
-        this.produto.ic_substrib_produto_saida = "S";
-      } else if (a == "N") {
-        this.produto.ic_substrib_produto_saida = "N";
+      if (a == 'S') {
+        this.produto.ic_substrib_produto_saida = 'S'
+      } else if (a == 'N') {
+        this.produto.ic_substrib_produto_saida = 'N'
       }
     },
     ic_substrib_produto_entrada(a) {
-      if (a == "S") {
-        this.produto.ic_substrib_produto_entrada = "S";
-      } else if (a == "N") {
-        this.produto.ic_substrib_produto_entrada = "N";
+      if (a == 'S') {
+        this.produto.ic_substrib_produto_entrada = 'S'
+      } else if (a == 'N') {
+        this.produto.ic_substrib_produto_entrada = 'N'
       }
     },
     ic_isento_icms_produto_saida(a) {
-      if (a == "S") {
-        this.produto.ic_isento_icms_produto_saida = "S";
-      } else if (a == "N") {
-        this.produto.ic_isento_icms_produto_saida = "N";
+      if (a == 'S') {
+        this.produto.ic_isento_icms_produto_saida = 'S'
+      } else if (a == 'N') {
+        this.produto.ic_isento_icms_produto_saida = 'N'
       }
     },
     ic_isento_icms_produto_entrada(a) {
-      if (a == "S") {
-        this.produto.ic_isento_icms_produto_entrada = "S";
-      } else if (a == "N") {
-        this.produto.ic_isento_icms_produto_entrada = "N";
+      if (a == 'S') {
+        this.produto.ic_isento_icms_produto_entrada = 'S'
+      } else if (a == 'N') {
+        this.produto.ic_isento_icms_produto_entrada = 'N'
       }
     },
   },
   data() {
     return {
-      tituloMenu: "",
+      tituloMenu: '',
       produto: {},
-      tipo_pesquisa_produto: "N",
+      tipo_pesquisa_produto: 'N',
       codigo: false,
       load: false,
-      color: "primary",
-      msgDinamica: "",
+      color: 'primary',
+      msgDinamica: '',
       fornecedor: [],
       ic_novo_fornecedor: false,
       dataSourceFornecedor: [],
-      columnsFornecedor: "",
-      totalFornecedor: "",
+      columnsFornecedor: '',
+      totalFornecedor: '',
       resultado_pesquisa: [],
       grupo: [],
       dataset_lookup_grupo: [],
-      unidade_medida: "",
+      unidade_medida: '',
       dataset_lookup_unidade_medida: [],
-      ds_produto: "",
+      ds_produto: '',
       status: [],
       dataset_lookup_status: [],
-      marca: "",
+      marca: '',
       dataset_lookup_marca: [],
       fase_produto_pesquisa: [],
       dataset_lookup_fase_produto: [],
-      nm_mascara_produto: "",
-      vl_produto: "",
+      nm_mascara_produto: '',
       categoria: [],
       dataset_lookup_categoria: [],
-      classificacao_fiscal_saida: "",
-      classificacao_fiscal_entrada: "",
+      classificacao_fiscal_saida: '',
+      classificacao_fiscal_entrada: '',
       dataset_lookup_classificacao_fiscal: [],
-      procedencia_saida: "",
-      procedencia_entrada: "",
+      procedencia_saida: '',
+      procedencia_entrada: '',
       dataset_lookup_procedencia: [],
-      tipo_produto_saida: "",
-      tipo_produto_entrada: "",
+      tipo_produto_saida: '',
+      tipo_produto_entrada: '',
       dataset_lookup_tipo_produto: [],
-      tributacao_saida: "",
-      tributacao_entrada: "",
+      tributacao_saida: '',
+      tributacao_entrada: '',
       dataset_lookup_tributacao: [],
       dataset_lookup_tributacao_cupom_fiscal: [],
-      tributacao_cupom_fiscal: "",
+      tributacao_cupom_fiscal: '',
       dataset_lookup_dispositivo_legal_ipi: [],
-      dispositivo_legal_ipi_saida: "",
-      dispositivo_legal_ipi_entrada: "",
+      dispositivo_legal_ipi_saida: '',
+      dispositivo_legal_ipi_entrada: '',
       dataset_lookup_dispositivo_legal_icms: [],
-      dispositivo_legal_icms_saida: "",
-      dispositivo_legal_icms_entrada: "",
+      dispositivo_legal_icms_saida: '',
+      dispositivo_legal_icms_entrada: '',
       dataset_lookup_destinacao_produto: [],
-      destinacao_produto_saida: "",
-      destinacao_produto_entrada: "",
+      destinacao_produto_saida: '',
+      destinacao_produto_entrada: '',
       dataset_lookup_sped_fiscal: [],
-      sped_fiscal: "",
+      sped_fiscal: '',
       dataset_lookup_cor: [],
-      cor: "",
+      cor: '',
       dataset_lookup_familia: [],
-      familia: "",
-      sped_fiscal_entrada: "",
+      familia: '',
+      sped_fiscal_entrada: '',
       dataset_lookup_plano_conta: [],
-      conta_entrada: "",
-      conta_saida: "",
-      cd_codigo_barra_produto: "",
-      pc_icms_produto: "",
-      ic_estoque_caixa_produto: "N",
-      ic_lista_preco_caixa_produto: "N",
-      categoria_pesquisa: "",
+      conta_entrada: '',
+      conta_saida: '',
+      cd_codigo_barra_produto: '',
+      pc_icms_produto: '',
+      ic_estoque_caixa_produto: 'N',
+      ic_lista_preco_caixa_produto: 'N',
+      ic_compra_produto: 'N',
+      categoria_pesquisa: '',
       cd_usuario: localStorage.cd_usuario,
-      grupo_pesquisa: "",
-      marca_pesquisa: "",
-      cd_mascara_produto: "",
-      nm_fantasia_produto: "",
-      nm_produto: "",
+      grupo_pesquisa: '',
+      marca_pesquisa: '',
+      cd_mascara_produto: '',
+      nm_fantasia_produto: '',
+      nm_produto: '',
       popup_pesquisa_filtro: false,
       load_salvar: false,
       load_salvar_fiscal: false,
       load_salvar_fornecedor: false,
       load_novo_fornecedor: false,
-      tab: this.cad_produto === "" ? "dados" : this.cad_produto,
-      ic_substrib_produto_saida: "N",
-      ic_substrib_produto_entrada: "N",
-      ic_isento_icms_produto_saida: "N",
-      ic_isento_icms_produto_entrada: "N",
-      menu: "",
-      dt_inicial: "",
-      dt_final: "",
-      dt_base: "",
+      tab: this.cad_produto === '' ? 'dados' : this.cad_produto,
+      ic_substrib_produto_saida: 'N',
+      ic_substrib_produto_entrada: 'N',
+      ic_isento_icms_produto_saida: 'N',
+      ic_isento_icms_produto_entrada: 'N',
+      menu: '',
+      dt_inicial: '',
+      dt_final: '',
+      dt_base: '',
       pageSizes: [10, 20, 50, 100],
       dataSourceFornecedorProduto: [],
-      columnsFornecedorProduto: "",
-      totalFornecedorProduto: "",
+      columnsFornecedorProduto: '',
+      totalFornecedorProduto: '',
       dataSourceConfig: [],
       columns: [],
       total: {},
       dataGridInstance: null,
-      taskSubject: "Descritivo",
-      taskDetails: "",
+      taskSubject: 'Descritivo',
+      taskDetails: '',
       temD: false,
       temPanel: false,
       qt_tabsheet: 0,
@@ -1679,7 +1637,7 @@ export default {
       cd_menu_destino: 0,
       cd_api_destino: 0,
       cd_tipo_consulta: 0,
-      ic_filtro_pesquisa: "N",
+      ic_filtro_pesquisa: 'N',
       qt_tempo: 0,
       filtro: [],
       polling: null,
@@ -1687,20 +1645,20 @@ export default {
       arquivo_abrir: false,
       ativaPDF: false,
       cd_empresa: localStorage.cd_empresa,
-      cd_menu: "7498", //localStorage.cd_menu,
+      cd_menu: '7498', //localStorage.cd_menu,
       cd_cliente: 0,
       cd_api: 0,
       api: 0,
-      ds_arquivo: "",
-      nm_documento: "",
-      ds_menu_descritivo: "",
+      ds_arquivo: '',
+      nm_documento: '',
+      ds_menu_descritivo: '',
       popupVisible: false,
       popupData: false,
       periodoVisible: false,
-      ic_form_menu: "N",
-      ic_tipo_data_menu: "0",
-      hoje: "",
-      hora: "",
+      ic_form_menu: 'N',
+      ic_tipo_data_menu: '0',
+      hoje: '',
+      hora: '',
       formData: {},
       items: [],
       cd_tipo_email: 0,
@@ -1709,197 +1667,145 @@ export default {
       cd_detalhe: 0,
       cd_menu_detalhe: 0,
       cd_api_detalhe: 0,
-      cd_identificacao: "",
-      text: "",
+      cd_identificacao: '',
+      text: '',
 
       dados_lookup: [],
       dataset_lookup: [],
-      value_lookup: "",
-      label_lookup: "",
-      placeholder_lookup: "",
+      value_lookup: '',
+      label_lookup: '',
+      placeholder_lookup: '',
       selecionada_lookup: [],
 
-      periodo: "",
-    };
+      periodo: '',
+    }
   },
   computed: {
     dataGrid: function () {
-      return this.$refs[dataGridRef].instance;
+      return this.$refs[dataGridRef].instance
     },
   },
 
   async created() {
     //locale(navigator.language);
-    config({ defaultCurrency: "BRL" });
-    loadMessages(ptMessages);
-    locale(navigator.language);
+    config({ defaultCurrency: 'BRL' })
+    loadMessages(ptMessages)
+    locale(navigator.language)
 
-    localStorage.cd_filtro = 0;
-    localStorage.cd_parametro = 0;
-    localStorage.cd_tipo_consulta = 0;
-    localStorage.cd_tipo_filtro = 0;
-    localStorage.cd_documento = 0;
+    localStorage.cd_filtro = 0
+    localStorage.cd_parametro = 0
+    localStorage.cd_tipo_consulta = 0
+    localStorage.cd_tipo_filtro = 0
+    localStorage.cd_documento = 0
 
-    this.dt_inicial = localStorage.dt_inicial;
-    this.dt_final = localStorage.dt_final;
-    this.dt_base = localStorage.dt_base;
-    this.periodoVisible = false;
+    this.dt_inicial = localStorage.dt_inicial
+    this.dt_final = localStorage.dt_final
+    this.dt_base = localStorage.dt_base
+    this.periodoVisible = false
 
-    this.hoje = "";
-    this.hora = "";
+    this.hoje = ''
+    this.hora = ''
 
     if (!this.qt_tempo == 0) {
-      this.pollData();
-      localStorage.polling = 1;
+      this.pollData()
+      localStorage.polling = 1
     }
 
-    const dados_lookup_grupo = await Lookup.montarSelect(this.cd_empresa, 159);
-    this.dataset_lookup_grupo = JSON.parse(
-      JSON.parse(JSON.stringify(dados_lookup_grupo.dataset))
-    );
+    const dados_lookup_grupo = await Lookup.montarSelect(this.cd_empresa, 159)
+    this.dataset_lookup_grupo = JSON.parse(JSON.parse(JSON.stringify(dados_lookup_grupo.dataset)))
 
-    const dados_lookup_status = await Lookup.montarSelect(this.cd_empresa, 183);
-    this.dataset_lookup_status = JSON.parse(
-      JSON.parse(JSON.stringify(dados_lookup_status.dataset))
-    );
+    const dados_lookup_status = await Lookup.montarSelect(this.cd_empresa, 183)
+    this.dataset_lookup_status = JSON.parse(JSON.parse(JSON.stringify(dados_lookup_status.dataset)))
 
-    const dados_lookup_categoria = await Lookup.montarSelect(
-      this.cd_empresa,
-      261
-    );
+    const dados_lookup_categoria = await Lookup.montarSelect(this.cd_empresa, 261)
     this.dataset_lookup_categoria = JSON.parse(
       JSON.parse(JSON.stringify(dados_lookup_categoria.dataset))
-    );
+    )
     /////////////////////////////////////////////
-    const dados_lookup_cor = await Lookup.montarSelect(this.cd_empresa, 912);
-    this.dataset_lookup_cor = JSON.parse(
-      JSON.parse(JSON.stringify(dados_lookup_cor.dataset))
-    );
+    const dados_lookup_cor = await Lookup.montarSelect(this.cd_empresa, 912)
+    this.dataset_lookup_cor = JSON.parse(JSON.parse(JSON.stringify(dados_lookup_cor.dataset)))
 
-    const dados_lookup_familia = await Lookup.montarSelect(
-      this.cd_empresa,
-      3020
-    );
+    const dados_lookup_familia = await Lookup.montarSelect(this.cd_empresa, 3020)
     this.dataset_lookup_familia = JSON.parse(
       JSON.parse(JSON.stringify(dados_lookup_familia.dataset))
-    );
+    )
     //////////////////////////////////////////////
-    const dados_lookup_unidade_medida = await Lookup.montarSelect(
-      this.cd_empresa,
-      138
-    );
+    const dados_lookup_unidade_medida = await Lookup.montarSelect(this.cd_empresa, 138)
     this.dataset_lookup_unidade_medida = JSON.parse(
       JSON.parse(JSON.stringify(dados_lookup_unidade_medida.dataset))
-    );
+    )
 
-    const dados_lookup_marca = await Lookup.montarSelect(this.cd_empresa, 2406);
-    this.dataset_lookup_marca = JSON.parse(
-      JSON.parse(JSON.stringify(dados_lookup_marca.dataset))
-    );
+    const dados_lookup_marca = await Lookup.montarSelect(this.cd_empresa, 2406)
+    this.dataset_lookup_marca = JSON.parse(JSON.parse(JSON.stringify(dados_lookup_marca.dataset)))
 
-    const dados_lookup_fase_produto = await Lookup.montarSelect(
-      this.cd_empresa,
-      163
-    );
+    const dados_lookup_fase_produto = await Lookup.montarSelect(this.cd_empresa, 163)
     this.dataset_lookup_fase_produto = JSON.parse(
       JSON.parse(JSON.stringify(dados_lookup_fase_produto.dataset))
-    );
+    )
 
-    const dados_lookup_classificacao_fiscal = await Lookup.montarSelect(
-      this.cd_empresa,
-      172
-    );
+    const dados_lookup_classificacao_fiscal = await Lookup.montarSelect(this.cd_empresa, 172)
     this.dataset_lookup_classificacao_fiscal = JSON.parse(
       JSON.parse(JSON.stringify(dados_lookup_classificacao_fiscal.dataset))
-    );
-    const dados_lookup_procedencia = await Lookup.montarSelect(
-      this.cd_empresa,
-      226
-    );
+    )
+    const dados_lookup_procedencia = await Lookup.montarSelect(this.cd_empresa, 226)
     this.dataset_lookup_procedencia = JSON.parse(
       JSON.parse(JSON.stringify(dados_lookup_procedencia.dataset))
-    );
-    const dados_lookup_tipo_produto = await Lookup.montarSelect(
-      this.cd_empresa,
-      268
-    );
+    )
+    const dados_lookup_tipo_produto = await Lookup.montarSelect(this.cd_empresa, 268)
     this.dataset_lookup_tipo_produto = JSON.parse(
       JSON.parse(JSON.stringify(dados_lookup_tipo_produto.dataset))
-    );
-    const dados_lookup_tributacao = await Lookup.montarSelect(
-      this.cd_empresa,
-      205
-    );
+    )
+    const dados_lookup_tributacao = await Lookup.montarSelect(this.cd_empresa, 205)
     this.dataset_lookup_tributacao = JSON.parse(
       JSON.parse(JSON.stringify(dados_lookup_tributacao.dataset))
-    );
-    const dados_lookup_tributacao_cupom_fiscal = await Lookup.montarSelect(
-      this.cd_empresa,
-      2264
-    );
+    )
+    const dados_lookup_tributacao_cupom_fiscal = await Lookup.montarSelect(this.cd_empresa, 2264)
     this.dataset_lookup_tributacao_cupom_fiscal = JSON.parse(
       JSON.parse(JSON.stringify(dados_lookup_tributacao_cupom_fiscal.dataset))
-    );
-    const dados_lookup_dispositivo_legal = await Lookup.montarSelect(
-      this.cd_empresa,
-      203
-    );
+    )
+    const dados_lookup_dispositivo_legal = await Lookup.montarSelect(this.cd_empresa, 203)
     let dataset_lookup_dispositivo_legal = JSON.parse(
       JSON.parse(JSON.stringify(dados_lookup_dispositivo_legal.dataset))
-    );
-    if (
-      dataset_lookup_dispositivo_legal &&
-      dataset_lookup_dispositivo_legal.length > 0
-    ) {
-      this.dataset_lookup_dispositivo_legal_ipi =
-        dataset_lookup_dispositivo_legal.filter((e) => {
-          return e.cd_imposto == 2;
-        });
-      this.dataset_lookup_dispositivo_legal_icms =
-        dataset_lookup_dispositivo_legal.filter((e) => {
-          return e.cd_imposto == 1;
-        });
+    )
+    if (dataset_lookup_dispositivo_legal && dataset_lookup_dispositivo_legal.length > 0) {
+      this.dataset_lookup_dispositivo_legal_ipi = dataset_lookup_dispositivo_legal.filter((e) => {
+        return e.cd_imposto == 2
+      })
+      this.dataset_lookup_dispositivo_legal_icms = dataset_lookup_dispositivo_legal.filter((e) => {
+        return e.cd_imposto == 1
+      })
     }
 
-    const dados_lookup_destinacao_produto = await Lookup.montarSelect(
-      this.cd_empresa,
-      227
-    );
+    const dados_lookup_destinacao_produto = await Lookup.montarSelect(this.cd_empresa, 227)
     this.dataset_lookup_destinacao_produto = JSON.parse(
       JSON.parse(JSON.stringify(dados_lookup_destinacao_produto.dataset))
-    );
+    )
 
-    const dados_lookup_sped_fiscal = await Lookup.montarSelect(
-      this.cd_empresa,
-      2913
-    );
+    const dados_lookup_sped_fiscal = await Lookup.montarSelect(this.cd_empresa, 2913)
     this.dataset_lookup_sped_fiscal = JSON.parse(
       JSON.parse(JSON.stringify(dados_lookup_sped_fiscal.dataset))
-    );
+    )
 
-    const dados_lookup_plano_conta = await Lookup.montarSelect(
-      this.cd_empresa,
-      10
-    );
+    const dados_lookup_plano_conta = await Lookup.montarSelect(this.cd_empresa, 10)
     this.dataset_lookup_plano_conta = JSON.parse(
       JSON.parse(JSON.stringify(dados_lookup_plano_conta.dataset))
-    );
+    )
     this.dataset_lookup_plano_conta.map((e) => {
-      e.nm_conta = e.cd_mascara_conta + " | " + e.nm_conta;
-    });
+      e.nm_conta = e.cd_mascara_conta + ' | ' + e.nm_conta
+    })
   },
 
   async mounted() {
-    localStorage.cd_filtro = 0;
-    localStorage.cd_parametro = 0;
-    localStorage.cd_tipo_consulta = 0;
-    localStorage.cd_tipo_filtro = 0;
-    localStorage.cd_documento = 0;
-    this.load = true;
-    this.color = "orange-9";
-    this.msgDinamica = "Carregando a tela de Produtos...";
-    await this.carregaDados();
-    this.load = false;
+    localStorage.cd_filtro = 0
+    localStorage.cd_parametro = 0
+    localStorage.cd_tipo_consulta = 0
+    localStorage.cd_tipo_filtro = 0
+    localStorage.cd_documento = 0
+    this.load = true
+    this.color = 'orange-9'
+    this.msgDinamica = 'Carregando a tela de Produtos...'
+    await this.carregaDados()
+    this.load = false
   },
 
   components: {
@@ -1922,118 +1828,111 @@ export default {
     DxPopup,
     DxEditing,
     selecaoData,
-    carregando: () => import("../components/carregando.vue"),
+    carregando: () => import('../components/carregando.vue'),
   },
 
   methods: {
     async FormataValor() {
-      this.produto.vl_produto = await funcao.FormataValor(
-        this.produto.vl_produto
-      );
+      this.produto.VL_PRODUTO = await funcao.FormataValor(this.produto.VL_PRODUTO)
     },
     popClick() {
-      this.popupVisible = true;
+      this.popupVisible = true
     },
 
     popClickData() {
       if (this.popupData == false) {
-        this.popupData = true;
+        this.popupData = true
       } else {
-        this.popupData = false;
+        this.popupData = false
         if (this.qt_tabsheet == 0) {
-          this.carregaDados();
+          this.carregaDados()
         } else {
-          this.$refs.componentetabsheet.carregaDados();
+          this.$refs.componentetabsheet.carregaDados()
         }
       }
     },
 
     onHiding() {
-      this.popupVisible = false; // Handler of the 'hiding' event
+      this.popupVisible = false // Handler of the 'hiding' event
     },
 
     async SelecionaProduto() {
-      this.dataSourceConfig = [];
-      await this.carregaFornecedor();
-      this.nm_produto = "";
-      this.$emit("SelectProduto", this.produto);
+      this.dataSourceConfig = []
+      await this.carregaFornecedor()
+      this.nm_produto = ''
+      this.$emit('SelectProduto', this.produto)
     },
 
     NovoProduto() {
       this.produto = {
         cd_produto: 0,
-      };
-      this.grupo = [];
-      this.marca = "";
-      this.unidade_medida = [];
-      this.status = [];
-      this.categoria = [];
-      this.classificacao_fiscal_saida = [];
-      this.classificacao_fiscal_entrada = [];
-      this.procedencia_saida = [];
-      this.procedencia_entrada = [];
-      this.tipo_produto_saida = [];
-      this.tipo_produto_entrada = [];
-      this.tributacao_saida = [];
-      this.tributacao_entrada = [];
-      this.dispositivo_legal_ipi_saida = [];
-      this.dispositivo_legal_ipi_entrada = [];
-      this.dispositivo_legal_icms_saida = [];
-      this.dispositivo_legal_icms_entrada = [];
-      this.destinacao_produto_saida = [];
-      this.destinacao_produto_entrada = [];
-      this.tributacao_cupom_fiscal = [];
-      this.sped_fiscal = [];
-      this.sped_fiscal_entrada = [];
-      this.conta_entrada = [];
-      this.conta_saida = [];
-      this.cor = [];
-      this.familia = [];
-      this.ic_substrib_produto_saida = "N";
-      this.ic_substrib_produto_entrada = "N";
-      this.ic_isento_icms_produto_saida = "N";
-      this.ic_isento_icms_produto_entrada = "N";
-      this.ic_estoque_caixa_produto = "N";
-      this.ic_lista_preco_caixa_produto = "N";
+      }
+      this.grupo = []
+      this.marca = []
+      this.unidade_medida = []
+      this.status = []
+      this.categoria = []
+      this.classificacao_fiscal_saida = []
+      this.classificacao_fiscal_entrada = []
+      this.procedencia_saida = []
+      this.procedencia_entrada = []
+      this.tipo_produto_saida = []
+      this.tipo_produto_entrada = []
+      this.tributacao_saida = []
+      this.tributacao_entrada = []
+      this.dispositivo_legal_ipi_saida = []
+      this.dispositivo_legal_ipi_entrada = []
+      this.dispositivo_legal_icms_saida = []
+      this.dispositivo_legal_icms_entrada = []
+      this.destinacao_produto_saida = []
+      this.destinacao_produto_entrada = []
+      this.tributacao_cupom_fiscal = []
+      this.sped_fiscal = []
+      this.sped_fiscal_entrada = []
+      this.conta_entrada = []
+      this.conta_saida = []
+      this.cor = []
+      this.familia = []
+      this.ic_substrib_produto_saida = 'N'
+      this.ic_substrib_produto_entrada = 'N'
+      this.ic_isento_icms_produto_saida = 'N'
+      this.ic_isento_icms_produto_entrada = 'N'
+      this.ic_estoque_caixa_produto = 'N'
+      this.ic_lista_preco_caixa_produto = 'N'
+      this.ic_compra_produto = 'N'
     },
 
     async trocaTab(e) {
-      if (e == "fornecedor") {
+      if (e == 'fornecedor') {
         if (!!this.produto.cd_produto == false) {
-          this.tab = "fiscal";
-          return notify("Por favor,selecione um produto!");
+          this.tab = 'fiscal'
+          return notify('Por favor,selecione um produto!')
         }
-        await this.carregaFornecedor();
+        await this.carregaFornecedor()
       }
     },
 
     async SalvaProdutoFiscal() {
       if (this.produto.cd_produto == undefined) {
-        return notify("Por favor, selecione um produto!");
+        return notify('Por favor, selecione um produto!')
       }
       let JSON_Produto_Fiscal = {
         cd_parametro: 4,
         cd_produto: this.produto.cd_produto,
-        cd_classificacao_fiscal_saida:
-          this.produto.cd_classificacao_fiscal_saida,
+        cd_classificacao_fiscal_saida: this.produto.cd_classificacao_fiscal_saida,
         cd_procedencia_produto_saida: this.produto.cd_procedencia_produto_saida,
         cd_tipo_produto_saida: this.produto.cd_tipo_produto_saida,
         cd_tributacao_saida: this.produto.cd_tributacao_saida,
-        cd_dispositivo_legal_icms_saida:
-          this.produto.cd_dispositivo_legal_icms_saida,
-        cd_dispositivo_legal_ipi_saida:
-          this.produto.cd_dispositivo_legal_ipi_saida,
+        cd_dispositivo_legal_icms_saida: this.produto.cd_dispositivo_legal_icms_saida,
+        cd_dispositivo_legal_ipi_saida: this.produto.cd_dispositivo_legal_ipi_saida,
         cd_destinacao_produto_saida: this.produto.cd_destinacao_produto_saida,
         cd_tributacao_cupom_fiscal: this.produto.cd_tributacao_cupom_fiscal,
         cd_tipo_item_saida: this.produto.cd_tipo_item_saida,
         ic_substrib_produto_saida: this.produto.ic_substrib_produto_saida,
         ic_isento_icms_produto_saida: this.produto.ic_isento_icms_produto_saida,
-        pc_aliquota_iss_produto_saida:
-          this.produto.pc_aliquota_iss_produto_saida,
-        pc_aliquota_icms_produto_saida:
-          this.produto.pc_aliquota_icms_produto_saida,
-        pc_interna_icms_produto_saida:
-          this.produto.pc_interna_icms_produto_saida,
+        pc_aliquota_iss_produto_saida: this.produto.pc_aliquota_iss_produto_saida,
+        pc_aliquota_icms_produto_saida: this.produto.pc_aliquota_icms_produto_saida,
+        pc_interna_icms_produto_saida: this.produto.pc_interna_icms_produto_saida,
         vl_pauta_icms_produto_saida: this.produto.vl_pauta_icms_produto_saida,
         pc_reducao_piscofins_saida: this.produto.pc_reducao_piscofins_saida,
         pc_iva_icms_produto_saida: this.produto.pc_iva_icms_produto_saida,
@@ -2042,71 +1941,53 @@ export default {
         vl_ipi_produto_fiscal_saida: this.produto.vl_ipi_produto_fiscal_saida,
         //Entrada
         ic_substrib_produto_entrada: this.produto.ic_substrib_produto_entrada,
-        ic_isento_icms_produto_entrada:
-          this.produto.ic_isento_icms_produto_entrada,
-        cd_classificacao_fiscal_entrada:
-          this.produto.cd_classificacao_fiscal_entrada,
-        cd_procedencia_produto_entrada:
-          this.produto.cd_procedencia_produto_entrada,
+        ic_isento_icms_produto_entrada: this.produto.ic_isento_icms_produto_entrada,
+        cd_classificacao_fiscal_entrada: this.produto.cd_classificacao_fiscal_entrada,
+        cd_procedencia_produto_entrada: this.produto.cd_procedencia_produto_entrada,
         cd_tipo_produto_entrada: this.produto.cd_tipo_produto_entrada,
         cd_tributacao_entrada: this.produto.cd_tributacao_entrada,
-        cd_dispositivo_legal_icms_entrada:
-          this.produto.cd_dispositivo_legal_icms_entrada,
-        cd_dispositivo_legal_ipi_entrada:
-          this.produto.cd_dispositivo_legal_ipi_entrada,
-        cd_destinacao_produto_entrada:
-          this.produto.cd_destinacao_produto_entrada,
+        cd_dispositivo_legal_icms_entrada: this.produto.cd_dispositivo_legal_icms_entrada,
+        cd_dispositivo_legal_ipi_entrada: this.produto.cd_dispositivo_legal_ipi_entrada,
+        cd_destinacao_produto_entrada: this.produto.cd_destinacao_produto_entrada,
         cd_tipo_item_entrada: this.produto.cd_tipo_item_entrada,
-        pc_aliquota_iss_produto_entrada:
-          this.produto.pc_aliquota_iss_produto_entrada,
-        pc_aliquota_icms_produto_entrada:
-          this.produto.pc_aliquota_icms_produto_entrada,
-        pc_interna_icms_produto_entrada:
-          this.produto.pc_interna_icms_produto_entrada,
-        vl_pauta_icms_produto_entrada:
-          this.produto.vl_pauta_icms_produto_entrada,
+        pc_aliquota_iss_produto_entrada: this.produto.pc_aliquota_iss_produto_entrada,
+        pc_aliquota_icms_produto_entrada: this.produto.pc_aliquota_icms_produto_entrada,
+        pc_interna_icms_produto_entrada: this.produto.pc_interna_icms_produto_entrada,
+        vl_pauta_icms_produto_entrada: this.produto.vl_pauta_icms_produto_entrada,
         pc_reducao_piscofins_entrada: this.produto.pc_reducao_piscofins_entrada,
         pc_iva_icms_produto_entrada: this.produto.pc_iva_icms_produto_entrada,
         cd_conta_entrada: this.produto.cd_conta_entrada,
         nm_conta_entrada: this.produto.nm_conta_entrada,
-        vl_ipi_produto_fiscal_entrada:
-          this.produto.vl_ipi_produto_fiscal_entrada,
-      };
-      this.load_salvar_fiscal = true;
-      let resultado_salvar_fiscal = await Incluir.incluirRegistro(
-        this.api,
-        JSON_Produto_Fiscal
-      );
-      this.load_salvar_fiscal = false;
-      notify(resultado_salvar_fiscal[0].Msg);
+        vl_ipi_produto_fiscal_entrada: this.produto.vl_ipi_produto_fiscal_entrada,
+      }
+      this.load_salvar_fiscal = true
+      let resultado_salvar_fiscal = await Incluir.incluirRegistro(this.api, JSON_Produto_Fiscal)
+      this.load_salvar_fiscal = false
+      notify(resultado_salvar_fiscal[0].Msg)
     },
 
     async NovoFornecedor() {
-      this.load_novo_fornecedor = true;
-      let menu_fornecedor = await Menu.montarMenu(this.cd_empresa, 7495, 771);
-      let api = menu_fornecedor.nm_identificacao_api;
-      let sParametroApi = menu_fornecedor.nm_api_parametro;
+      this.load_novo_fornecedor = true
+      let menu_fornecedor = await Menu.montarMenu(this.cd_empresa, 7495, 771)
+      let api = menu_fornecedor.nm_identificacao_api
+      let sParametroApi = menu_fornecedor.nm_api_parametro
       //dados da coluna
-      this.columnsFornecedor = JSON.parse(
-        JSON.parse(JSON.stringify(menu_fornecedor.coluna))
-      );
+      this.columnsFornecedor = JSON.parse(JSON.parse(JSON.stringify(menu_fornecedor.coluna)))
 
       //dados do total
-      this.totalFornecedor = JSON.parse(
-        JSON.parse(JSON.stringify(menu_fornecedor.coluna_total))
-      );
+      this.totalFornecedor = JSON.parse(JSON.parse(JSON.stringify(menu_fornecedor.coluna_total)))
       //
-      localStorage.cd_parametro = 0;
-      localStorage.cd_tipo_consulta = 0;
+      localStorage.cd_parametro = 0
+      localStorage.cd_tipo_consulta = 0
       this.dataSourceFornecedor = await Procedimento.montarProcedimento(
         this.cd_empresa,
         localStorage.cd_cliente,
         api,
         sParametroApi
-      );
+      )
 
-      this.ic_novo_fornecedor = !this.ic_novo_fornecedor;
-      this.load_novo_fornecedor = false;
+      this.ic_novo_fornecedor = !this.ic_novo_fornecedor
+      this.load_novo_fornecedor = false
     },
 
     async SelecionaFornecedor() {
@@ -2114,72 +1995,71 @@ export default {
         cd_parametro: 5,
         cd_produto: this.produto.cd_produto,
         cd_fornecedor: this.fornecedor.cd_fornecedor,
-      };
-      let resultado_fornecedor = await Incluir.incluirRegistro(
-        this.api,
-        JSON_Fornecedor
-      );
-      notify(resultado_fornecedor[0].Msg);
-      await this.carregaFornecedor();
-      this.ic_novo_fornecedor = false;
+      }
+      let resultado_fornecedor = await Incluir.incluirRegistro(this.api, JSON_Fornecedor)
+      notify(resultado_fornecedor[0].Msg)
+      await this.carregaFornecedor()
+      this.ic_novo_fornecedor = false
     },
 
     async SalvaProduto() {
       try {
+        this.produto.nm_produto = !this.produto.nm_produto
+          ? this.nm_produto
+          : this.produto.nm_produto
+        if (!this.produto.nm_produto && !this.produto.Produto) {
+          return notify('Informe o nome do Produto')
+        }
         let JSON_Salvar = {
           cd_parametro: 0,
           cd_produto: this.produto.cd_produto,
           cd_mascara_produto: this.produto.cd_mascara_produto,
-          nm_produto: this.produto.nm_produto,
-          nm_fantasia_produto: this.produto.nm_fantasia_produto,
+          nm_produto: !this.produto.nm_produto ? this.produto.Produto : this.produto.nm_produto,
+          nm_fantasia_produto: this.produto.Fantasia,
           nm_marca_produto: this.produto.nm_marca_produto,
           ds_produto: this.produto.ds_produto,
           cd_grupo_produto: this.produto.cd_grupo_produto,
           cd_status_produto: this.produto.cd_status_produto,
           cd_unidade_medida: this.produto.cd_unidade_medida,
           cd_categoria_produto: this.produto.cd_categoria_produto,
-          vl_produto: this.produto.vl_produto,
+          vl_produto: this.produto.VL_PRODUTO,
+          vl_custo_produto: this.produto.vl_custo_produto,
           cd_usuario: this.cd_usuario,
           cd_codigo_barra_produto: this.produto.cd_codigo_barra_produto,
           cd_serie_produto: this.produto.cd_serie_produto,
           pc_icms_produto: this.produto.pc_icms_produto,
           cd_marca_produto: this.produto.cd_marca_produto,
           ic_estoque_caixa_produto: this.produto.ic_estoque_caixa_produto,
-          ic_lista_preco_caixa_produto:
-            this.produto.ic_lista_preco_caixa_produto,
+          ic_lista_preco_caixa_produto: this.produto.ic_lista_preco_caixa_produto,
+          ic_compra_produto: this.produto.ic_compra_produto,
           cd_familia_produto: this.produto.cd_familia_produto,
           cd_cor: this.produto.cd_cor,
           nm_observacao_produto: this.produto.nm_observacao_produto,
-        };
+        }
         if (this.produto.cd_produto) {
           //Update
-          JSON_Salvar.cd_parametro = 2;
+          JSON_Salvar.cd_parametro = 2
         } else {
           //Insert
-          JSON_Salvar.cd_parametro = 1;
+          JSON_Salvar.cd_parametro = 1
         }
-        if (!!this.produto.nm_produto == false) {
-          return notify("Informe o nome do Produto");
-        }
-        this.load_salvar = true;
-        const resultado_salvar = await Incluir.incluirRegistro(
-          this.api,
-          JSON_Salvar
-        );
-        notify(resultado_salvar[0].Msg);
-        await this.onPesquisaProduto();
-        this.load_salvar = false;
+        this.load_salvar = true
+        const resultado_salvar = await Incluir.incluirRegistro(this.api, JSON_Salvar)
+        notify(resultado_salvar[0].Msg)
+        await this.onPesquisaProduto()
+        this.load_salvar = false
       } catch (error) {
-        this.load_salvar = false;
+        this.load_salvar = false
       }
     },
 
     LimpaProduto() {
-      this.produto = {};
-      this.grupo = [];
-      this.unidade_medida = [];
-      this.status = [];
-      this.categoria = [];
+      this.produto = {}
+      this.grupo = []
+      this.unidade_medida = []
+      this.status = []
+      this.marca = []
+      this.categoria = []
     },
 
     async onVerificaPesquisaProduto() {
@@ -2188,30 +2068,26 @@ export default {
         this.fase_produto_pesquisa.cd_fase_produto == undefined &&
         this.grupo_pesquisa.cd_grupo_produto == undefined &&
         this.marca_pesquisa.cd_marca_produto == undefined &&
-        this.cd_mascara_produto == "" &&
-        this.nm_fantasia_produto == "" &&
-        this.nm_produto == ""
+        this.cd_mascara_produto == '' &&
+        this.nm_fantasia_produto == '' &&
+        this.nm_produto == ''
       ) {
-        this.popup_pesquisa_filtro = true;
+        this.popup_pesquisa_filtro = true
       } else {
-        await this.onPesquisaProduto();
+        await this.onPesquisaProduto()
       }
     },
 
     async onPesquisaProduto() {
       if (this.ic_comprado) {
-        let menu_produto = await Menu.montarMenu(this.cd_empresa, 7719, 869);
-        let api = menu_produto.nm_identificacao_api;
-        let sParametroApi = menu_produto.nm_api_parametro;
+        let menu_produto = await Menu.montarMenu(this.cd_empresa, 7719, 869)
+        let api = menu_produto.nm_identificacao_api
+        let sParametroApi = menu_produto.nm_api_parametro
         //dados da coluna
-        this.colunas = JSON.parse(
-          JSON.parse(JSON.stringify(menu_produto.coluna))
-        );
+        this.colunas = JSON.parse(JSON.parse(JSON.stringify(menu_produto.coluna)))
 
         //dados do total
-        this.total = JSON.parse(
-          JSON.parse(JSON.stringify(menu_produto.coluna_total))
-        );
+        this.total = JSON.parse(JSON.parse(JSON.stringify(menu_produto.coluna_total)))
         //
         //localStorage.cd_parametro = 0;
         //localStorage.cd_tipo_consulta = 0;
@@ -2220,13 +2096,13 @@ export default {
           localStorage.cd_cliente,
           api,
           sParametroApi
-        );
+        )
       } else {
         //Pesquisa Padrão de Produtos
-        this.dataSourceConfig = [];
-        this.popup_pesquisa_filtro = false;
-        let JSON_Pesquisa = [];
-        if (this.tipo_pesquisa_produto == "S") {
+        this.dataSourceConfig = []
+        this.popup_pesquisa_filtro = false
+        let JSON_Pesquisa = []
+        if (this.tipo_pesquisa_produto == 'S') {
           JSON_Pesquisa = {
             cd_parametro: 10,
             cd_usuario: this.cd_usuario,
@@ -2237,154 +2113,139 @@ export default {
             cd_mascara_produto: this.cd_mascara_produto,
             nm_fantasia_produto: this.nm_fantasia_produto,
             nm_produto: this.nm_produto,
-          };
-        } else if (this.tipo_pesquisa_produto == "N") {
+          }
+        } else if (this.tipo_pesquisa_produto == 'N') {
           JSON_Pesquisa = {
             cd_parametro: 12,
             cd_usuario: this.cd_usuario,
             nm_produto: this.nm_produto,
-          };
+          }
         }
         this.dataSourceConfig = await Incluir.incluirRegistro(
-          "562/781", //this.api, //// pr_egisnet_elabora_proposta
+          '562/781', //this.api, //// pr_egisnet_elabora_proposta
           JSON_Pesquisa
-        );
-        let menu_pesquisa = await Menu.montarMenu(this.cd_empresa, 7441, 562);
-        this.colunas = JSON.parse(
-          JSON.parse(JSON.stringify(menu_pesquisa.coluna))
-        );
+        )
+        let menu_pesquisa = await Menu.montarMenu(this.cd_empresa, 7441, 562)
+        this.colunas = JSON.parse(JSON.parse(JSON.stringify(menu_pesquisa.coluna)))
 
         if (this.dataSourceConfig[0].Cod === 0) {
-          notify("Nenhum produto encontrado!");
-          this.dataSourceConfig = [];
-          return;
+          notify('Nenhum produto encontrado!')
+          this.dataSourceConfig = []
+          return
         }
       }
     },
 
     async showMenu() {
-      this.cd_cliente = localStorage.cd_cliente;
-      this.cd_api = "774"; //localStorage.cd_api;
-      this.api = "774/1176"; //localStorage.nm_identificacao_api; // pr_egisnet_controle_produtos
-      this.cd_menu_destino = 0;
-      this.cd_api_destino = 0;
-      localStorage.cd_parametro = 0;
+      this.cd_cliente = localStorage.cd_cliente
+      this.cd_api = '774' //localStorage.cd_api;
+      this.api = '774/1176' //localStorage.nm_identificacao_api; // pr_egisnet_controle_produtos
+      this.cd_menu_destino = 0
+      this.cd_api_destino = 0
+      localStorage.cd_parametro = 0
 
-      var dataI = new Date(localStorage.dt_inicial);
-      var diaI = dataI.getDate().toString();
-      var mesI = (dataI.getMonth() + 1).toString();
-      var anoI = dataI.getFullYear();
-      localStorage.dt_inicial = mesI + "-" + diaI + "-" + anoI;
+      var dataI = new Date(localStorage.dt_inicial)
+      var diaI = dataI.getDate().toString()
+      var mesI = (dataI.getMonth() + 1).toString()
+      var anoI = dataI.getFullYear()
+      localStorage.dt_inicial = mesI + '-' + diaI + '-' + anoI
 
-      var dataF = new Date(localStorage.dt_final);
-      var diaF = dataF.getDate().toString();
-      var mesF = (dataF.getMonth() + 1).toString();
-      var anoF = dataF.getFullYear();
-      localStorage.dt_final = mesF + "-" + diaF + "-" + anoF;
+      var dataF = new Date(localStorage.dt_final)
+      var diaF = dataF.getDate().toString()
+      var mesF = (dataF.getMonth() + 1).toString()
+      var anoF = dataF.getFullYear()
+      localStorage.dt_final = mesF + '-' + diaF + '-' + anoF
 
-      var dataB = new Date(localStorage.dt_base);
-      var diaB = dataB.getDate().toString();
-      var mesB = (dataB.getMonth() + 1).toString();
-      var anoB = dataB.getFullYear();
+      var dataB = new Date(localStorage.dt_base)
+      var diaB = dataB.getDate().toString()
+      var mesB = (dataB.getMonth() + 1).toString()
+      var anoB = dataB.getFullYear()
 
-      localStorage.dt_base = mesB + "-" + diaB + "-" + anoB;
+      localStorage.dt_base = mesB + '-' + diaB + '-' + anoB
 
-      dados = await Menu.montarMenu(this.cd_empresa, this.cd_menu, this.cd_api); //'titulo';
+      dados = await Menu.montarMenu(this.cd_empresa, this.cd_menu, this.cd_api) //'titulo';
 
       //this.sParametroApi       = dados.nm_api_parametro;
-      sParametroApi = dados.nm_api_parametro;
+      sParametroApi = dados.nm_api_parametro
 
-      if (
-        !dados.nm_identificacao_api == "" &&
-        !dados.nm_identificacao_api == this.api
-      ) {
-        this.api = dados.nm_identificacao_api;
+      if (!dados.nm_identificacao_api == '' && !dados.nm_identificacao_api == this.api) {
+        this.api = dados.nm_identificacao_api
       }
 
-      this.qt_tabsheet = dados.qt_tabsheet;
-      this.ic_filtro_pesquisa = dados.ic_filtro_pesquisa;
-      this.exportar = false;
-      this.arquivo_abrir = false;
-      this.ativaPDF = false;
-      this.qt_tempo = dados.qt_tempo_menu;
-      this.ds_menu_descritivo = dados.ds_menu_descritivo;
-      this.ic_form_menu = dados.ic_form_menu;
-      this.ic_tipo_data_menu = dados.ic_tipo_data_menu;
-      this.cd_tipo_email = dados.cd_tipo_email;
-      this.cd_detalhe = dados.cd_detalhe;
-      this.cd_menu_detalhe = dados.cd_menu_detalhe;
-      this.cd_api_detalhe = dados.cd_api_detalhe;
+      this.qt_tabsheet = dados.qt_tabsheet
+      this.ic_filtro_pesquisa = dados.ic_filtro_pesquisa
+      this.exportar = false
+      this.arquivo_abrir = false
+      this.ativaPDF = false
+      this.qt_tempo = dados.qt_tempo_menu
+      this.ds_menu_descritivo = dados.ds_menu_descritivo
+      this.ic_form_menu = dados.ic_form_menu
+      this.ic_tipo_data_menu = dados.ic_tipo_data_menu
+      this.cd_tipo_email = dados.cd_tipo_email
+      this.cd_detalhe = dados.cd_detalhe
+      this.cd_menu_detalhe = dados.cd_menu_detalhe
+      this.cd_api_detalhe = dados.cd_api_detalhe
 
       //this.cd_relatorio       = dados.cd_relatorio;
 
-      if (this.ic_tipo_data_menu == "1") {
-        this.hoje = " - " + new Date().toLocaleDateString();
+      if (this.ic_tipo_data_menu == '1') {
+        this.hoje = ' - ' + new Date().toLocaleDateString()
       }
-      if (this.ic_tipo_data_menu == "2" || this.ic_tipo_data_menu == "3") {
-        this.hora = new Date().toLocaleTimeString().substring(0, 5);
-      }
-
-      if (dados.ic_exportacao == "S") {
-        this.exportar = true;
+      if (this.ic_tipo_data_menu == '2' || this.ic_tipo_data_menu == '3') {
+        this.hora = new Date().toLocaleTimeString().substring(0, 5)
       }
 
-      localStorage.cd_tipo_consulta = 0;
+      if (dados.ic_exportacao == 'S') {
+        this.exportar = true
+      }
+
+      localStorage.cd_tipo_consulta = 0
 
       if (!dados.cd_tipo_consulta == 0) {
-        localStorage.cd_tipo_consulta = dados.cd_tipo_consulta;
+        localStorage.cd_tipo_consulta = dados.cd_tipo_consulta
       }
 
-      this.tituloMenu = dados.nm_menu_titulo; //await Menu.montarMenu(cd_empresa, cd_menu); //'titulo';
-      this.menu = dados.nm_menu;
+      this.tituloMenu = dados.nm_menu_titulo //await Menu.montarMenu(cd_empresa, cd_menu); //'titulo';
+      this.menu = dados.nm_menu
 
-      filename = this.tituloMenu + ".xlsx";
-      filenametxt = this.tituloMenu + ".txt";
-      filenamedoc = this.tituloMenu + ".docx";
-      filenamexml = this.tituloMenu + ".xml";
+      filename = this.tituloMenu + '.xlsx'
+      filenametxt = this.tituloMenu + '.txt'
+      filenamedoc = this.tituloMenu + '.docx'
+      filenamexml = this.tituloMenu + '.xml'
 
       //dados da coluna
-      this.columns = JSON.parse(JSON.parse(JSON.stringify(dados.coluna)));
+      this.columns = JSON.parse(JSON.parse(JSON.stringify(dados.coluna)))
 
       //dados do total
-      this.total = JSON.parse(JSON.parse(JSON.stringify(dados.coluna_total)));
+      this.total = JSON.parse(JSON.parse(JSON.stringify(dados.coluna_total)))
       //
 
       //TabSheet
-      this.tabs = [];
+      this.tabs = []
       //
 
       if (!this.qt_tabsheet == 0) {
-        this.tabs = JSON.parse(JSON.parse(JSON.stringify(dados.TabSheet)));
-        this.cd_menu_destino = parseInt(this.cd_menu);
-        this.cd_api_destino = parseInt(this.cd_api);
+        this.tabs = JSON.parse(JSON.parse(JSON.stringify(dados.TabSheet)))
+        this.cd_menu_destino = parseInt(this.cd_menu)
+        this.cd_api_destino = parseInt(this.cd_api)
       }
       //Filtros
 
-      this.filtro = [];
+      this.filtro = []
 
-      if (this.ic_filtro_pesquisa == "S") {
-        this.filtro = await JSON.parse(
-          JSON.parse(JSON.stringify(dados.Filtro))
-        );
+      if (this.ic_filtro_pesquisa == 'S') {
+        this.filtro = await JSON.parse(JSON.parse(JSON.stringify(dados.Filtro)))
 
         if (!!this.filtro[0].cd_tabela == false) {
-          this.dados_lookup = await Lookup.montarSelect(
-            this.cd_empresa,
-            dados.cd_tabela
-          );
+          this.dados_lookup = await Lookup.montarSelect(this.cd_empresa, dados.cd_tabela)
         } else {
-          this.dados_lookup = await Lookup.montarSelect(
-            this.cd_empresa,
-            this.filtro[0].cd_tabela
-          );
+          this.dados_lookup = await Lookup.montarSelect(this.cd_empresa, this.filtro[0].cd_tabela)
         }
         if (!!this.dados_lookup != false) {
-          this.dataset_lookup = JSON.parse(
-            JSON.parse(JSON.stringify(this.dados_lookup.dataset))
-          );
-          this.value_lookup = this.filtro[0].nm_campo_chave_lookup;
-          this.label_lookup = this.filtro[0].nm_campo;
-          this.placeholder_lookup = this.filtro[0].nm_campo_descricao_lookup;
+          this.dataset_lookup = JSON.parse(JSON.parse(JSON.stringify(this.dados_lookup.dataset)))
+          this.value_lookup = this.filtro[0].nm_campo_chave_lookup
+          this.label_lookup = this.filtro[0].nm_campo
+          this.placeholder_lookup = this.filtro[0].nm_campo_descricao_lookup
         }
       }
 
@@ -2395,307 +2256,300 @@ export default {
     pollData: function () {
       if (this.qt_tempo > 0) {
         this.polling = setInterval(() => {
-          this.carregaDados();
-        }, this.qt_tempo);
+          this.carregaDados()
+        }, this.qt_tempo)
       }
     },
 
     Select: function (e) {
       switch (e) {
         case 1: // Grupo
-          this.produto.cd_grupo_produto = this.grupo.cd_grupo_produto;
-          this.produto.nm_grupo_produto = this.grupo.nm_grupo_produto;
-          break;
+          this.produto.cd_grupo_produto = this.grupo.cd_grupo_produto
+          this.produto.nm_grupo_produto = this.grupo.nm_grupo_produto
+          break
         case 2: //Unid Medida
-          this.produto.cd_unidade_medida =
-            this.unidade_medida.cd_unidade_medida;
-          this.produto.nm_unidade_medida =
-            this.unidade_medida.nm_unidade_medida;
-          break;
+          this.produto.cd_unidade_medida = this.unidade_medida.cd_unidade_medida
+          this.produto.nm_unidade_medida = this.unidade_medida.nm_unidade_medida
+          break
         case 3: //Status
-          this.produto.cd_status_produto = this.status.cd_status_produto;
-          this.produto.nm_status_produto = this.status.nm_status_produto;
-          break;
+          this.produto.cd_status_produto = this.status.cd_status_produto
+          this.produto.nm_status_produto = this.status.nm_status_produto
+          break
         case 4: //Categoria
-          this.produto.cd_categoria_produto =
-            this.categoria.cd_categoria_produto;
-          this.produto.nm_categoria_produto =
-            this.categoria.nm_categoria_produto;
-          break;
+          this.produto.cd_categoria_produto = this.categoria.cd_categoria_produto
+          this.produto.nm_categoria_produto = this.categoria.nm_categoria_produto
+          break
         case 5: //Marca
-          this.produto.cd_marca_produto = this.marca.cd_marca_produto;
-          this.produto.nm_marca_produto = this.marca.nm_marca_produto;
-          break;
+          this.produto.cd_marca_produto = this.marca.cd_marca_produto
+          this.produto.nm_marca_produto = this.marca.nm_marca_produto
+          break
         case 6: //Classificacao Fiscal Saida
           this.produto.cd_classificacao_fiscal_saida =
-            this.classificacao_fiscal_saida.cd_classificacao_fiscal;
+            this.classificacao_fiscal_saida.cd_classificacao_fiscal
           this.produto.nm_classificacao_fiscal_saida =
-            this.classificacao_fiscal_saida.nm_classificacao_fiscal;
-          break;
+            this.classificacao_fiscal_saida.nm_classificacao_fiscal
+          break
         case 7: //Procedencia Saida
-          this.produto.cd_procedencia_produto_saida =
-            this.procedencia_saida.cd_procedencia_produto;
-          this.produto.nm_procedencia_produto_saida =
-            this.procedencia_saida.nm_procedencia_produto;
-          break;
+          this.produto.cd_procedencia_produto_saida = this.procedencia_saida.cd_procedencia_produto
+          this.produto.nm_procedencia_produto_saida = this.procedencia_saida.nm_procedencia_produto
+          break
         case 8: //Tipo Produto Saida
-          this.produto.cd_tipo_produto_saida =
-            this.tipo_produto_saida.cd_tipo_produto;
-          this.produto.nm_tipo_produto_saida =
-            this.tipo_produto_saida.nm_tipo_produto;
-          break;
+          this.produto.cd_tipo_produto_saida = this.tipo_produto_saida.cd_tipo_produto
+          this.produto.nm_tipo_produto_saida = this.tipo_produto_saida.nm_tipo_produto
+          break
         case 9: //Tributacao Saida
-          this.produto.cd_tributacao_saida =
-            this.tributacao_saida.cd_tributacao;
-          this.produto.nm_tributacao_saida =
-            this.tributacao_saida.nm_tributacao;
-          break;
+          this.produto.cd_tributacao_saida = this.tributacao_saida.cd_tributacao
+          this.produto.nm_tributacao_saida = this.tributacao_saida.nm_tributacao
+          break
         case 10: //Dispositivo Legal ICMS Saida
           this.produto.cd_dispositivo_legal_icms_saida =
-            this.dispositivo_legal_icms_saida.cd_dispositivo_legal;
+            this.dispositivo_legal_icms_saida.cd_dispositivo_legal
           this.produto.nm_dispositivo_legal_icms_saida =
-            this.dispositivo_legal_icms_saida.nm_dispositivo_legal;
-          break;
+            this.dispositivo_legal_icms_saida.nm_dispositivo_legal
+          break
         case 11: //Dispositivo Legal IPI Saida
           this.produto.cd_dispositivo_legal_ipi_saida =
-            this.dispositivo_legal_ipi_saida.cd_dispositivo_legal;
+            this.dispositivo_legal_ipi_saida.cd_dispositivo_legal
           this.produto.cd_dispositivo_legal_ipi_saida =
-            this.dispositivo_legal_ipi_saida.cd_dispositivo_legal;
-          break;
+            this.dispositivo_legal_ipi_saida.cd_dispositivo_legal
+          break
         case 12: //Destinacao Produto Saida
           this.produto.cd_destinacao_produto_saida =
-            this.destinacao_produto_saida.cd_destinacao_produto;
+            this.destinacao_produto_saida.cd_destinacao_produto
           this.produto.nm_destinacao_produto_saida =
-            this.destinacao_produto_saida.nm_destinacao_produto;
-          break;
+            this.destinacao_produto_saida.nm_destinacao_produto
+          break
         case 13: //Tributacao Cupom Fiscal
-          this.produto.cd_tributacao_cupom_fiscal =
-            this.tributacao_cupom_fiscal.cd_tributacao;
-          this.produto.nm_tributacao_cupom_fiscal =
-            this.tributacao_cupom_fiscal.nm_tributacao;
-          break;
+          this.produto.cd_tributacao_cupom_fiscal = this.tributacao_cupom_fiscal.cd_tributacao
+          this.produto.nm_tributacao_cupom_fiscal = this.tributacao_cupom_fiscal.nm_tributacao
+          break
         case 14: //Sped Fiscal
-          this.produto.cd_tipo_item_saida = this.sped_fiscal.cd_tipo_item;
-          this.produto.nm_tipo_item_saida = this.sped_fiscal.nm_tipo_item;
-          break;
+          this.produto.cd_tipo_item_saida = this.sped_fiscal.cd_tipo_item
+          this.produto.nm_tipo_item_saida = this.sped_fiscal.nm_tipo_item
+          break
         case 15: //Classificacao Fiscal Entrada
           this.produto.cd_classificacao_fiscal_entrada =
-            this.classificacao_fiscal_entrada.cd_classificacao_fiscal;
+            this.classificacao_fiscal_entrada.cd_classificacao_fiscal
           this.produto.nm_classificacao_fiscal_entrada =
-            this.classificacao_fiscal_entrada.nm_classificacao_fiscal;
-          break;
+            this.classificacao_fiscal_entrada.nm_classificacao_fiscal
+          break
         case 16: //Procedencia Entrada
           this.produto.cd_procedencia_produto_entrada =
-            this.procedencia_entrada.cd_procedencia_produto;
+            this.procedencia_entrada.cd_procedencia_produto
           this.produto.nm_procedencia_produto_entrada =
-            this.procedencia_entrada.nm_procedencia_produto;
-          break;
+            this.procedencia_entrada.nm_procedencia_produto
+          break
         case 17: //Tipo Produto Entrada
-          this.produto.cd_tipo_produto_entrada =
-            this.tipo_produto_entrada.cd_tipo_produto;
-          this.produto.nm_tipo_produto_entrada =
-            this.tipo_produto_entrada.nm_tipo_produto;
-          break;
+          this.produto.cd_tipo_produto_entrada = this.tipo_produto_entrada.cd_tipo_produto
+          this.produto.nm_tipo_produto_entrada = this.tipo_produto_entrada.nm_tipo_produto
+          break
         case 18: //Tributacao Entrada
-          this.produto.cd_tributacao_entrada =
-            this.tributacao_entrada.cd_tributacao;
-          this.produto.nm_tributacao_entrada =
-            this.tributacao_entrada.nm_tributacao;
-          break;
+          this.produto.cd_tributacao_entrada = this.tributacao_entrada.cd_tributacao
+          this.produto.nm_tributacao_entrada = this.tributacao_entrada.nm_tributacao
+          break
         case 19: //Dispositivo Legal ICMS Entrada
           this.produto.cd_dispositivo_legal_icms_entrada =
-            this.dispositivo_legal_icms_entrada.cd_dispositivo_legal;
+            this.dispositivo_legal_icms_entrada.cd_dispositivo_legal
           this.produto.nm_dispositivo_legal_icms_entrada =
-            this.dispositivo_legal_icms_entrada.nm_dispositivo_legal;
-          break;
+            this.dispositivo_legal_icms_entrada.nm_dispositivo_legal
+          break
         case 20: //Dispositivo Legal IPI Entrada
           this.produto.cd_dispositivo_legal_ipi_entrada =
-            this.dispositivo_legal_ipi_entrada.cd_dispositivo_legal;
+            this.dispositivo_legal_ipi_entrada.cd_dispositivo_legal
           this.produto.nm_dispositivo_legal_ipi_entrada =
-            this.dispositivo_legal_ipi_entrada.nm_dispositivo_legal;
-          break;
+            this.dispositivo_legal_ipi_entrada.nm_dispositivo_legal
+          break
         case 21: //Destinacao Produto Entrada
           this.produto.cd_destinacao_produto_entrada =
-            this.destinacao_produto_entrada.cd_destinacao_produto;
+            this.destinacao_produto_entrada.cd_destinacao_produto
           this.produto.nm_destinacao_produto_entrada =
-            this.destinacao_produto_entrada.nm_destinacao_produto;
-          break;
+            this.destinacao_produto_entrada.nm_destinacao_produto
+          break
         case 22: //Sped Fiscal Entrada
-          this.produto.cd_tipo_item_entrada =
-            this.sped_fiscal_entrada.cd_tipo_item;
-          this.produto.nm_tipo_item_entrada =
-            this.sped_fiscal_entrada.nm_tipo_item;
-          break;
+          this.produto.cd_tipo_item_entrada = this.sped_fiscal_entrada.cd_tipo_item
+          this.produto.nm_tipo_item_entrada = this.sped_fiscal_entrada.nm_tipo_item
+          break
         case 23: //Plano Conta Saida
-          this.produto.cd_conta_saida = this.conta_saida.cd_conta;
-          this.produto.nm_conta_saida = this.conta_saida.nm_conta;
-          break;
+          this.produto.cd_conta_saida = this.conta_saida.cd_conta
+          this.produto.nm_conta_saida = this.conta_saida.nm_conta
+          break
         case 24: //Plano Conta Entrada
-          this.produto.cd_conta_entrada = this.conta_entrada.cd_conta;
-          this.produto.nm_conta_entrada = this.conta_entrada.nm_conta;
-          break;
+          this.produto.cd_conta_entrada = this.conta_entrada.cd_conta
+          this.produto.nm_conta_entrada = this.conta_entrada.nm_conta
+          break
         case 25: //Cor
-          this.produto.cd_cor = this.cor.cd_cor;
-          this.produto.nm_cor = this.cor.nm_cor;
-          break;
+          this.produto.cd_cor = this.cor.cd_cor
+          this.produto.nm_cor = this.cor.nm_cor
+          break
         case 26: //Familia de Produto
-          this.produto.cd_familia_produto = this.familia.cd_familia_produto;
-          this.produto.nm_familia_produto = this.familia.nm_familia_produto;
-          break;
+          this.produto.cd_familia_produto = this.familia.cd_familia_produto
+          this.produto.nm_familia_produto = this.familia.nm_familia_produto
+          break
       }
     },
 
     handleSubmit: function (e) {
       notify(
         {
-          message: "Você precisa confirmar os Dados para pesquisa !",
+          message: 'Você precisa confirmar os Dados para pesquisa !',
           position: {
-            my: "center top",
-            at: "center top",
+            my: 'center top',
+            at: 'center top',
           },
         },
-        "success",
+        'success',
         1000
-      );
-      e.preventDefault();
+      )
+      e.preventDefault()
     },
 
     //
     onFocusedRowChanged: async function (e) {
-      var data = e.row && e.row.data;
-      this.produto = data;
+      var data = e.row && e.row.data
+      this.produto = data
       this.ic_estoque_caixa_produto =
         !!this.produto.ic_estoque_caixa_produto == false
-          ? "N"
-          : this.produto.ic_estoque_caixa_produto;
+          ? 'N'
+          : this.produto.ic_estoque_caixa_produto
       this.ic_lista_preco_caixa_produto =
         !!this.produto.ic_lista_preco_caixa_produto == false
-          ? "N"
-          : this.produto.ic_lista_preco_caixa_produto;
+          ? 'N'
+          : this.produto.ic_lista_preco_caixa_produto
+      this.ic_compra_produto =
+        !!this.produto.ic_compra_produto == false ? 'N' : this.produto.ic_compra_produto
+      this.nm_fantasia_produto = data.Fantasia
       this.grupo = {
         cd_grupo_produto: data.cd_grupo_produto,
         nm_grupo_produto: data.nm_grupo_produto,
-      };
+      }
       this.unidade_medida = {
         cd_unidade_medida: data.cd_unidade_medida,
         nm_unidade_medida: data.nm_unidade_medida,
-      };
+      }
       this.status = {
         cd_status_produto: data.cd_status_produto,
         nm_status_produto: data.nm_status_produto,
-      };
+      }
+      this.marca = {
+        cd_marca_produto: data.cd_marca_produto,
+        nm_marca_produto: data.nm_marca_produto,
+      }
+      this.fase_produto_pesquisa = {
+        cd_fase_produto: data.cd_fase_produto,
+        nm_fase_produto: data.nm_fase_produto,
+      }
       this.categoria = {
         cd_categoria_produto: data.cd_categoria_produto,
         nm_categoria_produto: data.nm_categoria_produto,
-      };
+      }
       this.cor = {
         cd_cor: data.cd_cor,
         nm_cor: data.nm_cor,
-      };
+      }
       this.familia = {
         cd_familia_produto: data.cd_familia_produto,
         nm_familia_produto: data.nm_familia_produto,
-      };
+      }
       //Saída
       this.classificacao_fiscal_saida = {
         cd_classificacao_fiscal: data.cd_classificacao_fiscal_saida,
         nm_classificacao_fiscal: data.nm_classificacao_fiscal_saida,
-      };
+      }
       this.procedencia_saida = {
         cd_procedencia_produto: data.cd_procedencia_produto_saida,
         nm_procedencia_produto: data.nm_procedencia_produto_saida,
-      };
+      }
       this.tipo_produto_saida = {
         cd_tipo_produto: data.cd_tipo_produto_saida,
         nm_tipo_produto: data.nm_tipo_produto_saida,
-      };
+      }
       this.tributacao_saida = {
         cd_tributacao: data.cd_tributacao_saida,
         nm_tributacao: data.nm_tributacao_saida,
-      };
+      }
       this.dispositivo_legal_icms_saida = {
         cd_dispositivo_legal: data.cd_dispositivo_legal_icms_saida,
         nm_dispositivo_legal: data.nm_dispositivo_legal_icms_saida,
-      };
+      }
       this.dispositivo_legal_ipi_saida = {
         cd_dispositivo_legal: data.cd_dispositivo_legal_ipi_saida,
         nm_dispositivo_legal: data.nm_dispositivo_legal_ipi_saida,
-      };
+      }
       this.destinacao_produto_saida = {
         cd_destinacao_produto: data.cd_destinacao_produto_saida,
         nm_destinacao_produto: data.nm_destinacao_produto_saida,
-      };
+      }
       this.tributacao_cupom_fiscal = {
         cd_tributacao: data.cd_tributacao_cupom_fiscal,
         nm_tributacao: data.nm_tributacao_cupom_fiscal,
-      };
+      }
       this.sped_fiscal = {
         cd_tipo_item: data.cd_tipo_item_saida,
         nm_tipo_item: data.nm_tipo_item_saida,
-      };
+      }
       this.conta_saida = {
         cd_conta: data.cd_conta_saida,
         nm_conta: data.nm_conta_saida,
-      };
-      this.ic_substrib_produto_saida = data.ic_substrib_produto_saida;
-      this.ic_isento_icms_produto_saida = data.ic_isento_icms_produto_saida;
+      }
+      this.ic_substrib_produto_saida = data.ic_substrib_produto_saida
+      this.ic_isento_icms_produto_saida = data.ic_isento_icms_produto_saida
       //Entrada
-      this.ic_substrib_produto_entrada = data.ic_substrib_produto_entrada;
-      this.ic_isento_icms_produto_entrada = data.ic_substrib_produto_entrada;
+      this.ic_substrib_produto_entrada = data.ic_substrib_produto_entrada
+      this.ic_isento_icms_produto_entrada = data.ic_substrib_produto_entrada
 
       this.classificacao_fiscal_entrada = {
         cd_classificacao_fiscal: data.cd_classificacao_fiscal_entrada,
         nm_classificacao_fiscal: data.nm_classificacao_fiscal_entrada,
-      };
+      }
       this.procedencia_entrada = {
         cd_procedencia_produto: data.cd_procedencia_produto_entrada,
         nm_procedencia_produto: data.nm_procedencia_produto_entrada,
-      };
+      }
       this.tipo_produto_entrada = {
         cd_tipo_produto: data.cd_tipo_produto_entrada,
         nm_tipo_produto: data.nm_tipo_produto_entrada,
-      };
+      }
       this.tributacao_entrada = {
         cd_tributacao: data.cd_tributacao_entrada,
         nm_tributacao: data.nm_tributacao_entrada,
-      };
+      }
       this.dispositivo_legal_icms_entrada = {
         cd_dispositivo_legal: data.cd_dispositivo_legal_icms_entrada,
         nm_dispositivo_legal: data.nm_dispositivo_legal_icms_entrada,
-      };
+      }
       this.dispositivo_legal_ipi_entrada = {
         cd_dispositivo_legal: data.cd_dispositivo_legal_ipi_entrada,
         nm_dispositivo_legal: data.nm_dispositivo_legal_ipi_entrada,
-      };
+      }
       this.destinacao_produto_entrada = {
         cd_destinacao_produto: data.cd_destinacao_produto_entrada,
         nm_destinacao_produto: data.nm_destinacao_produto_entrada,
-      };
+      }
       this.sped_fiscal_entrada = {
         cd_tipo_item: data.cd_tipo_item_entrada,
         nm_tipo_item: data.nm_tipo_item_entrada,
-      };
+      }
       this.conta_entrada = {
         cd_conta: data.cd_conta_entrada,
         nm_conta: data.nm_conta_entrada,
-      };
+      }
       // this.taskSubject = data && data.ds_informativo;
-      this.taskDetails = data && data.ds_informativo;
-      this.ds_arquivo = data && data.ds_arquivo;
-      this.nm_documento = data && data.nm_documento;
+      this.taskDetails = data && data.ds_informativo
+      this.ds_arquivo = data && data.ds_arquivo
+      this.nm_documento = data && data.nm_documento
 
-      if (!data.ds_informativo == "") {
-        this.temD = true;
+      if (!data.ds_informativo == '') {
+        this.temD = true
       }
     },
 
     RowChangedFornecedor: async function (e) {
-      var data = e.row && e.row.data;
-      this.fornecedor = data;
+      var data = e.row && e.row.data
+      this.fornecedor = data
     },
 
     RowChangedFornecedorProduto: async function (e) {
-      e.row && e.row.data;
+      e.row && e.row.data
     },
 
     FornecedorRemovido: async function (e) {
@@ -2704,39 +2558,32 @@ export default {
         cd_produto: this.produto.cd_produto,
         cd_fornecedor: e.data.cd_fornecedor,
         cd_fornecedor_produto: e.data.cd_fornecedor_produto,
-      };
+      }
       let resultado_remove_fornecedor = await Incluir.incluirRegistro(
         this.api,
         JSON_Remove_Fornecedor
-      );
-      notify(resultado_remove_fornecedor[0].Msg);
-      await this.carregaFornecedor();
+      )
+      notify(resultado_remove_fornecedor[0].Msg)
+      await this.carregaFornecedor()
     },
 
     async carregaFornecedor() {
-      let dados_fornecedor = await Menu.montarMenu(
-        this.cd_empresa,
-        7505,
-        this.cd_api
-      );
+      let dados_fornecedor = await Menu.montarMenu(this.cd_empresa, 7505, this.cd_api)
       //dados da coluna
       this.columnsFornecedorProduto = JSON.parse(
         JSON.parse(JSON.stringify(dados_fornecedor.coluna))
-      );
+      )
 
       //dados do total
       this.totalFornecedorProduto = JSON.parse(
         JSON.parse(JSON.stringify(dados_fornecedor.coluna_total))
-      );
+      )
       try {
         let JSON_DataSource = {
           cd_parametro: 6,
           cd_produto: this.produto.cd_produto,
-        };
-        this.dataSourceFornecedorProduto = await Incluir.incluirRegistro(
-          this.api,
-          JSON_DataSource
-        );
+        }
+        this.dataSourceFornecedorProduto = await Incluir.incluirRegistro(this.api, JSON_DataSource)
       } catch (error) {
         // eslint-disable-next-line no-console
         // console.error(error);
@@ -2744,46 +2591,43 @@ export default {
     },
 
     async carregaDados() {
-      localStorage.cd_identificacao = 0;
-      await this.showMenu();
+      localStorage.cd_identificacao = 0
+      await this.showMenu()
 
-      this.temPanel = true;
+      this.temPanel = true
 
-      notify("Aguarde... estamos montando a consulta para você, aguarde !");
+      notify('Aguarde... estamos montando a consulta para você, aguarde !')
       if (!this.qt_tabsheet == 0) {
-        sParametroApi;
+        sParametroApi
 
-        await this.carregaFornecedor();
+        await this.carregaFornecedor()
 
-        this.qt_registro = this.dataSourceConfig.length;
-        this.formData = this.dataSourceConfig[0];
-        this.items = JSON.parse(dados.labelForm);
+        this.qt_registro = this.dataSourceConfig.length
+        this.formData = this.dataSourceConfig[0]
+        this.items = JSON.parse(dados.labelForm)
       }
 
       try {
-        var TemDocumento = this.dataSourceConfig[0]
-          ? this.dataSourceConfig[0].nm_documento_pdf
-          : "";
+        var TemDocumento = this.dataSourceConfig[0] ? this.dataSourceConfig[0].nm_documento_pdf : ''
         if (TemDocumento != undefined) {
-          this.arquivo_abrir = true;
+          this.arquivo_abrir = true
         } else {
-          this.arquivo_abrir = false;
+          this.arquivo_abrir = false
         }
       } catch (error) {
         // eslint-disable-next-line no-console
-        console.error(error);
+        console.error(error)
       }
     },
 
     async onClick() {
-      this.dataSourceConfig = [];
+      this.dataSourceConfig = []
       if (this.selecionada_lookup != null) {
-        localStorage.cd_filtro =
-          this.selecionada_lookup[this.filtro[0].nm_campo_chave_lookup];
-        await this.carregaDados();
+        localStorage.cd_filtro = this.selecionada_lookup[this.filtro[0].nm_campo_chave_lookup]
+        await this.carregaDados()
       } else {
-        localStorage.cd_filtro = 0;
-        await this.carregaDados();
+        localStorage.cd_filtro = 0
+        await this.carregaDados()
       }
     },
 
@@ -2791,10 +2635,10 @@ export default {
       //   this.ic_filtro_pesquisa = 'N';
 
       //this.ds_arquivo = '';
-      const data = this.ds_arquivo;
+      const data = this.ds_arquivo
 
       if (this.ds_arquivo == null) {
-        notify("Arquivo não encontrado ou sem informações!");
+        notify('Arquivo não encontrado ou sem informações!')
         //this.ds_arquivo = 'Arquivo Texto sem informações !'
         //const data = this.ds_arquivo;
         //const blob = new Blob([data], {type: 'text/plain'});
@@ -2807,15 +2651,15 @@ export default {
         //a.dispatchEvent(em);
       }
       //const data = JSON.stringify(this.arr);
-      else if (this.ds_arquivo.includes("<NFe") == true) {
-        const blob = new Blob([data], { type: "text/plain" });
-        const em = document.createEvent("MouseEvents"),
-          a = document.createElement("a");
-        a.download = filenamexml;
-        a.href = window.URL.createObjectURL(blob);
-        a.dataset.downloadurl = ["text/json", a.download, a.href].join(":");
+      else if (this.ds_arquivo.includes('<NFe') == true) {
+        const blob = new Blob([data], { type: 'text/plain' })
+        const em = document.createEvent('MouseEvents'),
+          a = document.createElement('a')
+        a.download = filenamexml
+        a.href = window.URL.createObjectURL(blob)
+        a.dataset.downloadurl = ['text/json', a.download, a.href].join(':')
         em.initEvent(
-          "click",
+          'click',
           true,
           false,
           window,
@@ -2830,17 +2674,17 @@ export default {
           false,
           0,
           null
-        );
-        a.dispatchEvent(em);
+        )
+        a.dispatchEvent(em)
       } else {
-        const blob = new Blob([data], { type: "text/plain" });
-        const em = document.createEvent("MouseEvents"),
-          a = document.createElement("a");
-        a.download = filenametxt;
-        a.href = window.URL.createObjectURL(blob);
-        a.dataset.downloadurl = ["text/json", a.download, a.href].join(":");
+        const blob = new Blob([data], { type: 'text/plain' })
+        const em = document.createEvent('MouseEvents'),
+          a = document.createElement('a')
+        a.download = filenametxt
+        a.href = window.URL.createObjectURL(blob)
+        a.dataset.downloadurl = ['text/json', a.download, a.href].join(':')
         em.initEvent(
-          "click",
+          'click',
           true,
           false,
           window,
@@ -2855,22 +2699,22 @@ export default {
           false,
           0,
           null
-        );
-        a.dispatchEvent(em);
+        )
+        a.dispatchEvent(em)
       }
     },
 
     customizeColumns(columns) {
-      columns[0].width = 120;
+      columns[0].width = 120
     },
 
     saveGridInstance(e) {
-      this.dataGridInstance = e.component;
+      this.dataGridInstance = e.component
     },
 
     onExporting(e) {
-      const workbook = new ExcelJS.Workbook();
-      const worksheet = workbook.addWorksheet("Consulta");
+      const workbook = new ExcelJS.Workbook()
+      const worksheet = workbook.addWorksheet('Consulta')
 
       exportDataGrid({
         component: e.component,
@@ -2879,38 +2723,35 @@ export default {
       }).then(function () {
         // https://github.com/exceljs/exceljs#writing-xlsx
         workbook.xlsx.writeBuffer().then(function (buffer) {
-          saveAs(
-            new Blob([buffer], { type: "application/octet-stream" }),
-            filename
-          );
-        });
-      });
-      e.cancel = true;
+          saveAs(new Blob([buffer], { type: 'application/octet-stream' }), filename)
+        })
+      })
+      e.cancel = true
     },
 
     beforeDestroy() {
-      clearInterval(this.polling);
+      clearInterval(this.polling)
     },
 
     destroyed() {
-      this.$destroy();
+      this.$destroy()
     },
 
     renderDoc() {
       //loadFile("http://egisnet.com.br/template/template_GBS.docx", function(
       loadFile(
-        "/Template_GBS.docx",
+        '/Template_GBS.docx',
         function (
           //loadFile("https://docxtemplater.com/tag-example.docx", function(
           error,
           content
         ) {
           if (error) {
-            console.error("não encontrado o template.docx");
-            throw error;
+            console.error('não encontrado o template.docx')
+            throw error
           }
-          var zip = new PizZip(content);
-          var doc = new Docxtemplater(zip);
+          var zip = new PizZip(content)
+          var doc = new Docxtemplater(zip)
 
           doc.setData(
             dados
@@ -2921,38 +2762,37 @@ export default {
             //  nm_identificacao_api: 'endereÃ§o da api'
             //
             // }
-          );
+          )
 
           try {
             // render the document (replace all occurences of {first_name} by John, {last_name} by Doe, ...)
-            doc.render();
+            doc.render()
           } catch (error) {
             if (error.properties && error.properties.errors instanceof Array) {
               error.properties.errors
                 .map(function (error) {
-                  return error.properties.explanation;
+                  return error.properties.explanation
                 })
-                .join("\n");
+                .join('\n')
               // errorMessages is a humanly readable message looking like this :
               // 'The tag beginning with "foobar" is unopened'
             }
-            throw error;
+            throw error
           }
           var out = doc.getZip().generate({
-            type: "blob",
-            mimeType:
-              "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-          });
+            type: 'blob',
+            mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+          })
           //Output the document using Data-URI
-          saveAs(out, filenamedoc);
+          saveAs(out, filenamedoc)
         }
-      );
+      )
     },
   },
-};
+}
 </script>
 <style>
-@import url("./views.css");
+@import url('./views.css');
 
 #parametro {
   margin-top: 5px;

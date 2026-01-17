@@ -629,7 +629,7 @@ export default {
         notify('Selecione o Fornecedor')
         return
       }
-      if (!this.departamento.cd_departamento) {
+      if (this.departamento && !this.departamento.cd_departamento) {
         notify('Selecione o Departamento')
         return
       }
@@ -638,22 +638,24 @@ export default {
         return
       }
       var json_envia_pedido = {
-        cd_departamento: this.departamento.cd_departamento
-          ? this.departamento.cd_departamento
-          : null,
+        cd_departamento:
+          this.departamento && this.departamento.cd_departamento
+            ? this.departamento.cd_departamento
+            : null,
         vl_total_pedido_compra: this.vl_total_produto,
         dt_necessidade: this.dt_necessidade,
         ds_descricao: this.ds_descricao,
         cd_cliente: this.cd_cliente,
         cd_fornecedor: this.fornecedorSelecionado.cd_fornecedor,
+        nm_fantasia_fornecedor: this.fornecedorSelecionado.nm_fantasia_fornecedor,
         cd_usuario: this.cd_usuario,
         cd_contato: localStorage.cd_contato,
         grid: this.dataSourceConfig,
       }
       let [result_pedido] = await Incluir.incluirRegistro(
-        '959/1472', //'870/1347', //this.api,
+        '870/1347', //this.api, '959/1472',
         json_envia_pedido
-      ) //pr_egisnet_pedido_compra  // pr_gera_requisicao_compra
+      ) // pr_gera_requisicao_compra //pr_egisnet_pedido_compra
       if (result_pedido != undefined && result_pedido.cd_requisicao_compra) {
         notify(`Solicitação ${result_pedido.cd_requisicao_compra} enviada com sucesso`)
       } else if (result_pedido.Msg) {

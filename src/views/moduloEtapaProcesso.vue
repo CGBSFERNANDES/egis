@@ -4430,13 +4430,14 @@ export default {
         this.onTaskDrop(this.dadosArrastar, this.etapaArrastar)
         return
       }
-      if (etapa_origem == 64 && etapa_destino == 153) {
-        this.dadosArrastarSenha = arrastar
-        this.etapaArrastarSenha = etapa
-
-        this.popup_senha_movimento = true
-        return
-      }
+      //Karen pediu para tirar 08/01/2026
+      //if (etapa_origem == 64 && etapa_destino == 153) {
+      //  this.dadosArrastarSenha = arrastar
+      //  this.etapaArrastarSenha = etapa
+      //
+      //  this.popup_senha_movimento = true
+      //  return
+      //}
       if (etapa_destino == etapa_origem) {
         this.popupConfirm = false
       } else if (!this.ic_popup_confirmacao) {

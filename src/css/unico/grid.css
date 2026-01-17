@@ -1,0 +1,355 @@
+/* Seleção/linha focada laranja */
+.dx-datagrid .dx-row-focused,
+.dx-datagrid .dx-selection,
+.dx-datagrid .dx-selection.dx-row > td {
+  background-color: #ff7043 !important;
+  color: #fff !important;
+}
+
+.dx-datagrid .dx-command-select {
+  width: 36px;
+}
+
+/* viewport/htrack */
+.viewport { overflow: hidden; width: 100%; }
+.track { display: flex; width: 200%; transition: transform 0.3s ease; }
+.pane { width: 50%; padding: 8px; }
+
+.hshell { width: 100%; overflow: hidden; position: relative; min-height: 320px; }
+.htrack { display: flex; width: 200%; transition: transform 0.25s ease; }
+.hpanel { flex: 0 0 100%; width: 100%; box-sizing: border-box; padding: 8px 8px 0; }
+
+/* sticky container filtros */
+.filtros-container {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: white;
+  padding: 8px 0;
+  border-bottom: 1px solid #ddd;
+}
+
+/* grid layout */
+.grid-top{ flex: 0 0 auto; }
+
+.grid-body{
+  flex: 0 0 auto;
+  min-height: auto;
+  overflow: visible;
+}
+
+.grid-scroll-shell {
+  overflow: visible;
+  white-space: normal;
+  width: 100%;
+  position: relative;
+  padding: 0 32px 0px 6px;
+  box-sizing: border-box;
+  display: block;
+  min-height: auto;
+}
+
+.grid-scroll-track {
+  position: relative;
+  white-space: normal;
+  display: block;
+  width: 100%;
+  min-width: 0;
+  height: auto !important;
+  overflow: visible;
+}
+
+.grid-scroll-shell .dx-datagrid,
+.grid-scroll-track .dx-datagrid {
+  height: auto !important;
+  /* width: 100% !important;  REMOVIDO */
+}
+
+
+.dx-datagrid-rowsview {
+  padding-right: 8px;
+  padding-bottom: 4px;
+}
+
+.arrow-btn {
+  position: fixed;
+  top: 20%;
+  margin-left: 5px;
+  margin-right: 5px;
+  transform: translateY(40%);
+  z-index: 2000;
+}
+.arrow-btn.left { left: 60px; }
+.arrow-btn.right { right: 10px; }
+
+/* tabs */
+.q-tabs__content {
+  border-bottom: 2px solid var(--q-color-deep-orange-9);
+  margin-bottom: 6px;
+}
+
+.tabs-form { width: 100%; }
+
+.tabsheets-form {
+  width: 100%;
+  background: linear-gradient(90deg, rgba(123, 31, 162, 0.1), rgba(0, 172, 193, 0.08));
+  border-radius: 14px;
+  padding: 6px 8px;
+}
+.tabsheets-form .q-tabs__content {
+  gap: 8px;
+  align-items: center;
+  width: 100%;
+  justify-content: center;
+}
+.tabsheets-form .q-tab {
+  flex: 1 1 0;
+  min-width: 0;
+  justify-content: center;
+  text-align: center;
+  color: #3f2b96;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  font-size: 15px;
+  min-height: 46px;
+  line-height: 1.2;
+  border-radius: 12px;
+  transition: all 0.18s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.tabsheets-form .q-tab:hover {
+  background: rgba(0, 172, 193, 0.12);
+  color: #4a148c;
+}
+.tabsheets-form .q-tab.q-tab--active {
+  color: #fff;
+  background: linear-gradient(135deg, #6a1b9a, #00838f);
+  box-shadow: 0 12px 30px rgba(123, 31, 162, 0.18);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+}
+.tabsheets-form :deep(.q-tab__label) {
+  width: 100%;
+  text-align: center;
+  letter-spacing: 0.06em;
+  color: inherit;
+}
+.tabsheets-form .q-tab__indicator {
+  height: 5px;
+  border-radius: 6px;
+  background: linear-gradient(90deg, #f4511e, #00acc1);
+}
+.tabsheets-form__tab .q-tab__content {
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+}
+.tabsheets-form__tab .q-tab__label {
+  width: 100%;
+  text-align: center;
+}
+
+/* botão seta */
+.fab-down {
+  position: sticky;
+  bottom: 12px;
+  float: right;
+  margin-right: 12px;
+  z-index: 5;
+}
+
+/* menu/botoes */
+.margin-menu { position: absolute; right: 25px; top: 20px; }
+.bg-form { position: absolute; top: 10px; margin-right: 1px; align-items: right; }
+.fo-margin { margin-left: 40px; }
+.fo-margin-direita { margin-right: 40px; }
+
+/* ícone roxo */
+::v-deep .btn-processo-menu .dx-link-icon .dx-button-content .dx-icon{
+  color: #5e35b1;
+}
+::v-deep .btn-processo-menu .dx-link .dx-button-content {
+  background-color: #ede7f6;
+  border-radius: 9999px;
+  padding: 2px 4px;
+}
+
+/* legenda cores */
+.acoes-grid-color-wrapper {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  justify-content: center;
+}
+.acoes-grid-color-dot {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 1px solid rgba(0, 0, 0, 0.2);
+}
+.dx-datagrid .acoes-grid-color-dot {
+  width: 20px;
+  height: 10px;
+}
+.acoes-grid-legenda {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.acoes-grid-legenda-titulo {
+  font-weight: 600;
+  margin-top: 6px;
+  margin-right: 4px;
+  margin-left: 16px;
+}
+.acoes-grid-legenda-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  margin-top: 6px;
+}
+.acoes-grid-legenda-text { white-space: nowrap; }
+
+.dx-datagrid .dx-row .acoes-grid-color-cell {
+  background-color: #ffffff !important;
+}
+
+/* primeira coluna sempre branca */
+.dx-datagrid-rowsview .dx-row > td:first-child {
+  background-color: #ffffff !important;
+}
+.dx-datagrid-rowsview .dx-row.dx-selection > td:first-child,
+.dx-datagrid-rowsview .dx-row.dx-row-focused > td:first-child,
+.dx-datagrid-rowsview .dx-row.dx-state-hover > td:first-child {
+  background-color: #ffffff !important;
+}
+
+/* pequenos utilitários */
+.tam-icon .q-icon {
+  font-size: 16px;
+  width: 16px;
+  height: 16px;
+  line-height: 16px;
+}
+
+.no-wrap { flex-wrap: nowrap; }
+.toolbar-scroll { overflow-x: auto; white-space: nowrap; }
+.seta-form { margin-left: 10px; color: #512da8 }
+.tab_principal { margin-left: 200px; }
+
+.grid-align-x {
+  padding-left: 16px;
+  padding-right: 16px;
+}
+
+/* ajustes de respiro da grid (os que você pediu) */
+/* GRID com a mesma "caixa" das tabs/separator */
+:deep(#grid-padrao.dx-card.wide-card) {
+  width: calc(100% - 32px) !important; /* 16px + 16px */
+  margin-left: 16px !important;
+  margin-right: 16px !important;
+  box-sizing: border-box !important;
+
+  /* mantém seus respiros */
+  padding-right: 22px !important;
+  padding-bottom: 18px !important;
+
+}
+
+:deep(#grid-padrao .dx-datagrid-rowsview) {
+  padding-right: 14px !important;
+  padding-bottom: 10px !important;
+}
+
+:deep(#grid-padrao .dx-datagrid-pager) {
+  padding-bottom: 10px !important;
+}
+:deep(#grid-padrao .dx-datagrid-content) {
+  padding-bottom: 14px !important;
+}
+
+/* Tabs alinhadas com a grid (mesmo padding do grid-scroll-shell) */
+:deep(.tabs-form),
+:deep(.tabsheets-form),
+:deep(.q-tabs) {
+  margin-left: 16px;
+  margin-right: 16px;
+}
+
+/* =====================================================
+   ESPAÇO APÓS OS TOTAIS (correto com footer sticky)
+   ===================================================== */
+
+/* cria espaço ABAIXO do footer empurrando o conteúdo */
+:deep(#grid-padrao .dx-datagrid-rowsview) {
+  padding-bottom: 48px !important; /* altura visual após totais */
+}
+
+/* mantém o footer limpo */
+:deep(#grid-padrao .dx-datagrid-total-footer) {
+  box-shadow: 0 -6px 12px rgba(0,0,0,.04);
+}
+
+
+/* === SEM scroll vertical interno na grid === */
+.grid-scroll-shell,
+.grid-scroll-track,
+.grid-body {
+  height: auto !important;
+  overflow: visible !important;
+}
+
+/* DevExtreme: não force altura 100% em nenhum lugar */
+:deep(#grid-padrao),
+:deep(#grid-padrao .dx-datagrid),
+:deep(#grid-padrao .dx-datagrid-rowsview),
+:deep(#grid-padrao .dx-scrollable-container),
+:deep(#grid-padrao .dx-scrollable-content) {
+  height: auto !important;
+}
+
+:deep(#grid-padrao .dx-datagrid-pager) {
+  padding-bottom: 18px !important;
+}
+
+
+
+/* ========= RODAPÉ: espaço após os totais (Vue2 scoped) ========= */
+
+/* garante que pegamos o DOM interno do DevExtreme */
+::v-deep #grid-padrao .dx-datagrid-total-footer,
+::v-deep #grid-padrao .dx-datagrid-pager {
+  position: static !important;
+  background: #fff !important;
+}
+
+/* cria espaço REAL depois do total */
+::v-deep #grid-padrao .dx-datagrid-total-footer::after {
+  content: "";
+  display: block;
+  height: 28px; /* ajuste: 16 / 28 / 40 */
+}
+
+/* se quiser espaço depois do pager também */
+::v-deep #grid-padrao .dx-datagrid-pager::after {
+  content: "";
+  display: block;
+  height: 18px;
+}
+
+/* Contorno premium discreto */
+
+/* Laranja suave + glow (sem preto) */
+::v-deep #grid-padrao.dx-card.wide-card {
+  border: 0px solid rgba(244, 81, 30, 0.35) !important;
+  border-radius: 10px !important;
+  box-shadow:
+    0 0 0 1px #f4f3f2fd,
+    0 0 4px #512DA8 !important;
+  background: #fff !important;
+}
