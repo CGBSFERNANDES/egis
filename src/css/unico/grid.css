@@ -11,13 +11,37 @@
 }
 
 /* viewport/htrack */
-.viewport { overflow: hidden; width: 100%; }
-.track { display: flex; width: 200%; transition: transform 0.3s ease; }
-.pane { width: 50%; padding: 8px; }
+.viewport {
+  overflow: hidden;
+  width: 100%;
+}
+.track {
+  display: flex;
+  width: 200%;
+  transition: transform 0.3s ease;
+}
+.pane {
+  width: 50%;
+  padding: 8px;
+}
 
-.hshell { width: 100%; overflow: hidden; position: relative; min-height: 320px; }
-.htrack { display: flex; width: 200%; transition: transform 0.25s ease; }
-.hpanel { flex: 0 0 100%; width: 100%; box-sizing: border-box; padding: 8px 8px 0; }
+.hshell {
+  width: 100%;
+  overflow: hidden;
+  position: relative;
+  min-height: 320px;
+}
+.htrack {
+  display: flex;
+  width: 200%;
+  transition: transform 0.25s ease;
+}
+.hpanel {
+  flex: 0 0 100%;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 8px 8px 0;
+}
 
 /* sticky container filtros */
 .filtros-container {
@@ -30,9 +54,11 @@
 }
 
 /* grid layout */
-.grid-top{ flex: 0 0 auto; }
+.grid-top {
+  flex: 0 0 auto;
+}
 
-.grid-body{
+.grid-body {
   flex: 0 0 auto;
   min-height: auto;
   overflow: visible;
@@ -65,7 +91,6 @@
   /* width: 100% !important;  REMOVIDO */
 }
 
-
 .dx-datagrid-rowsview {
   padding-right: 8px;
   padding-bottom: 4px;
@@ -79,8 +104,12 @@
   transform: translateY(40%);
   z-index: 2000;
 }
-.arrow-btn.left { left: 60px; }
-.arrow-btn.right { right: 10px; }
+.arrow-btn.left {
+  left: 60px;
+}
+.arrow-btn.right {
+  right: 10px;
+}
 
 /* tabs */
 .q-tabs__content {
@@ -88,11 +117,17 @@
   margin-bottom: 6px;
 }
 
-.tabs-form { width: 100%; }
+.tabs-form {
+  width: 100%;
+}
 
 .tabsheets-form {
   width: 100%;
-  background: linear-gradient(90deg, rgba(123, 31, 162, 0.1), rgba(0, 172, 193, 0.08));
+  background: linear-gradient(
+    90deg,
+    rgba(123, 31, 162, 0.1),
+    rgba(0, 172, 193, 0.08)
+  );
   border-radius: 14px;
   padding: 6px 8px;
 }
@@ -160,13 +195,26 @@
 }
 
 /* menu/botoes */
-.margin-menu { position: absolute; right: 25px; top: 20px; }
-.bg-form { position: absolute; top: 10px; margin-right: 1px; align-items: right; }
-.fo-margin { margin-left: 40px; }
-.fo-margin-direita { margin-right: 40px; }
+.margin-menu {
+  position: absolute;
+  right: 25px;
+  top: 20px;
+}
+.bg-form {
+  position: absolute;
+  top: 10px;
+  margin-right: 1px;
+  align-items: right;
+}
+.fo-margin {
+  margin-left: 40px;
+}
+.fo-margin-direita {
+  margin-right: 40px;
+}
 
 /* ícone roxo */
-::v-deep .btn-processo-menu .dx-link-icon .dx-button-content .dx-icon{
+::v-deep .btn-processo-menu .dx-link-icon .dx-button-content .dx-icon {
   color: #5e35b1;
 }
 ::v-deep .btn-processo-menu .dx-link .dx-button-content {
@@ -213,7 +261,9 @@
   font-size: 12px;
   margin-top: 6px;
 }
-.acoes-grid-legenda-text { white-space: nowrap; }
+.acoes-grid-legenda-text {
+  white-space: nowrap;
+}
 
 .dx-datagrid .dx-row .acoes-grid-color-cell {
   background-color: #ffffff !important;
@@ -237,10 +287,28 @@
   line-height: 16px;
 }
 
-.no-wrap { flex-wrap: nowrap; }
-.toolbar-scroll { overflow-x: auto; white-space: nowrap; }
-.seta-form { margin-left: 10px; color: #512da8 }
-.tab_principal { margin-left: 200px; }
+.no-wrap {
+  flex-wrap: nowrap;
+}
+.toolbar-scroll {
+  overflow-x: auto;
+  white-space: nowrap;
+}
+.seta-form {
+  margin-left: 10px;
+  color: #512da8;
+}
+
+.unico-embed .tab_principal {
+  margin-left: 0 !important;
+}
+
+.unico-embed .area-filhas {
+  padding-left: 16px;
+  padding-right: 16px;
+}
+
+/* alinhamento horizontal padrão da grid */
 
 .grid-align-x {
   padding-left: 16px;
@@ -258,7 +326,6 @@
   /* mantém seus respiros */
   padding-right: 22px !important;
   padding-bottom: 18px !important;
-
 }
 
 :deep(#grid-padrao .dx-datagrid-rowsview) {
@@ -292,9 +359,8 @@
 
 /* mantém o footer limpo */
 :deep(#grid-padrao .dx-datagrid-total-footer) {
-  box-shadow: 0 -6px 12px rgba(0,0,0,.04);
+  box-shadow: 0 -6px 12px rgba(0, 0, 0, 0.04);
 }
-
 
 /* === SEM scroll vertical interno na grid === */
 .grid-scroll-shell,
@@ -316,8 +382,6 @@
 :deep(#grid-padrao .dx-datagrid-pager) {
   padding-bottom: 18px !important;
 }
-
-
 
 /* ========= RODAPÉ: espaço após os totais (Vue2 scoped) ========= */
 
@@ -348,23 +412,21 @@
 ::v-deep #grid-padrao.dx-card.wide-card {
   border: 0px solid rgba(244, 81, 30, 0.35) !important;
   border-radius: 10px !important;
-  box-shadow:
-    0 0 0 1px #f4f3f2fd,
-    0 0 4px #512DA8 !important;
+  box-shadow: 0 0 0 1px #f4f3f2fd, 0 0 4px #512da8 !important;
   background: #fff !important;
 }
 
 /* painel da tab filha não pode ter recuo/margem */
-.tab-panel-filho{
+.tab-panel-filho {
   margin: 0 !important;
   padding: 0 !important;
 }
 
 /* área filha ocupando a tela útil */
-.area-filhas-full{
+.area-filhas-full {
   width: 100%;
   min-height: calc(100vh - 220px); /* ajuste fino se precisar */
-  padding: 0 16px 16px 16px;       /* mesmo alinhamento da grid/tabs */
+  padding: 0 16px 16px 16px; /* mesmo alinhamento da grid/tabs */
   box-sizing: border-box;
 }
 
@@ -374,3 +436,86 @@
 ::v-deep .unico-embed .bg-form {
   display: none !important;
 }
+
+.embed-parent-banner {
+  margin: 6px 16px 10px 16px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: rgba(244, 81, 30, 0.06); /* deep-orange-6 suave */
+  border: 1px solid rgba(244, 81, 30, 0.25);
+}
+
+.embed-parent-title {
+  font-weight: 900;
+  font-size: 16px;
+  color: #512da8; /* deep-purple-7 */
+}
+
+.embed-parent-sub {
+  margin-top: 2px;
+  font-weight: 700;
+  color: rgba(0, 0, 0, 0.75);
+}
+
+.area-filhas,
+.area-filhas-full {
+  padding-top: 0 !important;
+  margin-top: 0 !important;
+}
+
+.ctx-card {
+  margin: 14px 16px 12px 16px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: rgba(244, 81, 30, 0.06); /* deep-orange suave */
+  border-left: 6px solid #f4511e; /* deep-orange-6 */
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.06);
+}
+.ctx-title {
+  font-weight: 900;
+  font-size: 20px;
+  color: #512da8; /* deep-purple-7 */
+  margin-bottom: 4px;
+}
+.ctx-sub {
+  font-weight: 700;
+  color: rgba(0, 0, 0, 0.7);
+}
+.ctx-content {
+  margin-top: 12px;
+  font-size: 14px;
+  color: rgba(0, 0, 0, 0.85);
+}
+
+/* remove espaço/miolo branco quando está em modo embed */
+.unico-embed,
+.unico-embed .unico-root {
+  background: transparent !important;
+}
+
+/* área filha sem padding extra (tira o painel branco) */
+.unico-embed .area-filhas {
+  padding: 0 !important;
+  margin: 0 !important;
+  background: transparent !important;
+}
+
+/* o painel (tab) não deve criar respiro */
+.unico-embed .q-tab-panel {
+  padding: 0 !important;
+}
+
+/* topbar do filho */
+.filho-topbar {
+  padding: 8px 16px;
+  border-radius: 8px;
+  background: rgba(81, 45, 168, 0.06); /* roxo bem leve */
+}
+
+.unico-embed ::v-deep .dx-card.wide-card {
+  border: 1px solid rgba(0, 0, 0, 0.1) !important;
+  border-radius: 8px !important;
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.08), 0 0 0 2px rgba(81, 45, 168, 0.1) !important;
+}
+
+/* FIM */
