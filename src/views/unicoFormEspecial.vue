@@ -1092,7 +1092,7 @@
                     :modo_inicial="
                       (t.ic_grid_menu || 'S') === 'N' ? 'EDIT' : 'GRID'
                     "
-                    @fechar="onFecharTabFilha(t)"
+                    @fechar.native.stop=""
                     @voltar="onFecharTabFilha(t)"
                     :cd_acesso_entrada="cd_chave_registro_local"
                     :cd_chave_registro="cd_chave_registro_local"
@@ -2612,6 +2612,8 @@ export default {
 
   data() {
     return {
+      _tabStack: [], // histórico de abas
+      _closingInternalDialog: false,
       _tabAntesModal: null,
       _estavaEmTabFilha: false,
       dlgKey: 0,
@@ -3473,6 +3475,18 @@ export default {
       if (v) {
         // ... sua rotina atual de init ...
         this.loadAllLookups(); // adiciona aqui
+      }
+    },
+
+    activeMenuTab(novo, antigo) {
+      // evita lixo
+      if (!antigo || antigo === novo) return;
+
+      // só empilha se estamos indo para uma aba filha
+      if (novo !== "principal") {
+        // evita duplicar a mesma aba seguida
+        const last = this._tabStack[this._tabStack.length - 1];
+        if (last !== antigo) this._tabStack.push(antigo);
       }
     },
   },
@@ -9707,11 +9721,16 @@ if (descGenerica) {
     },
 
     onFecharTabFilha(t) {
-      // volta pra tab principal sempre que o filho fechar
-      this.activeMenuTab = "principal";
       this.takeoverFilhoGrid = false;
 
-      this.limparSelecaoGrid();
+      // pega a última aba da pilha; se não tiver, volta pra principal
+      const voltarPara = this._tabStack.length
+        ? this._tabStack.pop()
+        : "principal";
+
+      this.activeMenuTab = voltarPara;
+
+      //this.limparSelecaoGrid();
     },
 
     // preenche campos de data com início/fim do mês vigente
