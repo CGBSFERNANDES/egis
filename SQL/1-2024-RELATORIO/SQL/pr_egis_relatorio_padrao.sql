@@ -664,6 +664,13 @@ begin
   exec pr_egis_relatorio_pedido_compra_modelo_01 @cd_relatorio, @json
   return
 end
+
+--Parcelas do Contrato a Pagar no Periodo-------------------------------------------------------------------------------------------------------------------------------   
+if @cd_relatorio = 432
+begin
+  exec pr_egis_relatorio_parcelas_contrato_pagar @json
+  return
+end
 --Contrato a Pagar-------------------------------------------------------------------------------------------------------------------------------   
 if @cd_relatorio = 338
 begin
