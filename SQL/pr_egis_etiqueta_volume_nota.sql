@@ -79,6 +79,54 @@ BEGIN
         /*-----------------------------------------------------------------------------------------
           3) Carrega dados principais da nota/empresa
         -----------------------------------------------------------------------------------------*/
+        DECLARE @Volumes TABLE
+        (
+            cd_nota_saida INT NULL,
+            cd_identificacao_nota_saida VARCHAR(60) NULL,
+            nr_nota VARCHAR(20) NULL,
+            nr_serie VARCHAR(10) NULL,
+            nm_emitente VARCHAR(120) NULL,
+            nm_fantasia_emitente VARCHAR(120) NULL,
+            cnpj_emitente VARCHAR(20) NULL,
+            ie_emitente VARCHAR(20) NULL,
+            endereco_emitente VARCHAR(200) NULL,
+            numero_emitente VARCHAR(20) NULL,
+            bairro_emitente VARCHAR(100) NULL,
+            cidade_emitente VARCHAR(100) NULL,
+            uf_emitente VARCHAR(10) NULL,
+            cep_emitente VARCHAR(15) NULL,
+            nm_destinatario VARCHAR(120) NULL,
+            nm_fantasia_destinatario VARCHAR(120) NULL,
+            doc_destinatario VARCHAR(20) NULL,
+            endereco_destinatario VARCHAR(200) NULL,
+            numero_destinatario VARCHAR(20) NULL,
+            bairro_destinatario VARCHAR(100) NULL,
+            cidade_destinatario VARCHAR(100) NULL,
+            uf_destinatario VARCHAR(10) NULL,
+            cep_destinatario VARCHAR(15) NULL,
+            nm_transportadora VARCHAR(120) NULL,
+            cnpj_transportadora VARCHAR(20) NULL,
+            cidade_transportadora VARCHAR(100) NULL,
+            uf_transportadora VARCHAR(10) NULL,
+            qt_volume INT NULL,
+            especie_volume VARCHAR(60) NULL,
+            peso_liquido VARCHAR(30) NULL,
+            peso_bruto VARCHAR(30) NULL,
+            nm_empresa VARCHAR(120) NULL,
+            nm_fantasia_empresa VARCHAR(120) NULL,
+            cd_cgc_empresa VARCHAR(20) NULL,
+            cd_ie_empresa VARCHAR(20) NULL,
+            nm_endereco_empresa VARCHAR(200) NULL,
+            cd_numero VARCHAR(20) NULL,
+            nm_bairro_empresa VARCHAR(100) NULL,
+            nm_cidade_empresa VARCHAR(100) NULL,
+            sg_estado_empresa VARCHAR(10) NULL,
+            cd_cep_empresa VARCHAR(15) NULL,
+            cd_telefone_empresa VARCHAR(30) NULL,
+            qt_volume_normalizado INT NOT NULL,
+            nr_volume INT NOT NULL
+        );
+
         ;WITH Base AS
         (
             SELECT
@@ -203,21 +251,105 @@ BEGIN
         (
             SELECT ROW_NUMBER() OVER (ORDER BY (SELECT NULL)) AS n
             FROM sys.all_objects
-        ),
-        Volumes AS
-        (
-            SELECT
-                b.*,
-                CASE WHEN ISNULL(b.qt_volume, 0) <= 0 THEN 1 ELSE b.qt_volume END AS qt_volume_normalizado,
-                t.n AS nr_volume
-            FROM Base AS b
-            JOIN Tally AS t
-              ON t.n <= CASE WHEN ISNULL(b.qt_volume, 0) <= 0 THEN 1 ELSE b.qt_volume END
         )
+        INSERT INTO @Volumes (
+            cd_nota_saida,
+            cd_identificacao_nota_saida,
+            nr_nota,
+            nr_serie,
+            nm_emitente,
+            nm_fantasia_emitente,
+            cnpj_emitente,
+            ie_emitente,
+            endereco_emitente,
+            numero_emitente,
+            bairro_emitente,
+            cidade_emitente,
+            uf_emitente,
+            cep_emitente,
+            nm_destinatario,
+            nm_fantasia_destinatario,
+            doc_destinatario,
+            endereco_destinatario,
+            numero_destinatario,
+            bairro_destinatario,
+            cidade_destinatario,
+            uf_destinatario,
+            cep_destinatario,
+            nm_transportadora,
+            cnpj_transportadora,
+            cidade_transportadora,
+            uf_transportadora,
+            qt_volume,
+            especie_volume,
+            peso_liquido,
+            peso_bruto,
+            nm_empresa,
+            nm_fantasia_empresa,
+            cd_cgc_empresa,
+            cd_ie_empresa,
+            nm_endereco_empresa,
+            cd_numero,
+            nm_bairro_empresa,
+            nm_cidade_empresa,
+            sg_estado_empresa,
+            cd_cep_empresa,
+            cd_telefone_empresa,
+            qt_volume_normalizado,
+            nr_volume
+        )
+        SELECT
+            b.cd_nota_saida,
+            b.cd_identificacao_nota_saida,
+            b.nr_nota,
+            b.nr_serie,
+            b.nm_emitente,
+            b.nm_fantasia_emitente,
+            b.cnpj_emitente,
+            b.ie_emitente,
+            b.endereco_emitente,
+            b.numero_emitente,
+            b.bairro_emitente,
+            b.cidade_emitente,
+            b.uf_emitente,
+            b.cep_emitente,
+            b.nm_destinatario,
+            b.nm_fantasia_destinatario,
+            b.doc_destinatario,
+            b.endereco_destinatario,
+            b.numero_destinatario,
+            b.bairro_destinatario,
+            b.cidade_destinatario,
+            b.uf_destinatario,
+            b.cep_destinatario,
+            b.nm_transportadora,
+            b.cnpj_transportadora,
+            b.cidade_transportadora,
+            b.uf_transportadora,
+            b.qt_volume,
+            b.especie_volume,
+            b.peso_liquido,
+            b.peso_bruto,
+            b.nm_empresa,
+            b.nm_fantasia_empresa,
+            b.cd_cgc_empresa,
+            b.cd_ie_empresa,
+            b.nm_endereco_empresa,
+            b.cd_numero,
+            b.nm_bairro_empresa,
+            b.nm_cidade_empresa,
+            b.sg_estado_empresa,
+            b.cd_cep_empresa,
+            b.cd_telefone_empresa,
+            CASE WHEN ISNULL(b.qt_volume, 0) <= 0 THEN 1 ELSE b.qt_volume END AS qt_volume_normalizado,
+            t.n AS nr_volume
+        FROM Base AS b
+        JOIN Tally AS t
+          ON t.n <= CASE WHEN ISNULL(b.qt_volume, 0) <= 0 THEN 1 ELSE b.qt_volume END;
         /*-----------------------------------------------------------------------------------------
           4) Validação de existência de dados
         -----------------------------------------------------------------------------------------*/
-        IF NOT EXISTS (SELECT 1 FROM Volumes)
+        IF NOT EXISTS (SELECT 1 FROM @Volumes)
             THROW 50004, 'Nenhum dado encontrado para a nota informada.', 1;
 
         /*-----------------------------------------------------------------------------------------
@@ -259,7 +391,7 @@ N'<style>
                     '<div class="section"><strong>NFe:</strong> ' + ISNULL(v.cd_identificacao_nota_saida, '') + '</div>' +
                     '<div class="barcode">' + ISNULL(v.cd_identificacao_nota_saida, '') + '</div>' +
                 '</div>'
-            FROM Volumes AS v
+            FROM @Volumes AS v
             ORDER BY v.cd_nota_saida, v.nr_volume
             FOR XML PATH(''), TYPE
         ).value('.', 'NVARCHAR(MAX)');
