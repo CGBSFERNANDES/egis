@@ -10,19 +10,19 @@ GO
   Stored Procedure : Microsoft SQL Server 2016
   Autor(es)        : Codex (assistente)
   Banco de Dados   : Egissql - Banco do Cliente
-  Objetivo         : RelatÃ³rio HTML - Contrato de ServiÃ§os (cd_relatorio = 422)
+  Objetivo         : Relatório HTML - Contrato de Serviços (cd_relatorio = 422)
 
   Requisitos:
-    - Somente 1 parÃ¢metro de entrada (@json)
+    - Somente 1 parâmetro de entrada (@json)
     - SET NOCOUNT ON / TRY...CATCH
     - Sem cursor
     - Performance para grandes volumes
-    - CÃ³digo comentado
+    - Código comentado
 
-  ObservaÃ§Ãµes:
+  Observações:
     - Entrada: @json = '[{"cd_contrato_servico": <int>}]'
-    - Dados extraÃ­dos da view dbo.vw_contrato_servico_cliente
-    - Retorna HTML no padrÃ£o RelatorioHTML
+    - Dados extraídos da view dbo.vw_contrato_servico_cliente
+    - Retorna HTML no padrão RelatorioHTML
 -------------------------------------------------------------------------------------------------*/
 CREATE PROCEDURE dbo.pr_egis_relatorio_contrato_servico
     @json NVARCHAR(MAX) = NULL
@@ -35,7 +35,7 @@ BEGIN
         @cd_relatorio          INT           = 422,
         @cd_empresa            INT           = NULL,
         @cd_contrato_servico   INT           = NULL,
-        @titulo                VARCHAR(200)  = 'Contrato de ServiÃ§os',
+        @titulo                VARCHAR(200)  = 'Contrato de Serviços',
         @logo                  VARCHAR(400)  = 'logo_gbstec_sistema.jpg',
         @nm_cor_empresa        VARCHAR(20)   = '#1976D2',
         @nm_endereco_empresa   VARCHAR(200)  = '',
@@ -54,10 +54,10 @@ BEGIN
 
     BEGIN TRY
         /*-----------------------------------------------------------------------------------------
-          1) ValidaÃ§Ã£o e normalizaÃ§Ã£o do JSON (aceita array [ { ... } ])
+          1) Validação e normalização do JSON (aceita array [ { ... } ])
         -----------------------------------------------------------------------------------------*/
         IF NULLIF(@json, N'') IS NULL OR ISJSON(@json) <> 1
-            THROW 50001, 'Payload JSON invÃ¡lido ou vazio em @json.', 1;
+            THROW 50001, 'Payload JSON inválido ou vazio em @json.', 1;
 
         IF JSON_VALUE(@json, '$[0]') IS NOT NULL
             SET @json = JSON_QUERY(@json, '$[0]');
@@ -66,10 +66,10 @@ BEGIN
             @cd_contrato_servico = TRY_CAST(JSON_VALUE(@json, '$.cd_contrato_servico') AS INT);
 
         IF ISNULL(@cd_contrato_servico, 0) = 0
-            THROW 50002, 'cd_contrato_servico nÃ£o informado.', 1;
+            THROW 50002, 'cd_contrato_servico não informado.', 1;
 
         /*-----------------------------------------------------------------------------------------
-          2) CabeÃ§alho do relatÃ³rio (relatorio + empresa)
+          2) Cabeçalho do relatório (relatorio + empresa)
         -----------------------------------------------------------------------------------------*/
         SELECT
             @titulo              = ISNULL(r.nm_relatorio, @titulo),
@@ -93,13 +93,13 @@ BEGIN
             @cd_telefone_empresa = ISNULL(e.cd_telefone_empresa, ''),
             @nm_email_internet   = ISNULL(e.nm_email_internet, ''),
             @cd_cnpj_empresa     = ISNULL(e.cd_cgc_empresa, '')
-        FROM Empresa AS e
+        FROM egisadmin.dbo.Empresa AS e
         LEFT JOIN Cidade AS c  ON c.cd_cidade  = e.cd_cidade
         LEFT JOIN Estado AS est ON est.cd_estado = c.cd_estado
         WHERE e.cd_empresa = @cd_empresa;
 
         /*-----------------------------------------------------------------------------------------
-          3) Carrega dados do contrato (view obrigatÃ³ria)
+          3) Carrega dados do contrato (view obrigatória)
         -----------------------------------------------------------------------------------------*/
         SELECT TOP (1)
             *
@@ -108,7 +108,7 @@ BEGIN
         WHERE cd_contrato_servico = @cd_contrato_servico;
 
         IF NOT EXISTS (SELECT 1 FROM #contrato_servico)
-            THROW 50003, 'Contrato nÃ£o encontrado em vw_contrato_servico_cliente.', 1;
+            THROW 50003, 'Contrato não encontrado em vw_contrato_servico_cliente.', 1;
 
         /*-----------------------------------------------------------------------------------------
           4) Converte o registro do contrato em pares Campo/Valor (sem cursor)
@@ -132,7 +132,7 @@ BEGIN
         ORDER BY c.column_id;
 
         IF NULLIF(@sql, N'') IS NULL
-            THROW 50004, 'NÃ£o foi possÃ­vel obter as colunas de vw_contrato_servico_cliente.', 1;
+            THROW 50004, 'Não foi possível obter as colunas de vw_contrato_servico_cliente.', 1;
 
         EXEC sp_executesql @sql;
 
@@ -163,7 +163,7 @@ N'<style>
                     N'<div class="header__logo"><img src="' + @logo + N'" alt="Logo" /></div>' +
                     N'<div class="header__title">' +
                         N'<h1>' + ISNULL(@nm_titulo_relatorio, @titulo) + N'</h1>' +
-                        N'<span>EmissÃ£o: ' + @data_hora_atual + N'</span>' +
+                        N'<span>Emissão: ' + @data_hora_atual + N'</span>' +
                     N'</div>' +
                 N'</div>' +
                 N'<div class="company">' +
@@ -196,8 +196,8 @@ N'<style>
         SELECT ISNULL(@html, N'') AS RelatorioHTML;
 
         /*-----------------------------------------------------------------------------------------
-          6) IntegraÃ§Ã£o com tabela de log (quando aplicÃ¡vel)
-             - Caso exista uma tabela de log padrÃ£o no ambiente, registrar aqui.
+          6) Integração com tabela de log (quando aplicável)
+             - Caso exista uma tabela de log padrão no ambiente, registrar aqui.
         -----------------------------------------------------------------------------------------*/
 
     END TRY

@@ -1,5 +1,6 @@
-IF OBJECT_ID('dbo.pr_egis_relatorio_balancete_verificacao', 'P') IS NOT NULL
-    DROP PROCEDURE dbo.pr_egis_relatorio_balancete_verificacao;
+IF OBJECT_ID('dbo.pr_egis_relatorio_balancete_verificacao', 'P') 
+	IS NOT NULL
+  DROP PROCEDURE dbo.pr_egis_relatorio_balancete_verificacao;
 GO
 
 /*-------------------------------------------------------------------------------------------------
@@ -68,21 +69,34 @@ BEGIN
         /*-----------------------------------------------------------------------------------------
           2) Normaliza JSON (aceita array [ { ... } ])
         -----------------------------------------------------------------------------------------*/
-        IF NULLIF(@json, N'') IS NOT NULL AND ISJSON(@json) = 1
-        BEGIN
-            IF JSON_VALUE(@json, '$[0]') IS NOT NULL
-                SET @json = JSON_QUERY(@json, '$[0]');
+        
+if @json<>''
+begin
+  select                     
+    1                                                    as id_registro,
+    IDENTITY(int,1,1)                                    as id,
+    valores.[key]  COLLATE SQL_Latin1_General_CP1_CI_AI  as campo,                     
+    valores.[value]              as valor                    
+                    
+    into #json                    
+    from                
+      openjson(@json)root                    
+      cross apply openjson(root.value) as valores      
 
-            SELECT
-                @cd_empresa               = COALESCE(@cd_empresa, TRY_CAST(JSON_VALUE(@json, '$.cd_empresa') AS INT)),
-                @cd_usuario               = COALESCE(@cd_usuario, TRY_CAST(JSON_VALUE(@json, '$.cd_usuario') AS INT)),
-                @dt_inicial               = COALESCE(@dt_inicial, TRY_CAST(JSON_VALUE(@json, '$.dt_inicial') AS DATE)),
-                @dt_final                 = COALESCE(@dt_final,   TRY_CAST(JSON_VALUE(@json, '$.dt_final')   AS DATE)),
-                @ic_parametro             = COALESCE(@ic_parametro, TRY_CAST(JSON_VALUE(@json, '$.ic_parametro') AS INT)),
-                @ic_imprime_sem_movimento = COALESCE(@ic_imprime_sem_movimento, TRY_CAST(JSON_VALUE(@json, '$.ic_imprime_sem_movimento') AS CHAR(1))),
-                @cd_mascara_conta_pesq    = COALESCE(@cd_mascara_conta_pesq, JSON_VALUE(@json, '$.cd_mascara_conta')),
-                @ic_preview               = COALESCE(@ic_preview, TRY_CAST(JSON_VALUE(@json, '$.ic_preview') AS BIT));
+-------------------------------------------------------------------------------------------------
+
+--select * from #json
+
+-------------------------------------------------------------------------------------------------
+
+  select @cd_empresa             = valor from #json where campo = 'cd_empresa'             
+  select @cd_usuario             = valor from #json where campo = 'cd_usuario'             
+  select @dt_inicial             = valor from #json where campo = 'dt_inicial'
+  select @dt_final               = valor from #json where campo = 'dt_final'
         END
+		
+
+		
 
         /*-----------------------------------------------------------------------------------------
           3) Datas padrão: tenta Parametro_Relatorio e cai no mês corrente
@@ -99,7 +113,7 @@ BEGIN
             SET @dt_inicial = DATEFROMPARTS(YEAR(GETDATE()), MONTH(GETDATE()), 1);
             SET @dt_final   = EOMONTH(@dt_inicial);
         END
-
+	
         /*-----------------------------------------------------------------------------------------
           4) Normaliza parâmetros obrigatórios
         -----------------------------------------------------------------------------------------*/
@@ -154,7 +168,7 @@ BEGIN
             @cd_telefone_empresa = ISNULL(e.cd_telefone_empresa, ''),
             @nm_email_internet   = ISNULL(e.nm_email_internet, ''),
             @nm_pais             = ISNULL(p.sg_pais, '')
-        FROM Empresa AS e
+        FROM egisadmin.dbo.empresa AS e
         LEFT JOIN Cidade AS c  ON c.cd_cidade  = e.cd_cidade
         LEFT JOIN Estado AS est ON est.cd_estado = c.cd_estado
         LEFT JOIN Pais AS p     ON p.cd_pais    = est.cd_pais
@@ -163,6 +177,8 @@ BEGIN
         /*-----------------------------------------------------------------------------------------
           7) Tabela temporária para capturar a saída do legado
         -----------------------------------------------------------------------------------------*/
+
+		
         CREATE TABLE #Balancete (
             cd_conta               INT,
             cd_conta_reduzido      INT,
@@ -192,8 +208,8 @@ BEGIN
             @dt_inicial               = @dt_inicial,
             @dt_final                 = @dt_final,
             @cd_mascara_conta_pesq    = @cd_mascara_conta_pesq,
-            @cd_usuario               = ISNULL(@cd_usuario, 0),
-            @cd_controle              = 0;
+            @cd_usuario               = @cd_usuario,
+            @cd_controle              = 0
 
         /*-----------------------------------------------------------------------------------------
           8) Projeção final (colunas de saída)
@@ -311,6 +327,16 @@ BEGIN
             '    h1 { color: ' + @nm_cor_empresa + '; margin-bottom: 4px; }' +
             '    h3 { color: #555; margin-top: 0; }' +
             '    table { width: 100%; border-collapse: collapse; margin-top: 20px; }' +
+			'    .section-title {
+            background-color: #1976D2;
+            color: white;
+            padding: 5px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            font-size: 120%;
+			text-align: center;
+		
+        }'+
             '    th, td { border: 1px solid #ddd; padding: 8px; font-size: 12px; }' +
             '    th { background-color: #f2f2f2; text-align: left; }' +
             '    tfoot td { background-color: #fafafa; font-weight: bold; }' +
@@ -328,22 +354,47 @@ BEGIN
             '      <p><strong>Período: </strong>' + CONVERT(CHAR(10), @dt_inicial, 103) + ' a ' + CONVERT(CHAR(10), @dt_final, 103) + '</p>' +
             '    </div>' +
             '  </div>' +
-            '  <div style="margin-top:10px;">' + ISNULL(@ds_relatorio, '') + '</div>' +
-            '  <div style="text-align:right; font-size:11px; margin-top:10px;">Gerado em: ' + @data_hora_atual + '</div>';
+            '  <div class="section-title" style="margin-top:10px;">' + ISNULL(@ds_relatorio, '') + '</div>' 
 
-        SET @html_footer = '  </body></html>';
+        SET @html_footer = '
+              <div style="text-align:right; font-size:11px; margin-top:10px;">Gerado em: ' + @data_hora_atual + '</div>  </body></html>';
         SET @html        = @html_header + @html_table + @html_footer;
 
         SELECT ISNULL(@html, '') AS RelatorioHTML;
     END TRY
-    BEGIN CATCH
-        DECLARE @errMsg NVARCHAR(2048) = FORMATMESSAGE(
-            'pr_egis_relatorio_balancete_verificacao falhou: %s (linha %d)',
-            ERROR_MESSAGE(),
-            ERROR_LINE()
-        );
+BEGIN CATCH
+    DECLARE 
+        @ErrorLine INT = ERROR_LINE(),
+        @errMsg NVARCHAR(2048);
 
-        THROW ERROR_NUMBER(), @errMsg, ERROR_STATE();
-    END CATCH
+    SET @errMsg = FORMATMESSAGE(
+        'pr_egis_relatorio_balancete_verificacao falhou: %s (linha %d)',
+        ERROR_MESSAGE(),
+        @ErrorLine
+    );
+
+    THROW 50001, @errMsg, 1;
+END CATCH
+
 END
 GO
+exec pr_egis_relatorio_balancete_verificacao '[{
+    "cd_menu": "0",
+    "cd_form": 216,
+    "cd_documento_form": 60,
+    "cd_parametro_form": "2",
+    "cd_usuario": "4915",
+    "cd_cliente_form": "0",
+    "cd_contato_form": "4915",
+    "cd_filtro_tabela": null,
+    "dt_usuario": "2026-01-06",
+    "lookup_formEspecial": {},
+    "cd_parametro_relatorio": "60",
+    "cd_relatorio": "419",
+    "dt_inicial": "2025-12-05",
+    "dt_final": "2026-01-05",
+    "cd_produto": null,
+    "detalhe": [],
+    "lote": [],
+    "cd_modulo": "252"
+}]'

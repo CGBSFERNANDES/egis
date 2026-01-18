@@ -1,9 +1,8 @@
 ﻿IF EXISTS (SELECT name 
-	   FROM   sysobjects 
-	   WHERE  name = N'pr_egis_relatorio_ordem_separacao_categoria' 
-	   AND 	  type = 'P')
-    DROP PROCEDURE pr_egis_relatorio_ordem_separacao_categoria
-
+           FROM   sysobjects 
+           WHERE  name = N'pr_egis_relatorio_ordem_separacao_categoria' 
+           AND    type = 'P')
+    DROP PROCEDURE dbo.pr_egis_relatorio_ordem_separacao_categoria
 GO
 
 -------------------------------------------------------------------------------
@@ -18,7 +17,7 @@ GO
 --Autor(es)        : Joao Pedro Marcal / Codex
 --Banco de Dados   : Egissql - Banco do Cliente 
 --
---Objetivo         : Relat�rio Padr�o Egis HTML - Ordem de Separa��o por Categoria
+--Objetivo         : Relatório Padrão Egis HTML - Ordem de Separaçãoo por Categoria
 --Data             : 10.01.2025	
 --Altera��o        : 2025-XX-XX - Vers�o com quebra por categoria de produto (cd_relatorio = 424)
 --
@@ -698,6 +697,8 @@ from
 --    cd_item_pedido_venda
 --end
 ------------------------------------------------------------------------------------------------------------
+--Categoria
+--
 select
 	identity(int,1,1)               as cd_controle,
 	isnull(nm_categoria_produto,'') as nm_categoria_produto
@@ -711,7 +712,9 @@ order by
 	nm_categoria_produto
 
 select
-	identity(int,1,1) as cd_controle,
+	--identity(int,1,1) as cd_controle_detalhe,
+    --select 
+    ROW_NUMBER() over (order by nm_categoria_produto, cd_item_pedido_venda) as cd_controle_detalhe,
 	*
 into
 	#CategoriaSeparacaoDetalhe
@@ -1085,7 +1088,7 @@ while exists ( select cd_controle from #CategoriaSeparacao )
 begin  
   
   select top 1  
-    @id_categoria        = cd_controle,
+    @id_categoria         = cd_controle,
 	@nm_categoria_produto = nm_categoria_produto
   from  
     #CategoriaSeparacao  
@@ -1100,7 +1103,7 @@ begin
   while exists (select cd_controle from #CategoriaSeparacaoDetalhe where isnull(nm_categoria_produto,'') = isnull(@nm_categoria_produto,''))  
   begin
 	  select top 1  
-		@id           = cd_controle,  
+		@id           = cd_controle_detalhe,  
 
 		@html_detalhe = @html_detalhe + '  
 			   <tr >      
@@ -1121,9 +1124,9 @@ begin
 	  where
 		isnull(nm_categoria_produto,'') = isnull(@nm_categoria_produto,'')
 	  order by  
-		cd_controle  
+		cd_controle_detalhe  
 
-	  delete from #CategoriaSeparacaoDetalhe  where  cd_controle = @id  
+	  delete from #CategoriaSeparacaoDetalhe  where  cd_controle_detalhe = @id  
   end
   
   delete from #CategoriaSeparacao  where  cd_controle = @id_categoria  
@@ -1215,7 +1218,8 @@ set @html         =
 
 ---------------------
 
-select 'OrdemSeparacao_'+CAST(ISNULL(@cd_pedido_venda, 0) AS NVARCHAR) AS pdfName,isnull(@html,'') as RelatorioHTML
+select --'OrdemSeparacao_'+CAST(ISNULL(@cd_pedido_venda, 0) AS NVARCHAR) AS pdfName,
+  isnull(@html,'') as RelatorioHTML
 
 -------------------------------------------------------------------------------------------------------------------------------------------------------
 --select isnull(@html,'') as RelatorioHTML
@@ -1240,6 +1244,6 @@ go
 ------------------------------------------------------------------------------
 --exec pr_egis_relatorio_padrao
 ------------------------------------------------------------------------------
---exec pr_egis_relatorio_ordem_separacao_categoria '[{"cd_pedido_venda": 253}]'
+--exec pr_egis_relatorio_ordem_separacao_categoria '[{"cd_pedido_venda": 1264}]'
 ------------------------------------------------------------------------------
 --exec pr_egis_relatorio_padrao '[{"cd_documento_form": 170985, "cd_empresa": 317, "cd_item_documento_form": "0", "cd_item_processo": "", "cd_menu": 7852, "cd_modulo": 212, "cd_parametro": "0", "cd_processo": "", "cd_relatorio": 264, "cd_usuario": 4357}]'

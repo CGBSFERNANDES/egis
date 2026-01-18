@@ -10,30 +10,31 @@ GO
   Stored Procedure : Microsoft SQL Server 2016
   Autor(es)        : ChatGPT (OpenAI)
   Banco de Dados   : Egissql - Banco do Cliente
-  Objetivo         : Relat√≥rio 425 - Etiqueta de Volume (Nota Fiscal)
+  Objetivo         : RelatÛrio 425 - Etiqueta de Volume (Nota Fiscal)
                      - Gera HTML (RelatorioHTML) de etiqueta de volume conforme qt_volume.
                      - Uma etiqueta por volume, exibindo os dados principais da nota.
 
-  Par√¢metro √∫nico de entrada (JSON):
+  Par‚metro ˙nico de entrada (JSON):
     @json NVARCHAR(MAX)  --> [{"cd_nota_saida": <int>}]
 
-  Requisitos T√©cnicos:
+  Requisitos TÈcnicos:
     - SET NOCOUNT ON
     - TRY...CATCH
     - Sem cursor (set-based)
-    - Compat√≠vel com SQL Server 2016
-    - C√≥digo comentado
+    - CompatÌvel com SQL Server 2016
+    - CÛdigo comentado
 
   Fontes de dados de leitura:
     - vw_nfe_emitente_nota_fiscal (emitente)
-    - vw_nfe_identificacao_nota_fiscal (identifica√ß√£o da nota)
-    - vw_nfe_destintario_nota_fiscal (destinat√°rio)
+    - vw_nfe_identificacao_nota_fiscal (identificaÁ„o da nota)
+    - vw_nfe_destintario_nota_fiscal (destinat·rio)
     - vw_nfe_transporte_nota_fiscal (transporte/volumes)
     - egisadmin.dbo.empresa (dados da empresa)
 -------------------------------------------------------------------------------------------------*/
 CREATE PROCEDURE dbo.pr_egis_etiqueta_volume_nota
-    @json NVARCHAR(MAX) -- Par√¢metro √∫nico vindo do front-end
+    @json NVARCHAR(MAX) = '' -- Par‚metro ˙nico vindo do front-end
 AS
+
 BEGIN
     SET NOCOUNT ON;
     SET XACT_ABORT ON;
@@ -48,14 +49,18 @@ BEGIN
             SET @jsonNormalized = N'[{}]';
 
         IF ISJSON(@jsonNormalized) = 0
-            THROW 50001, 'JSON de entrada inv√°lido ou mal formatado.', 1;
+            THROW 50001, 'JSON de entrada inv·lido ou mal formatado.', 1;
+
+        --select @jsonNormalized
 
         -- Aceita objeto isolado e converte para array
-        IF JSON_VALUE(@jsonNormalized, '$[0]') IS NULL
-            SET @jsonNormalized = CONCAT('[', @jsonNormalized, ']');
+        --IF JSON_VALUE(@jsonNormalized, '$[0]') IS NULL
+        --    SET @jsonNormalized = CONCAT('[', @jsonNormalized, ']');
+
+        --select @jsonNormalized
 
         /*-----------------------------------------------------------------------------------------
-          2) Carrega par√¢metros em tabela (sem cursor)
+          2) Carrega par‚metros em tabela (sem cursor)
         -----------------------------------------------------------------------------------------*/
         DECLARE @Parametros TABLE
         (
@@ -71,14 +76,64 @@ BEGIN
         ) AS j;
 
         IF NOT EXISTS (SELECT 1 FROM @Parametros)
-            THROW 50002, 'Nenhum par√¢metro informado em @json.', 1;
+            THROW 50002, 'Nenhum par‚metro informado em @json.', 1;
+
+        --select * from @Parametros
 
         IF EXISTS (SELECT 1 FROM @Parametros WHERE cd_nota_saida IS NULL)
-            THROW 50003, 'Par√¢metro cd_nota_saida √© obrigat√≥rio.', 1;
+            THROW 50003, 'Par‚metro cd_nota_saida È obrigatÛrio.', 1;
 
         /*-----------------------------------------------------------------------------------------
           3) Carrega dados principais da nota/empresa
         -----------------------------------------------------------------------------------------*/
+        DECLARE @Volumes TABLE
+        (
+            cd_nota_saida INT NULL,
+            cd_identificacao_nota_saida VARCHAR(60) NULL,
+            nr_nota VARCHAR(20) NULL,
+            nr_serie VARCHAR(10) NULL,
+            nm_emitente VARCHAR(120) NULL,
+            nm_fantasia_emitente VARCHAR(120) NULL,
+            cnpj_emitente VARCHAR(20) NULL,
+            ie_emitente VARCHAR(20) NULL,
+            endereco_emitente VARCHAR(200) NULL,
+            numero_emitente VARCHAR(20) NULL,
+            bairro_emitente VARCHAR(100) NULL,
+            cidade_emitente VARCHAR(100) NULL,
+            uf_emitente VARCHAR(10) NULL,
+            cep_emitente VARCHAR(15) NULL,
+            nm_destinatario VARCHAR(120) NULL,
+            nm_fantasia_destinatario VARCHAR(120) NULL,
+            doc_destinatario VARCHAR(20) NULL,
+            endereco_destinatario VARCHAR(200) NULL,
+            numero_destinatario VARCHAR(20) NULL,
+            bairro_destinatario VARCHAR(100) NULL,
+            cidade_destinatario VARCHAR(100) NULL,
+            uf_destinatario VARCHAR(10) NULL,
+            cep_destinatario VARCHAR(15) NULL,
+            nm_transportadora VARCHAR(120) NULL,
+            cnpj_transportadora VARCHAR(20) NULL,
+            cidade_transportadora VARCHAR(100) NULL,
+            uf_transportadora VARCHAR(10) NULL,
+            qt_volume INT NULL,
+            especie_volume VARCHAR(60) NULL,
+            peso_liquido VARCHAR(30) NULL,
+            peso_bruto VARCHAR(30) NULL,
+            nm_empresa VARCHAR(120) NULL,
+            nm_fantasia_empresa VARCHAR(120) NULL,
+            cd_cgc_empresa VARCHAR(20) NULL,
+            cd_ie_empresa VARCHAR(20) NULL,
+            nm_endereco_empresa VARCHAR(200) NULL,
+            cd_numero VARCHAR(20) NULL,
+            nm_bairro_empresa VARCHAR(100) NULL,
+            nm_cidade_empresa VARCHAR(100) NULL,
+            sg_estado_empresa VARCHAR(10) NULL,
+            cd_cep_empresa VARCHAR(15) NULL,
+            cd_telefone_empresa VARCHAR(30) NULL,
+            qt_volume_normalizado INT NOT NULL,
+            nr_volume INT NOT NULL
+        );
+
         ;WITH Base AS
         (
             SELECT
@@ -203,25 +258,109 @@ BEGIN
         (
             SELECT ROW_NUMBER() OVER (ORDER BY (SELECT NULL)) AS n
             FROM sys.all_objects
-        ),
-        Volumes AS
-        (
-            SELECT
-                b.*,
-                CASE WHEN ISNULL(b.qt_volume, 0) <= 0 THEN 1 ELSE b.qt_volume END AS qt_volume_normalizado,
-                t.n AS nr_volume
-            FROM Base AS b
-            JOIN Tally AS t
-              ON t.n <= CASE WHEN ISNULL(b.qt_volume, 0) <= 0 THEN 1 ELSE b.qt_volume END
         )
+        INSERT INTO @Volumes (
+            cd_nota_saida,
+            cd_identificacao_nota_saida,
+            nr_nota,
+            nr_serie,
+            nm_emitente,
+            nm_fantasia_emitente,
+            cnpj_emitente,
+            ie_emitente,
+            endereco_emitente,
+            numero_emitente,
+            bairro_emitente,
+            cidade_emitente,
+            uf_emitente,
+            cep_emitente,
+            nm_destinatario,
+            nm_fantasia_destinatario,
+            doc_destinatario,
+            endereco_destinatario,
+            numero_destinatario,
+            bairro_destinatario,
+            cidade_destinatario,
+            uf_destinatario,
+            cep_destinatario,
+            nm_transportadora,
+            cnpj_transportadora,
+            cidade_transportadora,
+            uf_transportadora,
+            qt_volume,
+            especie_volume,
+            peso_liquido,
+            peso_bruto,
+            nm_empresa,
+            nm_fantasia_empresa,
+            cd_cgc_empresa,
+            cd_ie_empresa,
+            nm_endereco_empresa,
+            cd_numero,
+            nm_bairro_empresa,
+            nm_cidade_empresa,
+            sg_estado_empresa,
+            cd_cep_empresa,
+            cd_telefone_empresa,
+            qt_volume_normalizado,
+            nr_volume
+        )
+        SELECT
+            b.cd_nota_saida,
+            b.cd_identificacao_nota_saida,
+            b.nr_nota,
+            b.nr_serie,
+            b.nm_emitente,
+            b.nm_fantasia_emitente,
+            b.cnpj_emitente,
+            b.ie_emitente,
+            b.endereco_emitente,
+            b.numero_emitente,
+            b.bairro_emitente,
+            b.cidade_emitente,
+            b.uf_emitente,
+            b.cep_emitente,
+            b.nm_destinatario,
+            b.nm_fantasia_destinatario,
+            b.doc_destinatario,
+            b.endereco_destinatario,
+            b.numero_destinatario,
+            b.bairro_destinatario,
+            b.cidade_destinatario,
+            b.uf_destinatario,
+            b.cep_destinatario,
+            b.nm_transportadora,
+            b.cnpj_transportadora,
+            b.cidade_transportadora,
+            b.uf_transportadora,
+            b.qt_volume,
+            b.especie_volume,
+            b.peso_liquido,
+            b.peso_bruto,
+            b.nm_empresa,
+            b.nm_fantasia_empresa,
+            b.cd_cgc_empresa,
+            b.cd_ie_empresa,
+            b.nm_endereco_empresa,
+            b.cd_numero,
+            b.nm_bairro_empresa,
+            b.nm_cidade_empresa,
+            b.sg_estado_empresa,
+            b.cd_cep_empresa,
+            b.cd_telefone_empresa,
+            CASE WHEN ISNULL(b.qt_volume, 0) <= 0 THEN 1 ELSE b.qt_volume END AS qt_volume_normalizado,
+            t.n AS nr_volume
+        FROM Base AS b
+        JOIN Tally AS t
+          ON t.n <= CASE WHEN ISNULL(b.qt_volume, 0) <= 0 THEN 1 ELSE b.qt_volume END;
         /*-----------------------------------------------------------------------------------------
-          4) Valida√ß√£o de exist√™ncia de dados
+          4) ValidaÁ„o de existÍncia de dados
         -----------------------------------------------------------------------------------------*/
-        IF NOT EXISTS (SELECT 1 FROM Volumes)
+        IF NOT EXISTS (SELECT 1 FROM @Volumes)
             THROW 50004, 'Nenhum dado encontrado para a nota informada.', 1;
 
         /*-----------------------------------------------------------------------------------------
-          5) Monta HTML de sa√≠da (RelatorioHTML)
+          5) Monta HTML de saÌda (RelatorioHTML)
         -----------------------------------------------------------------------------------------*/
         DECLARE @html NVARCHAR(MAX) = N'';
         DECLARE @style NVARCHAR(MAX) =
@@ -252,14 +391,14 @@ N'<style>
                     '</div>' +
                     '<div class="title">Etiqueta de Volume - NF-e</div>' +
                     '<div class="section"><strong>Emitente:</strong> ' + ISNULL(v.nm_emitente, '') + '</div>' +
-                    '<div class="section"><strong>Destinat√°rio:</strong> ' + ISNULL(v.nm_destinatario, '') + '</div>' +
+                    '<div class="section"><strong>Destinat·rio:</strong> ' + ISNULL(v.nm_destinatario, '') + '</div>' +
                     '<div class="section"><strong>Transportadora:</strong> ' + ISNULL(v.nm_transportadora, '') + '</div>' +
-                    '<div class="section"><strong>Nota:</strong> ' + ISNULL(CONVERT(VARCHAR(20), v.nr_nota), '') + ' S√©rie ' + ISNULL(CONVERT(VARCHAR(10), v.nr_serie), '') + '</div>' +
-                    '<div class="section"><strong>Esp√©cie:</strong> ' + ISNULL(v.especie_volume, '') + ' <strong>Peso:</strong> ' + ISNULL(CONVERT(VARCHAR(20), v.peso_liquido), '') + '</div>' +
+                    '<div class="section"><strong>Nota:</strong> ' + ISNULL(CONVERT(VARCHAR(20), v.nr_nota), '') + ' SÈrie ' + ISNULL(CONVERT(VARCHAR(10), v.nr_serie), '') + '</div>' +
+                    '<div class="section"><strong>EspÈcie:</strong> ' + ISNULL(v.especie_volume, '') + ' <strong>Peso:</strong> ' + ISNULL(CONVERT(VARCHAR(20), v.peso_liquido), '') + '</div>' +
                     '<div class="section"><strong>NFe:</strong> ' + ISNULL(v.cd_identificacao_nota_saida, '') + '</div>' +
                     '<div class="barcode">' + ISNULL(v.cd_identificacao_nota_saida, '') + '</div>' +
                 '</div>'
-            FROM Volumes AS v
+            FROM @Volumes AS v
             ORDER BY v.cd_nota_saida, v.nr_volume
             FOR XML PATH(''), TYPE
         ).value('.', 'NVARCHAR(MAX)');
@@ -276,3 +415,9 @@ N'<style>
     END CATCH;
 END;
 GO
+
+--select * from nota_saida
+
+exec pr_egis_etiqueta_volume_nota '[{"cd_nota_saida": 553}]'
+
+----------------

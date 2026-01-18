@@ -1,4 +1,4 @@
-IF OBJECT_ID('dbo.pr_egis_canhoto_entrega_nota_saida', 'P') IS NOT NULL
+﻿IF OBJECT_ID('dbo.pr_egis_canhoto_entrega_nota_saida', 'P') IS NOT NULL
     DROP PROCEDURE dbo.pr_egis_canhoto_entrega_nota_saida;
 GO
 
@@ -113,7 +113,6 @@ BEGIN
                 ns.cd_nota_saida,
                 COALESCE(ns.cd_identificacao_nota_saida, ident.cd_identificacao_nota_saida) AS cd_identificacao_nota_saida,
                 ns.dt_nota_saida,
-                ns.vl_total AS vl_total_nota,
                 ident.nNF AS nr_nota,
                 ident.serie AS nr_serie,
                 emit.xNome AS nm_emitente,
@@ -149,11 +148,8 @@ BEGIN
                 emp.nm_cidade_empresa,
                 emp.sg_estado_empresa,
                 emp.cd_cep_empresa,
-                emp.cd_telefone_empresa,
-                cp.nm_condicao_pagamento
+                emp.cd_telefone_empresa
             FROM nota_saida AS ns WITH (NOLOCK)
-            LEFT JOIN condicao_pagamento AS cp WITH (NOLOCK)
-                ON cp.cd_condicao_pagamento = ns.cd_condicao_pagamento
             OUTER APPLY (
                 SELECT TOP (1)
                     v.cd_identificacao_nota_saida,
@@ -239,47 +235,35 @@ BEGIN
                 COUNT(*) OVER () AS total_registros
             FROM Base AS b
         )
+
+        SELECT * INTO #TmpDados FROM Dados; -- consome a CTE
+
         /*-----------------------------------------------------------------------------------------
           4) Validação de existência de dados
         -----------------------------------------------------------------------------------------*/
-        IF NOT EXISTS (SELECT 1 FROM Dados)
+        IF NOT EXISTS (SELECT 1 FROM #TmpDados)
             THROW 50004, 'Nenhum dado encontrado para os filtros informados.', 1;
 
         /*-----------------------------------------------------------------------------------------
           5) Monta HTML de saída (RelatorioHTML)
         -----------------------------------------------------------------------------------------*/
         DECLARE @html NVARCHAR(MAX) = N'';
-        DECLARE @data_hora NVARCHAR(20) =
-            CONVERT(VARCHAR(10), GETDATE(), 103) + N' ' + CONVERT(VARCHAR(5), GETDATE(), 108);
         DECLARE @style NVARCHAR(MAX) =
 N'<style>
     body { font-family: ''Segoe UI'', Arial, sans-serif; color: #222; margin: 0; padding: 0; }
     .report { width: 100%; }
-    .canhoto { border: 1px solid #444; padding: 12px 14px; margin-bottom: 12px; box-sizing: border-box; }
-    .header { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
-    .logo { font-weight: 700; font-size: 20px; line-height: 1.1; }
-    .logo-sub { font-weight: 600; font-size: 11px; letter-spacing: 0.3px; }
-    .header-center { flex: 1; text-align: center; font-size: 16px; font-weight: 700; }
-    .header-right { text-align: right; font-size: 11px; min-width: 140px; }
-    .line { border-bottom: 1px solid #444; margin: 6px 0 10px; }
-    .label { font-weight: 700; }
-    .receipt-table { width: 100%; border-collapse: collapse; font-size: 11px; }
-    .box { border: 1px solid #444; vertical-align: top; padding: 6px; }
-    .box-left { width: 78%; }
-    .box-right { width: 22%; text-align: center; }
-    .box-title { font-size: 10px; font-weight: 700; margin-bottom: 6px; }
-    .box-row { display: flex; border-top: 1px solid #444; }
-    .box-cell { flex: 1; padding: 6px; border-right: 1px solid #444; min-height: 20px; }
-    .box-cell:last-child { border-right: 0; }
-    .nf-title { font-size: 12px; font-weight: 700; }
-    .nf-number { font-size: 18px; font-weight: 700; margin: 4px 0; }
-    .nf-serie { font-size: 12px; font-weight: 700; }
-    .info-row { display: flex; justify-content: space-between; gap: 12px; font-size: 11px; margin-top: 6px; }
-    .info-left { flex: 1; }
-    .dest-name { font-weight: 700; }
+    .canhoto { border: 1px solid #444; padding: 12px 16px; margin-bottom: 12px; box-sizing: border-box; }
+    .title { font-size: 16px; font-weight: 700; text-align: center; margin-bottom: 8px; }
+    .row { display: flex; justify-content: space-between; gap: 12px; font-size: 12px; }
+    .col { flex: 1; }
+    .label { font-weight: 600; }
+    .section { margin: 6px 0; font-size: 12px; }
+    .barcode { font-size: 14px; letter-spacing: 2px; text-align: center; font-weight: 700; margin-top: 8px; }
     .cut-line { display: flex; align-items: center; gap: 8px; margin: 6px 0 12px; color: #666; }
     .cut-text { flex: 1; overflow: hidden; white-space: nowrap; font-size: 11px; }
     .scissor { font-size: 14px; }
+    .signature { margin-top: 12px; font-size: 12px; display: flex; justify-content: space-between; gap: 12px; }
+    .signature span { flex: 1; border-top: 1px solid #444; padding-top: 4px; text-align: center; }
 </style>';
 
         SET @html = @style + N'<div class="report">';
@@ -288,45 +272,33 @@ N'<style>
         (
             SELECT
                 '<div class="canhoto">' +
-                    '<div class="header">' +
-                        '<div class="logo">' +
-                            ISNULL(COALESCE(NULLIF(d.nm_fantasia_empresa, ''''), NULLIF(d.nm_empresa, ''''), NULLIF(d.nm_emitente, '''')), '''') +
-                            '<div class="logo-sub">' +
-                                ISNULL(COALESCE(NULLIF(d.nm_empresa, ''''), NULLIF(d.nm_emitente, '''')), '''') +
-                            '</div>' +
-                        '</div>' +
-                        '<div class="header-center">Canhotos de Entrega</div>' +
-                        '<div class="header-right">' +
-                            '<div><span class="label">PÁG.:</span> 1</div>' +
-                            '<div><span class="label">DATA / HORA:</span> ' + @data_hora + '</div>' +
-                        '</div>' +
+                    '<div class="title">CANHOTO DE ENTREGA</div>' +
+                    '<div class="section"><span class="label">Empresa:</span> ' + ISNULL(d.nm_empresa, '') + '</div>' +
+                    '<div class="section"><span class="label">Endereço:</span> ' + ISNULL(d.nm_endereco_empresa, '') + ', ' + ISNULL(CONVERT(VARCHAR(20), d.cd_numero), '') +
+                        ' - ' + ISNULL(d.nm_bairro_empresa, '') + ' - ' + ISNULL(d.nm_cidade_empresa, '') + '/' + ISNULL(d.sg_estado_empresa, '') +
+                        ' CEP ' + ISNULL(d.cd_cep_empresa, '') +
                     '</div>' +
-                    '<div class="line"></div>' +
-                    '<table class="receipt-table">' +
-                        '<tr>' +
-                            '<td class="box box-left">' +
-                                '<div class="box-title">RECEBEMOS OS PRODUTOS / SERVIÇOS CONSTANTES NA NOTA FISCAL INDICADA AO LADO</div>' +
-                                '<div class="box-row">' +
-                                    '<div class="box-cell"><span class="label">DATA DE RECEBIMENTO</span><br>&nbsp;</div>' +
-                                    '<div class="box-cell"><span class="label">IDENTIFICAÇÃO E ASSINATURA DO RECEBEDOR</span><br>&nbsp;</div>' +
-                                '</div>' +
-                            '</td>' +
-                            '<td class="box box-right">' +
-                                '<div class="nf-title">NF-e</div>' +
-                                '<div class="nf-number">' + ISNULL(CONVERT(VARCHAR(20), d.nr_nota), '') + '</div>' +
-                                '<div class="nf-serie">Série: ' + ISNULL(CONVERT(VARCHAR(10), d.nr_serie), '') + '</div>' +
-                            '</td>' +
-                        '</tr>' +
-                    '</table>' +
-                    '<div class="info-row">' +
-                        '<div class="info-left">' +
-                            '<div class="dest-name">' + ISNULL(d.nm_destinatario, '') + '</div>' +
-                        '</div>' +
-                        '<div>' + ISNULL(NULLIF(d.nm_fantasia_destinatario, ''), '') + '</div>' +
+                    '<div class="row">' +
+                        '<div class="col"><span class="label">CNPJ:</span> ' + ISNULL(d.cd_cgc_empresa, '') + '</div>' +
+                        '<div class="col"><span class="label">IE:</span> ' + ISNULL(d.cd_ie_empresa, '') + '</div>' +
+                        '<div class="col"><span class="label">Telefone:</span> ' + ISNULL(d.cd_telefone_empresa, '') + '</div>' +
                     '</div>' +
-                    '<div class="info-row">' +
-                        '<div><span class="label">VALOR NOTA:</span> ' + ISNULL(dbo.fn_formata_valor(ISNULL(d.vl_total_nota, 0)), '') + '</div>' +
-                        '<div><span class="label">FORMA DE PAGAMENTO:</span> ' + ISNULL(d.nm_condicao_pagamento, '') + '</div>' +
+                    '<div class="section"><span class="label">Emitente:</span> ' + ISNULL(d.nm_emitente, '') + '</div>' +
+                    '<div class="section"><span class="label">Destinatário:</span> ' + ISNULL(d.nm_destinatario, '') + ' (' + ISNULL(d.doc_destinatario, '') + ')</div>' +
+                    '<div class="section"><span class="label">Endereço Destinatário:</span> ' + ISNULL(d.endereco_destinatario, '') + ', ' + ISNULL(d.numero_destinatario, '') +
+                        ' - ' + ISNULL(d.bairro_destinatario, '') + ' - ' + ISNULL(d.cidade_destinatario, '') + '/' + ISNULL(d.uf_destinatario, '') +
+                        ' CEP ' + ISNULL(d.cep_destinatario, '') +
+                    '</div>' +
+                    '<div class="row">' +
+                        '<div class="col"><span class="label">NF-e:</span> ' + ISNULL(CONVERT(VARCHAR(20), d.nr_nota), '') + '</div>' +
+                        '<div class="col"><span class="label">Série:</span> ' + ISNULL(CONVERT(VARCHAR(10), d.nr_serie), '') + '</div>' +
+                        '<div class="col"><span class="label">Emissão:</span> ' + ISNULL(CONVERT(VARCHAR(10), d.dt_nota_saida, 103), '') + '</div>' +
+                    '</div>' +
+                    '<div class="section"><span class="label">Transportadora:</span> ' + ISNULL(d.nm_transportadora, '') + ' (' + ISNULL(d.cnpj_transportadora, '') + ')</div>' +
+                    '<div class="barcode">' + cast(ISNULL(d.cd_identificacao_nota_saida, '') as varchar(20)) + '</div>' +
+                    '<div class="signature">' +
+                        '<span>Data de Recebimento</span>' +
+                        '<span>Assinatura do Recebedor</span>' +
                     '</div>' +
                 '</div>' +
                 CASE
@@ -335,7 +307,7 @@ N'<style>
                     ELSE
                         ''
                 END
-            FROM Dados AS d
+            FROM #TmpDados AS d
             ORDER BY d.rn
             FOR XML PATH(''), TYPE
         ).value('.', 'NVARCHAR(MAX)');
@@ -354,3 +326,5 @@ N'<style>
     END CATCH;
 END;
 GO
+
+exec pr_egis_canhoto_entrega_nota_saida '[{"dt_inicial":"12/01/2025", "dt_final": "12/31/2025"}]'

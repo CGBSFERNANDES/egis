@@ -26,6 +26,7 @@ GO
       "ic_parametro": 1,   -- 1=Analítico (padrão) | 2=Sintético
       "ic_preview": 0      -- 1 = retorna dataset ao invés do HTML
     }
+	
 -------------------------------------------------------------------------------------------------*/
 CREATE PROCEDURE dbo.pr_egis_relatorio_contabil_faturamento
     @json NVARCHAR(MAX) = NULL -- Parâmetros vindos do front-end (datas e flags opcionais)
@@ -62,7 +63,9 @@ BEGIN
             @nm_fantasia_empresa VARCHAR(200)  = '',
             @cd_numero_endereco  VARCHAR(20)   = '',
             @cd_cep_empresa      VARCHAR(20)   = '',
+			@cd_cnpj_empresa      VARCHAR(20)   = '',
             @nm_pais             VARCHAR(20)   = '',
+			@cd_inscestadual     VARCHAR(100)  = '',
             @data_hora_atual     VARCHAR(50)   = CONVERT(VARCHAR, GETDATE(), 103) + ' ' + CONVERT(VARCHAR, GETDATE(), 108);
 
         /*-----------------------------------------------------------------------------------------
@@ -129,8 +132,10 @@ BEGIN
             @sg_estado           = ISNULL(est.sg_estado, ''),
             @cd_telefone_empresa = ISNULL(e.cd_telefone_empresa, ''),
             @nm_email_internet   = ISNULL(e.nm_email_internet, ''),
-            @nm_pais             = ISNULL(p.sg_pais, '')
-        FROM Empresa AS e
+            @nm_pais             = ISNULL(p.sg_pais, ''),
+			@cd_cnpj_empresa     = ISNULL(dbo.fn_formata_cnpj(LTRIM(RTRIM(ISNULL(e.cd_cgc_empresa, '')))), ''),
+			@cd_inscestadual     = LTRIM(RTRIM(ISNULL(e.cd_iest_empresa, '')))
+        FROM egisadmin.dbo.empresa AS e
         LEFT JOIN Cidade AS c   ON c.cd_cidade  = e.cd_cidade
         LEFT JOIN Estado AS est ON est.cd_estado = c.cd_estado
         LEFT JOIN Pais AS p     ON p.cd_pais    = est.cd_pais
@@ -198,7 +203,7 @@ BEGIN
                 @html_header NVARCHAR(MAX),
                 @html_footer NVARCHAR(MAX),
                 @titulo_exibir VARCHAR(200);
-
+				
             SET @titulo_exibir = ISNULL(NULLIF(@nm_titulo_relatorio, ''), @titulo);
 
             SET @html_rows = (
@@ -236,22 +241,33 @@ BEGIN
                 '    th, td { border: 1px solid #ddd; padding: 8px; font-size: 12px; }' +
                 '    th { background-color: #f2f2f2; text-align: left; }' +
                 '    tfoot td { background-color: #fafafa; font-weight: bold; }' +
-                '  </style>' +
+					'    .section-title {  
+            background-color: #1976D2;  
+            color: white;  
+            padding: 5px;  
+            margin-bottom: 10px;  
+		    border-radius: 5px;  
+		    font-size: 100%;  
+		  }  ' +
+                '</style>' +
+                '</style>' +
                 '</head>' +
                 '<body>' +
-                '  <div style="display:flex; justify-content: space-between; align-items: center;">' +
-                '    <div style="width:30%; padding-right:20px;"><img src="' + @logo + '" alt="Logo" style="max-width: 220px;"></div>' +
-                '    <div style="width:70%; padding-left:10px;">' +
-                '      <h1>' + ISNULL(@titulo_exibir, '') + '</h1>' +
-                '      <h3>Contabilização do Faturamento</h3>' +
-                '      <p><strong>' + @nm_fantasia_empresa + '</strong></p>' +
-                '      <p>' + @nm_endereco_empresa + ', ' + @cd_numero_endereco + ' - ' + @cd_cep_empresa + ' - ' + @nm_cidade + ' - ' + @sg_estado + ' - ' + @nm_pais + '</p>' +
-                '      <p><strong>Fone: </strong>' + @cd_telefone_empresa + ' | <strong>Email: </strong>' + @nm_email_internet + '</p>' +
-                '      <p><strong>Período: </strong>' + CONVERT(CHAR(10), @dt_inicial, 103) + ' a ' + CONVERT(CHAR(10), @dt_final, 103) + '</p>' +
-                '    </div>' +
-                '  </div>' +
-                '  <div style="margin-top:10px;">' + ISNULL(@ds_relatorio, '') + '</div>' +
-                '  <div style="text-align:right; font-size:11px; margin-top:10px;">Gerado em: ' + @data_hora_atual + '</div>' +
+                '<div style="display:flex; justify-content: space-between; align-items: center;">' +
+                '<div style="width:30%; padding-right:20px;"><img src="' + @logo + '" alt="Logo" style="max-width: 220px;"></div>' +
+                '<div style="width:70%; padding-left:10px;">' +
+                '<p><strong>' + @nm_fantasia_empresa + '</strong></p>' +
+                '<p>' + @nm_endereco_empresa + ', ' + @cd_numero_endereco + ' - ' + @cd_cep_empresa + ' - ' + @nm_cidade + '/' + @sg_estado + ' - ' + @nm_pais + '</p>' +
+                '<p><strong>Fone: </strong>' + @cd_telefone_empresa + ' | <strong>Email: </strong>' + @nm_email_internet + '</p>' +
+                '<p><strong>CNPJ: </strong>' + @cd_cnpj_empresa + ' | <strong>I.E: </strong>' + @cd_inscestadual + '</p>' +
+                '<p><strong>Período: </strong>' + CONVERT(CHAR(10), @dt_inicial, 103) + ' a ' + CONVERT(CHAR(10), @dt_final, 103) + '</p>' +
+                '</div>' +
+                '</div>' +
+                 '<div class="section-title">  
+					  <p style="display: inline;text-align: left;">Período: '+isnull(dbo.fn_data_string(@dt_inicial),'')+' á '+isnull(dbo.fn_data_string(@dt_final),'')+'</p>   
+					  <p style="display: inline; text-align: center; padding: 20%;">' + ISNULL(@ds_relatorio, '') + '</p>  
+				 </div>' +
+                
                 '  <table>' +
                 '    <thead>' +
                 '      <tr>' +
@@ -286,6 +302,7 @@ BEGIN
                 '      </tr>' +
                 '    </tfoot>' +
                 '  </table>' +
+				'  <div style="text-align:right; font-size:11px; margin-top:10px;">Gerado em: ' + @data_hora_atual + '</div>' +
                 '</body>' +
                 '</html>';
 
@@ -451,14 +468,16 @@ BEGIN
         SET @html_s = @html_header_s + ISNULL(@html_rows_s, '') + @html_footer_s;
         SELECT ISNULL(@html_s, '') AS RelatorioHTML;
     END TRY
-    BEGIN CATCH
+     BEGIN CATCH
         DECLARE @errMsg NVARCHAR(2048) = FORMATMESSAGE(
             'pr_egis_relatorio_contabil_faturamento falhou: %s (linha %d)',
             ERROR_MESSAGE(),
             ERROR_LINE()
         );
 
-        THROW ERROR_NUMBER(), @errMsg, ERROR_STATE();
+        THROW 50000, @errMsg, 1;
     END CATCH
 END
 GO
+
+--EXEC pr_egis_relatorio_contabil_faturamento '[{"dt_inicial": "2023-01-01", "dt_final": "2023-12-31"}]';

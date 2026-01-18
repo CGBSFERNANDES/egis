@@ -1,16 +1,13 @@
-IF OBJECT_ID('dbo.pr_egis_relatorio_contabil_estoque', 'P') IS NOT NULL
-    DROP PROCEDURE dbo.pr_egis_relatorio_contabil_estoque;
-GO
-
 /*-------------------------------------------------------------------------------------------------
   pr_egis_relatorio_contabil_estoque
 ---------------------------------------------------------------------------------------------------
-  GBS Global Business Solution Ltda                                                     2026-02-04
+  GBS Global Business Solution Ltda                                                     2026-01-07
 ---------------------------------------------------------------------------------------------------
   Stored Procedure : Microsoft SQL Server 2016
   Autor(es)        : Codex (assistente)
   Banco de Dados   : Egissql - Banco do Cliente
   Objetivo         : Relatório HTML - Contabilização de Estoques (Entradas) - cd_relatorio = 415
+  Alteração        : 2026-01-07 - Corrigido parse de datas + decode XML + dados empresa + layout
 
   Requisitos:
     - Apenas 1 parâmetro de entrada (@json)
@@ -27,8 +24,8 @@ GO
       "ic_preview": 0      -- 1 = retorna dataset ao invés do HTML
     }
 -------------------------------------------------------------------------------------------------*/
-CREATE PROCEDURE dbo.pr_egis_relatorio_contabil_estoque
-    @json NVARCHAR(MAX) = NULL -- Parâmetros vindos do front-end (datas e flags opcionais)
+CREATE OR ALTER PROCEDURE dbo.pr_egis_relatorio_contabil_estoque
+    @json NVARCHAR(MAX) = NULL
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -44,9 +41,13 @@ BEGIN
             @cd_usuario       INT           = NULL,
             @dt_inicial       DATE          = NULL,
             @dt_final         DATE          = NULL,
-            @dt_final_limit   DATETIME      = NULL, -- final do dia para incluir o período completo
-            @ic_parametro     INT           = 1,    -- 1=Analítico | 2=Sintético
-            @ic_preview       BIT           = 0;    -- 1 = retorna dataset em vez do HTML
+            @dt_final_limit   DATETIME      = NULL,
+            @ic_parametro     INT           = 1,
+            @ic_preview       BIT           = 0;
+
+        -- Variáveis auxiliares para parse de data
+        DECLARE @dt_ini_str NVARCHAR(50) = NULL;
+        DECLARE @dt_fim_str NVARCHAR(50) = NULL;
 
         DECLARE
             @titulo              VARCHAR(200)  = 'Contabilização de Estoques',
@@ -63,40 +64,90 @@ BEGIN
             @cd_numero_endereco  VARCHAR(20)   = '',
             @cd_cep_empresa      VARCHAR(20)   = '',
             @nm_pais             VARCHAR(20)   = '',
+            @cd_cnpj_empresa     VARCHAR(60)   = '',
+            @cd_inscestadual     VARCHAR(100)  = '',
             @data_hora_atual     VARCHAR(50)   = CONVERT(VARCHAR, GETDATE(), 103) + ' ' + CONVERT(VARCHAR, GETDATE(), 108);
 
         /*-----------------------------------------------------------------------------------------
           1.a) Validação mínima do JSON
         -----------------------------------------------------------------------------------------*/
-        IF NULLIF(@json, N'') IS NOT NULL AND ISJSON(@json) = 0
+        IF NULLIF(LTRIM(RTRIM(@json)), N'') IS NOT NULL AND ISJSON(@json) = 0
             THROW 50001, 'Payload JSON inválido em @json.', 1;
 
         /*-----------------------------------------------------------------------------------------
-          2) Normaliza JSON (aceita array [ { ... } ])
+          2) Normaliza JSON e parse de datas com múltiplos formatos
         -----------------------------------------------------------------------------------------*/
-        IF NULLIF(@json, N'') IS NOT NULL AND ISJSON(@json) = 1
+        IF NULLIF(LTRIM(RTRIM(@json)), N'') IS NOT NULL AND ISJSON(@json) = 1
         BEGIN
-            IF JSON_VALUE(@json, '$[0]') IS NOT NULL
+            -- Se vier como array, pegar primeiro elemento
+            IF LEFT(LTRIM(@json), 1) = '['
                 SET @json = JSON_QUERY(@json, '$[0]');
 
-            SELECT
-                @cd_empresa   = COALESCE(@cd_empresa, TRY_CAST(JSON_VALUE(@json, '$.cd_empresa') AS INT)),
-                @cd_usuario   = COALESCE(@cd_usuario, TRY_CAST(JSON_VALUE(@json, '$.cd_usuario') AS INT)),
-                @dt_inicial   = COALESCE(@dt_inicial, TRY_CAST(JSON_VALUE(@json, '$.dt_inicial') AS DATE)),
-                @dt_final     = COALESCE(@dt_final,   TRY_CAST(JSON_VALUE(@json, '$.dt_final')   AS DATE)),
-                @ic_parametro = COALESCE(@ic_parametro, TRY_CAST(JSON_VALUE(@json, '$.ic_parametro') AS INT)),
-                @ic_preview   = COALESCE(@ic_preview, TRY_CAST(JSON_VALUE(@json, '$.ic_preview') AS BIT));
+            -- Extrair strings de data ANTES de converter
+            SET @dt_ini_str = JSON_VALUE(@json, '$.dt_inicial');
+            SET @dt_fim_str = JSON_VALUE(@json, '$.dt_final');
+
+            -- Parse dos outros campos
+            SET @cd_empresa   = TRY_CAST(JSON_VALUE(@json, '$.cd_empresa') AS INT);
+            SET @cd_usuario   = TRY_CAST(JSON_VALUE(@json, '$.cd_usuario') AS INT);
+            SET @ic_parametro = COALESCE(TRY_CAST(JSON_VALUE(@json, '$.ic_parametro') AS INT), @ic_parametro);
+            SET @ic_preview   = COALESCE(TRY_CAST(JSON_VALUE(@json, '$.ic_preview') AS BIT), @ic_preview);
+
+            -- ==================================================================
+            -- PARSE DATA INICIAL - Suporta múltiplos formatos
+            -- ==================================================================
+            IF @dt_ini_str IS NOT NULL AND LEN(LTRIM(RTRIM(@dt_ini_str))) > 0
+            BEGIN
+                -- 1. Formato ISO: yyyy-MM-dd (ex: 2023-01-01)
+                SET @dt_inicial = TRY_CAST(@dt_ini_str AS DATE);
+                
+                -- 2. Formato brasileiro: dd/MM/yyyy (ex: 01/01/2023)
+                IF @dt_inicial IS NULL
+                    SET @dt_inicial = TRY_CONVERT(DATE, @dt_ini_str, 103);
+                
+                -- 3. Formato americano: MM/dd/yyyy (ex: 01/01/2023)
+                IF @dt_inicial IS NULL
+                    SET @dt_inicial = TRY_CONVERT(DATE, @dt_ini_str, 101);
+                
+                -- 4. Formato com hífen brasileiro: dd-MM-yyyy
+                IF @dt_inicial IS NULL
+                    SET @dt_inicial = TRY_CONVERT(DATE, REPLACE(@dt_ini_str, '-', '/'), 103);
+            END
+
+            -- ==================================================================
+            -- PARSE DATA FINAL - Suporta múltiplos formatos
+            -- ==================================================================
+            IF @dt_fim_str IS NOT NULL AND LEN(LTRIM(RTRIM(@dt_fim_str))) > 0
+            BEGIN
+                -- 1. Formato ISO: yyyy-MM-dd (ex: 2023-12-31)
+                SET @dt_final = TRY_CAST(@dt_fim_str AS DATE);
+                
+                -- 2. Formato brasileiro: dd/MM/yyyy (ex: 31/12/2023)
+                IF @dt_final IS NULL
+                    SET @dt_final = TRY_CONVERT(DATE, @dt_fim_str, 103);
+                
+                -- 3. Formato americano: MM/dd/yyyy (ex: 12/31/2023)
+                IF @dt_final IS NULL
+                    SET @dt_final = TRY_CONVERT(DATE, @dt_fim_str, 101);
+                
+                -- 4. Formato com hífen brasileiro: dd-MM-yyyy
+                IF @dt_final IS NULL
+                    SET @dt_final = TRY_CONVERT(DATE, REPLACE(@dt_fim_str, '-', '/'), 103);
+            END
         END
 
         /*-----------------------------------------------------------------------------------------
           3) Datas padrão: tenta Parametro_Relatorio e cai no mês corrente
         -----------------------------------------------------------------------------------------*/
-        SELECT
-            @dt_inicial = COALESCE(@dt_inicial, pr.dt_inicial),
-            @dt_final   = COALESCE(@dt_final,   pr.dt_final)
-        FROM Parametro_Relatorio AS pr WITH (NOLOCK)
-        WHERE pr.cd_relatorio = @cd_relatorio
-          AND (@cd_usuario IS NULL OR pr.cd_usuario_relatorio = @cd_usuario);
+        IF @dt_inicial IS NULL OR @dt_final IS NULL
+        BEGIN
+            SELECT
+                @dt_inicial = COALESCE(@dt_inicial, pr.dt_inicial),
+                @dt_final   = COALESCE(@dt_final,   pr.dt_final)
+            FROM Parametro_Relatorio AS pr WITH (NOLOCK)
+            WHERE pr.cd_relatorio = @cd_relatorio
+              AND (@cd_usuario IS NULL OR pr.cd_usuario_relatorio = @cd_usuario);
+        END
 
         IF @dt_inicial IS NULL OR @dt_final IS NULL
         BEGIN
@@ -115,7 +166,7 @@ BEGIN
             @titulo              = ISNULL(r.nm_relatorio, @titulo),
             @nm_titulo_relatorio = NULLIF(r.nm_titulo_relatorio, ''),
             @ds_relatorio        = ISNULL(r.ds_relatorio, '')
-        FROM egisadmin.dbo.relatorio AS r
+        FROM egisadmin.dbo.relatorio AS r WITH (NOLOCK)
         WHERE r.cd_relatorio = @cd_relatorio;
 
         SELECT TOP (1)
@@ -123,41 +174,53 @@ BEGIN
             @nm_cor_empresa      = ISNULL(e.nm_cor_empresa, '#1976D2'),
             @nm_fantasia_empresa = ISNULL(e.nm_fantasia_empresa, ''),
             @nm_endereco_empresa = ISNULL(e.nm_endereco_empresa, ''),
-            @cd_numero_endereco  = LTRIM(RTRIM(ISNULL(e.cd_numero, ''))),
+            @cd_numero_endereco  = LTRIM(RTRIM(ISNULL(CAST(e.cd_numero AS VARCHAR(20)), ''))),
             @cd_cep_empresa      = ISNULL(dbo.fn_formata_cep(e.cd_cep_empresa), ''),
             @nm_cidade           = ISNULL(c.nm_cidade, ''),
             @sg_estado           = ISNULL(est.sg_estado, ''),
             @cd_telefone_empresa = ISNULL(e.cd_telefone_empresa, ''),
             @nm_email_internet   = ISNULL(e.nm_email_internet, ''),
-            @nm_pais             = ISNULL(p.sg_pais, '')
-        FROM Empresa AS e
-        LEFT JOIN Cidade AS c   ON c.cd_cidade  = e.cd_cidade
-        LEFT JOIN Estado AS est ON est.cd_estado = c.cd_estado
-        LEFT JOIN Pais AS p     ON p.cd_pais    = est.cd_pais
+            @nm_pais             = ISNULL(p.sg_pais, ''),
+            @cd_cnpj_empresa     = ISNULL(dbo.fn_formata_cnpj(LTRIM(RTRIM(ISNULL(e.cd_cgc_empresa, '')))), ''),
+            @cd_inscestadual     = LTRIM(RTRIM(ISNULL(e.cd_iest_empresa, '')))
+        FROM egisadmin.dbo.empresa AS e WITH (NOLOCK)
+        LEFT JOIN Estado AS est WITH (NOLOCK) ON est.cd_estado = e.cd_estado
+        LEFT JOIN Cidade AS c   WITH (NOLOCK) ON c.cd_cidade  = e.cd_cidade AND c.cd_estado = e.cd_estado
+        LEFT JOIN Pais AS p     WITH (NOLOCK) ON p.cd_pais    = e.cd_pais
         WHERE e.cd_empresa = @cd_empresa;
 
         /*-----------------------------------------------------------------------------------------
-          5) Carrega a base a partir da pr_contabiliza_nota_entrada
+          5) Carrega a base a partir da pr_contabiliza_nota_entrada (MODO ANALÍTICO)
         -----------------------------------------------------------------------------------------*/
         IF @ic_parametro = 1
         BEGIN
             CREATE TABLE #EstoqueAnalitico (
+                cd_chave                   INT,
                 Nome_Lancamento_Padrao     VARCHAR(100),
                 Mascara_Lancamento_Padrao  VARCHAR(50),
                 Reduzido_Lancamento_Padrao VARCHAR(20),
+                Reduzido_Credito           VARCHAR(20),
                 cd_conta_plano             INT,
                 Documento                  VARCHAR(20),
                 Fornecedor                 VARCHAR(200),
                 DataContabilizacao         DATETIME,
-                Operacao_Fiscal            VARCHAR(100),
+                DataEmissao                DATETIME,
+                REM                        VARCHAR(40),
+                Operacao_Fiscal            VARCHAR(200),
                 Operacao_Fiscal_Nome       VARCHAR(200),
                 Operacao_Fiscal_Mascara    VARCHAR(50),
+                ValorComercial             CHAR(1),
+                Servico                    CHAR(1),
                 ValorTotal                 DECIMAL(25, 2),
                 ValorICMS                  DECIMAL(25, 2),
                 ValorIPI                   DECIMAL(25, 2),
-                ValorPIS                   DECIMAL(25, 2),
-                ValorCOFINS                DECIMAL(25, 2),
-                SMO                        CHAR(1)
+                ValorIRRF                  DECIMAL(25, 2),
+                ValorINSS                  DECIMAL(25, 2),
+                ValorISS                   DECIMAL(25, 2),
+                vl_pis_nota_entrada        DECIMAL(25, 2),
+                vl_cofins_nota_entrada     DECIMAL(25, 2),
+                vl_csll_nota_entrada       DECIMAL(25, 2),
+                Provisao                   CHAR(1)
             );
 
             INSERT INTO #EstoqueAnalitico
@@ -171,6 +234,7 @@ BEGIN
                 SELECT *
                 FROM #EstoqueAnalitico
                 ORDER BY DataContabilizacao, Mascara_Lancamento_Padrao, Documento;
+                DROP TABLE #EstoqueAnalitico;
                 RETURN;
             END
 
@@ -188,8 +252,8 @@ BEGIN
                 @tot_vl_total = SUM(ISNULL(ValorTotal, 0)),
                 @tot_icms     = SUM(ISNULL(ValorICMS, 0)),
                 @tot_ipi      = SUM(ISNULL(ValorIPI, 0)),
-                @tot_pis      = SUM(ISNULL(ValorPIS, 0)),
-                @tot_cofins   = SUM(ISNULL(ValorCOFINS, 0))
+                @tot_pis      = SUM(ISNULL(vl_pis_nota_entrada, 0)),
+                @tot_cofins   = SUM(ISNULL(vl_cofins_nota_entrada, 0))
             FROM #EstoqueAnalitico;
 
             DECLARE
@@ -201,96 +265,102 @@ BEGIN
 
             SET @titulo_exibir = ISNULL(NULLIF(@nm_titulo_relatorio, ''), @titulo);
 
-            SET @html_rows = (
+            -- Gerar linhas HTML com decode de entidades XML
+            SELECT @html_rows = (
                 SELECT
-                    '<tr>' +
-                    '<td>' + ISNULL(f.Mascara_Lancamento_Padrao, '') + '</td>' +
-                    '<td>' + ISNULL(f.Nome_Lancamento_Padrao, '') + '</td>' +
-                    '<td>' + ISNULL(f.Reduzido_Lancamento_Padrao, '') + '</td>' +
-                    '<td>' + ISNULL(f.Documento, '') + '</td>' +
-                    '<td>' + ISNULL(f.Fornecedor, '') + '</td>' +
-                    '<td style="text-align:center">' + CONVERT(CHAR(10), f.DataContabilizacao, 103) + '</td>' +
-                    '<td>' + ISNULL(f.Operacao_Fiscal, '') + '</td>' +
-                    '<td style="text-align:right">' + FORMAT(ISNULL(f.ValorTotal, 0), 'N2') + '</td>' +
-                    '<td style="text-align:right">' + FORMAT(ISNULL(f.ValorICMS, 0), 'N2') + '</td>' +
-                    '<td style="text-align:right">' + FORMAT(ISNULL(f.ValorIPI, 0), 'N2') + '</td>' +
-                    '<td style="text-align:right">' + FORMAT(ISNULL(f.ValorPIS, 0), 'N2') + '</td>' +
-                    '<td style="text-align:right">' + FORMAT(ISNULL(f.ValorCOFINS, 0), 'N2') + '</td>' +
-                    '<td style="text-align:center">' + ISNULL(f.SMO, '') + '</td>' +
-                    '</tr>'
+                    '<tr><td>' + ISNULL(f.Mascara_Lancamento_Padrao, '') + '</td><td>' + ISNULL(f.Nome_Lancamento_Padrao, '') + '</td><td>' + ISNULL(f.Reduzido_Lancamento_Padrao, '') + '</td><td>' + ISNULL(f.Documento, '') + '</td><td>' + ISNULL(f.Fornecedor, '') + '</td><td style="text-align:center">' + CONVERT(CHAR(10), f.DataContabilizacao, 103) + '</td><td>' + ISNULL(f.Operacao_Fiscal, '') + '</td><td style="text-align:right">' + FORMAT(ISNULL(f.ValorTotal, 0), 'N2') + '</td><td style="text-align:right">' + FORMAT(ISNULL(f.ValorICMS, 0), 'N2') + '</td><td style="text-align:right">' + FORMAT(ISNULL(f.ValorIPI, 0), 'N2') + '</td><td style="text-align:right">' + FORMAT(ISNULL(f.vl_pis_nota_entrada, 0), 'N2') + '</td><td style="text-align:right">' + FORMAT(ISNULL(f.vl_cofins_nota_entrada, 0), 'N2') + '</td><td style="text-align:center">' + ISNULL(f.Servico, '') + '</td></tr>' AS [text()]
                 FROM #EstoqueAnalitico AS f
                 ORDER BY f.DataContabilizacao, f.Mascara_Lancamento_Padrao, f.Documento
-                FOR XML PATH(''), TYPE
-            ).value('.', 'nvarchar(max)');
+                FOR XML PATH('')
+            );
+
+            -- Decodificar entidades XML
+            SET @html_rows = REPLACE(@html_rows, N'&lt;', N'<');
+            SET @html_rows = REPLACE(@html_rows, N'&gt;', N'>');
+            SET @html_rows = REPLACE(@html_rows, N'&amp;', N'&');
+            SET @html_rows = REPLACE(@html_rows, N'&quot;', N'"');
 
             SET @html_header =
                 '<html>' +
                 '<head>' +
-                '  <meta charset="UTF-8">' +
-                '  <title>' + ISNULL(@titulo_exibir, '') + '</title>' +
-                '  <style>' +
-                '    body { font-family: Arial, sans-serif; color: #333; padding: 20px; }' +
-                '    h1 { color: ' + @nm_cor_empresa + '; margin-bottom: 4px; }' +
-                '    h3 { color: #555; margin-top: 0; }' +
-                '    table { width: 100%; border-collapse: collapse; margin-top: 20px; }' +
-                '    th, td { border: 1px solid #ddd; padding: 8px; font-size: 12px; }' +
-                '    th { background-color: #f2f2f2; text-align: left; }' +
-                '    tfoot td { background-color: #fafafa; font-weight: bold; }' +
-                '  </style>' +
+                '<meta charset="UTF-8">' +
+                '<title>' + ISNULL(@titulo_exibir, '') + '</title>' +
+                '<style>' +
+                'body { font-family: Arial, sans-serif; color: #333; padding: 20px; }' +
+                'h1 { background: ' + @nm_cor_empresa + '; color: white; padding: 8px 20px; border-radius: 4px; margin-bottom: 8px; }' +
+                'h3 { color: #555; margin-top: 0; }' +
+                'table { width: 100%; border-collapse: collapse; margin-top: 20px; }' +
+                'th, td { border: 1px solid #ddd; padding: 8px; font-size: 12px; }' +
+                'th { background-color: #f2f2f2; color: #333; text-align: left; }' +
+                'tfoot td { background-color: #fafafa; font-weight: bold; }' +
+					'    .section-title {  
+            background-color: #1976D2;  
+            color: white;  
+            padding: 5px;  
+            margin-bottom: 10px;  
+		    border-radius: 5px;  
+		    font-size: 100%;  
+		  }  ' +
+                '</style>' +
+                '</style>' +
                 '</head>' +
                 '<body>' +
-                '  <div style="display:flex; justify-content: space-between; align-items: center;">' +
-                '    <div style="width:30%; padding-right:20px;"><img src="' + @logo + '" alt="Logo" style="max-width: 220px;"></div>' +
-                '    <div style="width:70%; padding-left:10px;">' +
-                '      <h1>' + ISNULL(@titulo_exibir, '') + '</h1>' +
-                '      <h3>Contabilização de Entradas (Estoque)</h3>' +
-                '      <p><strong>' + @nm_fantasia_empresa + '</strong></p>' +
-                '      <p>' + @nm_endereco_empresa + ', ' + @cd_numero_endereco + ' - ' + @cd_cep_empresa + ' - ' + @nm_cidade + ' - ' + @sg_estado + ' - ' + @nm_pais + '</p>' +
-                '      <p><strong>Fone: </strong>' + @cd_telefone_empresa + ' | <strong>Email: </strong>' + @nm_email_internet + '</p>' +
-                '      <p><strong>Período: </strong>' + CONVERT(CHAR(10), @dt_inicial, 103) + ' a ' + CONVERT(CHAR(10), @dt_final, 103) + '</p>' +
-                '    </div>' +
-                '  </div>' +
-                '  <div style="margin-top:10px;">' + ISNULL(@ds_relatorio, '') + '</div>' +
-                '  <div style="text-align:right; font-size:11px; margin-top:10px;">Gerado em: ' + @data_hora_atual + '</div>' +
-                '  <table>' +
-                '    <thead>' +
-                '      <tr>' +
-                '        <th>Classificação</th>' +
-                '        <th>Conta</th>' +
-                '        <th>Reduzido</th>' +
-                '        <th>Documento</th>' +
-                '        <th>Fornecedor</th>' +
-                '        <th>Data</th>' +
-                '        <th>Operação Fiscal</th>' +
-                '        <th>Valor Total</th>' +
-                '        <th>ICMS</th>' +
-                '        <th>IPI</th>' +
-                '        <th>PIS</th>' +
-                '        <th>COFINS</th>' +
-                '        <th>SMO</th>' +
-                '      </tr>' +
-                '    </thead>' +
-                '    <tbody>';
+                '<div style="display:flex; justify-content: space-between; align-items: center;">' +
+                '<div style="width:30%; padding-right:20px;"><img src="' + @logo + '" alt="Logo" style="max-width: 220px;"></div>' +
+                '<div style="width:70%; padding-left:10px;">' +
+                '<p><strong>' + @nm_fantasia_empresa + '</strong></p>' +
+                '<p>' + @nm_endereco_empresa + ', ' + @cd_numero_endereco + ' - ' + @cd_cep_empresa + ' - ' + @nm_cidade + '/' + @sg_estado + ' - ' + @nm_pais + '</p>' +
+                '<p><strong>Fone: </strong>' + @cd_telefone_empresa + ' | <strong>Email: </strong>' + @nm_email_internet + '</p>' +
+                '<p><strong>CNPJ: </strong>' + @cd_cnpj_empresa + ' | <strong>I.E: </strong>' + @cd_inscestadual + '</p>' +
+                '<p><strong>Período: </strong>' + CONVERT(CHAR(10), @dt_inicial, 103) + ' a ' + CONVERT(CHAR(10), @dt_final, 103) + '</p>' +
+                '</div>' +
+                '</div>' +
+                 '<div class="section-title">  
+					  <p style="display: inline;text-align: left;">Período: '+isnull(dbo.fn_data_string(@dt_inicial),'')+' á '+isnull(dbo.fn_data_string(@dt_final),'')+'</p>   
+					  <p style="display: inline; text-align: center; padding: 20%;">' + ISNULL(@ds_relatorio, '') + '</p>  
+				 </div>' +
+                '<table>' +
+                '<thead>' +
+                '<tr>' +
+                '<th>Classificação</th>' +
+                '<th>Conta</th>' +
+                '<th>Reduzido</th>' +
+                '<th>Documento</th>' +
+                '<th>Fornecedor</th>' +
+                '<th>Data</th>' +
+                '<th>Operação Fiscal</th>' +
+                '<th>Valor Total</th>' +
+                '<th>ICMS</th>' +
+                '<th>IPI</th>' +
+                '<th>PIS</th>' +
+                '<th>COFINS</th>' +
+                '<th>Serviço</th>' +
+                '</tr>' +
+                '</thead>' +
+                '<tbody>';
 
             SET @html_footer =
-                '    </tbody>' +
-                '    <tfoot>' +
-                '      <tr>' +
-                '        <td colspan="7" style="text-align:right"><strong>Totais</strong></td>' +
-                '        <td style="text-align:right"><strong>' + FORMAT(ISNULL(@tot_vl_total, 0), 'N2') + '</strong></td>' +
-                '        <td style="text-align:right"><strong>' + FORMAT(ISNULL(@tot_icms, 0), 'N2') + '</strong></td>' +
-                '        <td style="text-align:right"><strong>' + FORMAT(ISNULL(@tot_ipi, 0), 'N2') + '</strong></td>' +
-                '        <td style="text-align:right"><strong>' + FORMAT(ISNULL(@tot_pis, 0), 'N2') + '</strong></td>' +
-                '        <td style="text-align:right"><strong>' + FORMAT(ISNULL(@tot_cofins, 0), 'N2') + '</strong></td>' +
-                '        <td></td>' +
-                '      </tr>' +
-                '    </tfoot>' +
-                '  </table>' +
+                '</tbody>' +
+                '<tfoot>' +
+                '<tr>' +
+                '<td colspan="7" style="text-align:right"><strong>Totais</strong></td>' +
+                '<td style="text-align:right"><strong>' + FORMAT(ISNULL(@tot_vl_total, 0), 'N2') + '</strong></td>' +
+                '<td style="text-align:right"><strong>' + FORMAT(ISNULL(@tot_icms, 0), 'N2') + '</strong></td>' +
+                '<td style="text-align:right"><strong>' + FORMAT(ISNULL(@tot_ipi, 0), 'N2') + '</strong></td>' +
+                '<td style="text-align:right"><strong>' + FORMAT(ISNULL(@tot_pis, 0), 'N2') + '</strong></td>' +
+                '<td style="text-align:right"><strong>' + FORMAT(ISNULL(@tot_cofins, 0), 'N2') + '</strong></td>' +
+                '<td></td>' +
+                '</tr>' +
+                '</tfoot>' +
+                '</table>' +
+				'<div style="text-align:right; font-size:11px; margin-top:10px;">Gerado em: ' + @data_hora_atual + '</div>' +
                 '</body>' +
                 '</html>';
 
             SET @html = @html_header + ISNULL(@html_rows, '') + @html_footer;
             SELECT ISNULL(@html, '') AS RelatorioHTML;
+
+            DROP TABLE #EstoqueAnalitico;
             RETURN;
         END
 
@@ -328,6 +398,7 @@ BEGIN
             SELECT *
             FROM #EstoqueSintetico
             ORDER BY Mascara_Lancamento_Padrao, Nome_Lancamento_Padrao;
+            DROP TABLE #EstoqueSintetico;
             RETURN;
         END
 
@@ -353,103 +424,95 @@ BEGIN
 
         SET @titulo_exibir_s = ISNULL(NULLIF(@nm_titulo_relatorio, ''), @titulo);
 
-        SET @html_rows_s = (
+        -- Gerar linhas HTML com decode de entidades XML
+        SELECT @html_rows_s = (
             SELECT
-                '<tr>' +
-                '<td>' + ISNULL(s.Mascara_Lancamento_Padrao, '') + '</td>' +
-                '<td>' + ISNULL(s.Nome_Lancamento_Padrao, '') + '</td>' +
-                '<td>' + ISNULL(s.Reduzido_Lancamento_Padrao, '') + '</td>' +
-                '<td style="text-align:center">' + ISNULL(CAST(s.cd_debito_nota_fiscal AS VARCHAR(20)), '') + '</td>' +
-                '<td style="text-align:center">' + ISNULL(CAST(s.cd_credito_nota_fiscal AS VARCHAR(20)), '') + '</td>' +
-                '<td style="text-align:center">' + ISNULL(CAST(s.cd_debito_icms AS VARCHAR(20)), '') + '</td>' +
-                '<td style="text-align:center">' + ISNULL(CAST(s.cd_credito_icms AS VARCHAR(20)), '') + '</td>' +
-                '<td style="text-align:center">' + ISNULL(CAST(s.cd_debito_ipi AS VARCHAR(20)), '') + '</td>' +
-                '<td style="text-align:center">' + ISNULL(CAST(s.cd_credito_ipi AS VARCHAR(20)), '') + '</td>' +
-                '<td style="text-align:center">' + ISNULL(CAST(s.cd_historico_nota_fiscal AS VARCHAR(20)), '') + '</td>' +
-                '<td style="text-align:center">' + ISNULL(CAST(s.cd_historico_icms AS VARCHAR(20)), '') + '</td>' +
-                '<td style="text-align:center">' + ISNULL(CAST(s.cd_historico_ipi AS VARCHAR(20)), '') + '</td>' +
-                '<td style="text-align:right">' + FORMAT(ISNULL(s.ValorTotal, 0), 'N2') + '</td>' +
-                '<td style="text-align:right">' + FORMAT(ISNULL(s.ValorICMS, 0), 'N2') + '</td>' +
-                '<td style="text-align:right">' + FORMAT(ISNULL(s.ValorIPI, 0), 'N2') + '</td>' +
-                '<td style="text-align:right">' + FORMAT(ISNULL(s.ValorPIS, 0), 'N2') + '</td>' +
-                '<td style="text-align:right">' + FORMAT(ISNULL(s.ValorCOFINS, 0), 'N2') + '</td>' +
-                '</tr>'
+                '<tr><td>' + ISNULL(s.Mascara_Lancamento_Padrao, '') + '</td><td>' + ISNULL(s.Nome_Lancamento_Padrao, '') + '</td><td>' + ISNULL(s.Reduzido_Lancamento_Padrao, '') + '</td><td style="text-align:center">' + ISNULL(CAST(s.cd_debito_nota_fiscal AS VARCHAR(20)), '') + '</td><td style="text-align:center">' + ISNULL(CAST(s.cd_credito_nota_fiscal AS VARCHAR(20)), '') + '</td><td style="text-align:center">' + ISNULL(CAST(s.cd_debito_icms AS VARCHAR(20)), '') + '</td><td style="text-align:center">' + ISNULL(CAST(s.cd_credito_icms AS VARCHAR(20)), '') + '</td><td style="text-align:center">' + ISNULL(CAST(s.cd_debito_ipi AS VARCHAR(20)), '') + '</td><td style="text-align:center">' + ISNULL(CAST(s.cd_credito_ipi AS VARCHAR(20)), '') + '</td><td style="text-align:center">' + ISNULL(CAST(s.cd_historico_nota_fiscal AS VARCHAR(20)), '') + '</td><td style="text-align:center">' + ISNULL(CAST(s.cd_historico_icms AS VARCHAR(20)), '') + '</td><td style="text-align:center">' + ISNULL(CAST(s.cd_historico_ipi AS VARCHAR(20)), '') + '</td><td style="text-align:right">' + FORMAT(ISNULL(s.ValorTotal, 0), 'N2') + '</td><td style="text-align:right">' + FORMAT(ISNULL(s.ValorICMS, 0), 'N2') + '</td><td style="text-align:right">' + FORMAT(ISNULL(s.ValorIPI, 0), 'N2') + '</td><td style="text-align:right">' + FORMAT(ISNULL(s.ValorPIS, 0), 'N2') + '</td><td style="text-align:right">' + FORMAT(ISNULL(s.ValorCOFINS, 0), 'N2') + '</td></tr>' AS [text()]
             FROM #EstoqueSintetico AS s
             ORDER BY s.Mascara_Lancamento_Padrao, s.Nome_Lancamento_Padrao
-            FOR XML PATH(''), TYPE
-        ).value('.', 'nvarchar(max)');
+            FOR XML PATH('')
+        );
+
+        -- Decodificar entidades XML
+        SET @html_rows_s = REPLACE(@html_rows_s, N'&lt;', N'<');
+        SET @html_rows_s = REPLACE(@html_rows_s, N'&gt;', N'>');
+        SET @html_rows_s = REPLACE(@html_rows_s, N'&amp;', N'&');
+        SET @html_rows_s = REPLACE(@html_rows_s, N'&quot;', N'"');
 
         SET @html_header_s =
             '<html>' +
             '<head>' +
-            '  <meta charset="UTF-8">' +
-            '  <title>' + ISNULL(@titulo_exibir_s, '') + '</title>' +
-            '  <style>' +
-            '    body { font-family: Arial, sans-serif; color: #333; padding: 20px; }' +
-            '    h1 { color: ' + @nm_cor_empresa + '; margin-bottom: 4px; }' +
-            '    h3 { color: #555; margin-top: 0; }' +
-            '    table { width: 100%; border-collapse: collapse; margin-top: 20px; }' +
-            '    th, td { border: 1px solid #ddd; padding: 8px; font-size: 12px; }' +
-            '    th { background-color: #f2f2f2; text-align: left; }' +
-            '    tfoot td { background-color: #fafafa; font-weight: bold; }' +
-            '  </style>' +
+            '<meta charset="UTF-8">' +
+            '<title>' + ISNULL(@titulo_exibir_s, '') + '</title>' +
+            '<style>' +
+            'body { font-family: Arial, sans-serif; color: #333; padding: 20px; }' +
+            'h1 { background: ' + @nm_cor_empresa + '; color: white; padding: 8px 20px; border-radius: 4px; margin-bottom: 8px; }' +
+            'h3 { color: #555; margin-top: 0; }' +
+            'table { width: 100%; border-collapse: collapse; margin-top: 20px; }' +
+            'th, td { border: 1px solid #ddd; padding: 8px; font-size: 12px; }' +
+            'th { background-color: #f2f2f2; color: #333; text-align: left; }' +
+            'tfoot td { background-color: #fafafa; font-weight: bold; }' +
+            '</style>' +
             '</head>' +
             '<body>' +
-            '  <div style="display:flex; justify-content: space-between; align-items: center;">' +
-            '    <div style="width:30%; padding-right:20px;"><img src="' + @logo + '" alt="Logo" style="max-width: 220px;"></div>' +
-            '    <div style="width:70%; padding-left:10px;">' +
-            '      <h1>' + ISNULL(@titulo_exibir_s, '') + '</h1>' +
-            '      <h3>Contabilização de Entradas (Estoque) - Sintético</h3>' +
-            '      <p><strong>' + @nm_fantasia_empresa + '</strong></p>' +
-            '      <p>' + @nm_endereco_empresa + ', ' + @cd_numero_endereco + ' - ' + @cd_cep_empresa + ' - ' + @nm_cidade + ' - ' + @sg_estado + ' - ' + @nm_pais + '</p>' +
-            '      <p><strong>Fone: </strong>' + @cd_telefone_empresa + ' | <strong>Email: </strong>' + @nm_email_internet + '</p>' +
-            '      <p><strong>Período: </strong>' + CONVERT(CHAR(10), @dt_inicial, 103) + ' a ' + CONVERT(CHAR(10), @dt_final, 103) + '</p>' +
-            '    </div>' +
-            '  </div>' +
-            '  <div style="margin-top:10px;">' + ISNULL(@ds_relatorio, '') + '</div>' +
-            '  <div style="text-align:right; font-size:11px; margin-top:10px;">Gerado em: ' + @data_hora_atual + '</div>' +
-            '  <table>' +
-            '    <thead>' +
-            '      <tr>' +
-            '        <th>Classificação</th>' +
-            '        <th>Conta</th>' +
-            '        <th>Reduzido</th>' +
-            '        <th>Débito NF</th>' +
-            '        <th>Crédito NF</th>' +
-            '        <th>Débito ICMS</th>' +
-            '        <th>Crédito ICMS</th>' +
-            '        <th>Débito IPI</th>' +
-            '        <th>Crédito IPI</th>' +
-            '        <th>Hist. NF</th>' +
-            '        <th>Hist. ICMS</th>' +
-            '        <th>Hist. IPI</th>' +
-            '        <th>Valor Total</th>' +
-            '        <th>ICMS</th>' +
-            '        <th>IPI</th>' +
-            '        <th>PIS</th>' +
-            '        <th>COFINS</th>' +
-            '      </tr>' +
-            '    </thead>' +
-            '    <tbody>';
+            '<div style="display:flex; justify-content: space-between; align-items: center;">' +
+            '<div style="width:30%; padding-right:20px;"><img src="' + @logo + '" alt="Logo" style="max-width: 220px;"></div>' +
+            '<div style="width:70%; padding-left:10px;">' +
+            '<p><strong>' + @nm_fantasia_empresa + '</strong></p>' +
+            '<p>' + @nm_endereco_empresa + ', ' + @cd_numero_endereco + ' - ' + @cd_cep_empresa + ' - ' + @nm_cidade + '/' + @sg_estado + ' - ' + @nm_pais + '</p>' +
+            '<p><strong>Fone: </strong>' + @cd_telefone_empresa + ' | <strong>Email: </strong>' + @nm_email_internet + '</p>' +
+            '<p><strong>CNPJ: </strong>' + @cd_cnpj_empresa + ' | <strong>I.E: </strong>' + @cd_inscestadual + '</p>' +
+            '<p><strong>Período: </strong>' + CONVERT(CHAR(10), @dt_inicial, 103) + ' a ' + CONVERT(CHAR(10), @dt_final, 103) + '</p>' +
+            '</div>' +
+            '</div>' +
+            '<div style="margin-top:10px;">' + ISNULL(@ds_relatorio, '') + '</div>' +
+            
+            '<table>' +
+            '<thead>' +
+            '<tr>' +
+            '<th>Classificação</th>' +
+            '<th>Conta</th>' +
+            '<th>Reduzido</th>' +
+            '<th>Débito NF</th>' +
+            '<th>Crédito NF</th>' +
+            '<th>Débito ICMS</th>' +
+            '<th>Crédito ICMS</th>' +
+            '<th>Débito IPI</th>' +
+            '<th>Crédito IPI</th>' +
+            '<th>Hist. NF</th>' +
+            '<th>Hist. ICMS</th>' +
+            '<th>Hist. IPI</th>' +
+            '<th>Valor Total</th>' +
+            '<th>ICMS</th>' +
+            '<th>IPI</th>' +
+            '<th>PIS</th>' +
+            '<th>COFINS</th>' +
+            '</tr>' +
+            '</thead>' +
+            '<tbody>';
 
         SET @html_footer_s =
-            '    </tbody>' +
-            '    <tfoot>' +
-            '      <tr>' +
-            '        <td colspan="12" style="text-align:right"><strong>Totais</strong></td>' +
-            '        <td style="text-align:right"><strong>' + FORMAT(ISNULL(@tot_vl_total_s, 0), 'N2') + '</strong></td>' +
-            '        <td style="text-align:right"><strong>' + FORMAT(ISNULL(@tot_icms_s, 0), 'N2') + '</strong></td>' +
-            '        <td style="text-align:right"><strong>' + FORMAT(ISNULL(@tot_ipi_s, 0), 'N2') + '</strong></td>' +
-            '        <td style="text-align:right"><strong>' + FORMAT(ISNULL(@tot_pis_s, 0), 'N2') + '</strong></td>' +
-            '        <td style="text-align:right"><strong>' + FORMAT(ISNULL(@tot_cofins_s, 0), 'N2') + '</strong></td>' +
-            '      </tr>' +
-            '    </tfoot>' +
-            '  </table>' +
+            '</tbody>' +
+            '<tfoot>' +
+            '<tr>' +
+            '<td colspan="12" style="text-align:right"><strong>Totais</strong></td>' +
+            '<td style="text-align:right"><strong>' + FORMAT(ISNULL(@tot_vl_total_s, 0), 'N2') + '</strong></td>' +
+            '<td style="text-align:right"><strong>' + FORMAT(ISNULL(@tot_icms_s, 0), 'N2') + '</strong></td>' +
+            '<td style="text-align:right"><strong>' + FORMAT(ISNULL(@tot_ipi_s, 0), 'N2') + '</strong></td>' +
+            '<td style="text-align:right"><strong>' + FORMAT(ISNULL(@tot_pis_s, 0), 'N2') + '</strong></td>' +
+            '<td style="text-align:right"><strong>' + FORMAT(ISNULL(@tot_cofins_s, 0), 'N2') + '</strong></td>' +
+            '</tr>' +
+            '</tfoot>' +
+            '</table>' +
+			'<div style="text-align:right; font-size:11px; margin-top:10px;">Gerado em: ' + @data_hora_atual + '</div>' +
             '</body>' +
             '</html>';
 
         SET @html_s = @html_header_s + ISNULL(@html_rows_s, '') + @html_footer_s;
         SELECT ISNULL(@html_s, '') AS RelatorioHTML;
+
+        DROP TABLE #EstoqueSintetico;
+
     END TRY
     BEGIN CATCH
         DECLARE @errMsg NVARCHAR(2048) = FORMATMESSAGE(
@@ -458,7 +521,8 @@ BEGIN
             ERROR_LINE()
         );
 
-        THROW ERROR_NUMBER(), @errMsg, ERROR_STATE();
+        THROW 50000, @errMsg, 1;
     END CATCH
 END
 GO
+--EXEC pr_egis_relatorio_contabil_estoque @json = N'[{"dt_inicial": "2023-01-01", "dt_final": "2023-12-31"}]';

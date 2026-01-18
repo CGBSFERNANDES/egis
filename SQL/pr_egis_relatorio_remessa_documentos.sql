@@ -10,19 +10,19 @@ GO
   Stored Procedure : Microsoft SQL Server 2016
   Autor(es)        : Codex (assistente)
   Banco de Dados   : Egissql - Banco do Cliente
-  Objetivo         : Relat√≥rio HTML - Remessa de Documentos (cd_relatorio = 423)
+  Objetivo         : RelatÛrio HTML - Remessa de Documentos (cd_relatorio = 423)
 
   Requisitos:
-    - Somente 1 par√¢metro de entrada (@json)
+    - Somente 1 par‚metro de entrada (@json)
     - SET NOCOUNT ON / TRY...CATCH
     - Sem cursor
     - Performance para grandes volumes
-    - C√≥digo comentado
+    - CÛdigo comentado
 
-  Observa√ß√µes:
+  ObservaÁıes:
     - Entrada: @json = '[{"cd_remessa_banco": <int>, "cd_conta_banco": <int>}]'
-    - Dados extra√≠dos de documento_receber + joins conforme especifica√ß√£o
-    - Retorna HTML no padr√£o RelatorioHTML
+    - Dados extraÌdos de documento_receber + joins conforme especificaÁ„o
+    - Retorna HTML no padr„o RelatorioHTML
 -------------------------------------------------------------------------------------------------*/
 CREATE PROCEDURE dbo.pr_egis_relatorio_remessa_documentos
     @json NVARCHAR(MAX) = NULL
@@ -55,23 +55,35 @@ BEGIN
 
     BEGIN TRY
         /*-----------------------------------------------------------------------------------------
-          1) Valida√ß√£o e normaliza√ß√£o do JSON (aceita array [ { ... } ])
+          1) ValidaÁ„o e normalizaÁ„o do JSON (aceita array [ { ... } ])
         -----------------------------------------------------------------------------------------*/
         IF NULLIF(@json, N'') IS NULL OR ISJSON(@json) <> 1
-            THROW 50001, 'Payload JSON inv√°lido ou vazio em @json.', 1;
+            THROW 50001, 'Payload JSON inv·lido ou vazio em @json.', 1;
 
         IF JSON_VALUE(@json, '$[0]') IS NOT NULL
             SET @json = JSON_QUERY(@json, '$[0]');
 
-        SELECT
-            @cd_remessa_banco = TRY_CAST(JSON_VALUE(@json, '$.cd_remessa_banco') AS INT),
-            @cd_conta_banco   = TRY_CAST(JSON_VALUE(@json, '$.cd_conta_banco') AS INT);
+           -- select @json
+   
+SELECT
+    @cd_remessa_banco = cd_remessa_banco,
+    @cd_conta_banco   = cd_conta_banco
+FROM OPENJSON(@json)
+WITH (
+    ic_json_parametro NVARCHAR(1) '$.ic_json_parametro',
+    cd_menu           INT         '$.cd_menu',
+    cd_usuario        NVARCHAR(10)'$.cd_usuario',
+    cd_relatorio      INT         '$.cd_relatorio',
+    cd_remessa_banco  INT         '$.cd_remessa_banco',
+    cd_conta_banco    INT         '$.cd_conta_banco'
+);
 
+        
         IF ISNULL(@cd_remessa_banco, 0) = 0
-            THROW 50002, 'cd_remessa_banco n√£o informado.', 1;
+            THROW 50002, 'cd_remessa_banco n„o informado.', 1;
 
         /*-----------------------------------------------------------------------------------------
-          2) Cabe√ßalho do relat√≥rio (relatorio + empresa)
+          2) CabeÁalho do relatÛrio (relatorio + empresa)
         -----------------------------------------------------------------------------------------*/
         SELECT
             @titulo              = ISNULL(r.nm_relatorio, @titulo),
@@ -172,7 +184,7 @@ N'<style>
                     N'<div class="header__logo"><img src="' + @logo + N'" alt="Logo" /></div>' +
                     N'<div class="header__title">' +
                         N'<h1>' + ISNULL(@nm_titulo_relatorio, @titulo) + N'</h1>' +
-                        N'<span>Emiss√£o: ' + @data_hora_atual + N'</span>' +
+                        N'<span>Emiss„o: ' + @data_hora_atual + N'</span>' +
                     N'</div>' +
                 N'</div>' +
                 N'<div class="company">' +
@@ -193,14 +205,14 @@ N'<style>
                         N'<tr>' +
                             N'<th>Portador</th>' +
                             N'<th>Banco</th>' +
-                            N'<th>Ag√™ncia</th>' +
+                            N'<th>AgÍncia</th>' +
                             N'<th>Conta</th>' +
                             N'<th>Remessa</th>' +
-                            N'<th>Identifica√ß√£o</th>' +
+                            N'<th>IdentificaÁ„o</th>' +
                             N'<th>Valor</th>' +
                             N'<th>Cliente</th>' +
-                            N'<th>Raz√£o Social</th>' +
-                            N'<th>Emiss√£o</th>' +
+                            N'<th>Raz„o Social</th>' +
+                            N'<th>Emiss„o</th>' +
                             N'<th>Vencimento</th>' +
                             N'<th>UF</th>' +
                             N'<th>Cidade</th>' +
@@ -208,12 +220,17 @@ N'<style>
                     N'</thead>' +
                     N'<tbody>';
 
+
+                    --select @html
+
+                   -- select * from #remessa_dados
+
         SET @html = @html +
         (
             SELECT
                 N'<tr>' +
                     N'<td>' + ISNULL(nm_portador, '') + N'</td>' +
-                    N'<td>' + ISNULL(cd_numero_banco, '') + N'</td>' +
+                   N'<td>' + ISNULL(CONVERT(NVARCHAR(20), cd_numero_banco), '') + N'</td>' +
                     N'<td>' + ISNULL(nm_agencia_banco, '') + N'</td>' +
                     N'<td>' + ISNULL(nm_conta_banco, '') + N'</td>' +
                     N'<td>' + ISNULL(CONVERT(NVARCHAR(20), cd_remessa_banco), '') + N'</td>' +
@@ -231,6 +248,8 @@ N'<style>
             FOR XML PATH(''), TYPE
         ).value('.', 'NVARCHAR(MAX)');
 
+       -- select @html
+
         SET @html = @html +
                     N'</tbody>' +
                     N'<tfoot>' +
@@ -246,8 +265,8 @@ N'<style>
         SELECT ISNULL(@html, N'') AS RelatorioHTML;
 
         /*-----------------------------------------------------------------------------------------
-          5) Integra√ß√£o com tabela de log (quando aplic√°vel)
-             - Caso exista uma tabela de log padr√£o no ambiente, registrar aqui.
+          5) IntegraÁ„o com tabela de log (quando aplic·vel)
+             - Caso exista uma tabela de log padr„o no ambiente, registrar aqui.
         -----------------------------------------------------------------------------------------*/
     END TRY
     BEGIN CATCH
@@ -256,3 +275,16 @@ N'<style>
     END CATCH;
 END;
 GO
+
+--select cd_remessa_banco,* from documento_receber where isnull(cd_remessa_banco,0) <> 0
+
+exec pr_egis_relatorio_remessa_documentos '[
+    {
+        "ic_json_parametro": "S",
+        "cd_menu": 8235,
+        "cd_usuario": "5034",
+        "cd_relatorio": 423,
+        "cd_remessa_banco": 6
+    }
+]'
+
