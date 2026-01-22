@@ -184,6 +184,13 @@ begin
 	return
 end
 
+--Nota Débito----------------------------------------------------------------------------------
+if @cd_relatorio = 435
+begin
+	exec pr_egis_relatorio_nota_debito @json = @json
+	return
+end
+
 --Resumo de Comissão por Vendedor----------------------------------------------------------------------------
 if @cd_relatorio = 427
 begin
