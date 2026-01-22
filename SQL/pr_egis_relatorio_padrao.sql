@@ -177,6 +177,13 @@ begin
 	return
 end
 
+--Ordem de Servico Consultoria----------------------------------------------------------------------------------
+if @cd_relatorio = 434
+begin
+	exec pr_egis_relatorio_ordem_servico_consultoria @json = @json
+	return
+end
+
 --Resumo de Comissão por Vendedor----------------------------------------------------------------------------
 if @cd_relatorio = 427
 begin
