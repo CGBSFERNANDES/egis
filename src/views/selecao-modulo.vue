@@ -2,7 +2,7 @@
   <div>
     <div class="row items-center q-mb-md">
       <h2 class="content-block">{{ tituloMenu }}</h2>
-       
+
       <q-btn
         round
         color="primary"
@@ -16,26 +16,24 @@
       </q-btn>
 
       <!-- TOGGLE: GRID x CARDS -->
-       <q-toggle
-          v-model="exibirComoCards"
-          color="deep-purple-7"
-          checked-icon="view_module"
-          unchecked-icon="view_list"
-          :label="exibirComoCards ? 'grid' : 'cards'"
-          keep-color
-        />
+      <q-toggle
+        v-model="exibirComoCards"
+        color="deep-purple-7"
+        checked-icon="view_module"
+        unchecked-icon="view_list"
+        :label="exibirComoCards ? 'grid' : 'cards'"
+        keep-color
+      />
 
-          <!-- contador vem DEPOIS -->
-         <div class="q-ml-md text-grey-6">
-           {{ qtdFiltrados }} de {{ qtdTotal }} módulos liberados
-         </div>
-
-
+      <!-- contador vem DEPOIS -->
+      <div class="q-ml-md text-grey-6">
+        {{ qtdFiltrados }} de {{ qtdTotal }} módulos liberados
+      </div>
     </div>
 
     <div v-if="dashBoard">
       <dx-data-grid
-        v-if="!exibirComoCards" 
+        v-if="!exibirComoCards"
         class="dx-card wide-card"
         :data-source="dataSourceConfig"
         :columns="columns"
@@ -92,78 +90,69 @@
         <DxColumnChooser :enabled="true" mode="select" />
       </dx-data-grid>
       <!-- CARDS DOS MÓDULOS -->
-<div
-  v-else
-  class="q-mt-lg q-ml-lg"
->
+      <div v-else class="q-mt-lg q-ml-lg">
+        <div class="q-mb-md filtros-modulos">
+          <div class="row q-col-gutter-md q-mt-sm items-center">
+            <div class="col-12 col-md-4">
+              <q-input
+                dense
+                outlined
+                v-model="filtroTexto"
+                placeholder="Buscar módulo..."
+                clearable
+              />
+            </div>
 
-<div class="q-mb-md filtros-modulos">
-  
-  <div class="row q-col-gutter-md q-mt-sm items-center">
-    <div class="col-12 col-md-4">
-      <q-input
-        dense
-        outlined
-        v-model="filtroTexto"
-        placeholder="Buscar módulo..."
-        clearable
-      />
-    </div>
+            <div class="col-12 col-md-4">
+              <q-select
+                dense
+                outlined
+                v-model="filtroCadeia"
+                :options="opcoesCadeia"
+                emit-value
+                map-options
+                label="Cadeia de Valor"
+              />
+            </div>
+          </div>
+        </div>
 
-    <div class="col-12 col-md-4">
-      <q-select
-        dense
-        outlined
-        v-model="filtroCadeia"
-        :options="opcoesCadeia"
-        emit-value
-        map-options
-        label="Cadeia de Valor"
-      />
-    </div>
-  </div>
-</div>
+        <div class="cards-wrapper">
+          <div
+            v-for="modulo in modulosFiltrados"
+            :key="modulo.cd_modulo"
+            class="modulo-card cursor-pointer card-modulo"
+            @click="selecionarModulo(modulo)"
+          >
+            <div class="modulo-card-body">
+              <div class="logo-modulo">
+                <span class="logo-letter">
+                  {{ (modulo.sg_modulo || modulo.nm_modulo || "").charAt(0) }}
+                </span>
+              </div>
 
-  <div class="cards-wrapper">
-    <div
-      v-for="modulo in modulosFiltrados"
-      :key="modulo.cd_modulo"
-      class="modulo-card cursor-pointer card-modulo"
-      @click="selecionarModulo(modulo)"
-    >
+              <!-- código do módulo -->
+              <div class="codigo-modulo">
+                {{ modulo.cd_modulo }}
+              </div>
 
-    <div class="modulo-card-body">
-         <div class="logo-modulo">
-            <span class="logo-letter">
-              {{ (modulo.sg_modulo || modulo.nm_modulo || '').charAt(0) }}
-            </span>
-         </div>
+              <!-- nome do módulo -->
+              <div class="nome-modulo">
+                {{ modulo.nm_modulo }}
+              </div>
 
-      <!-- código do módulo -->
-      <div class="codigo-modulo">
-        {{ modulo.cd_modulo }}
+              <!-- descrição / observação / qualquer texto extra que você tiver -->
+              <div class="descricao-modulo q-mt-xs">
+                {{ modulo.ds_modulo }}<br />
+              </div>
+            </div>
+            <!-- LINHA FIXA NO RODAPÉ DO CARD -->
+            <div class="cadeia-modulo">
+              {{ modulo.nm_cadeia_valor }}
+            </div>
+          </div>
+        </div>
       </div>
-
-      <!-- nome do módulo -->
-      <div class="nome-modulo">
-        {{ modulo.nm_modulo }}
-      </div>
-
-      <!-- descrição / observação / qualquer texto extra que você tiver -->
-      <div class="descricao-modulo q-mt-xs">
-        {{ modulo.ds_modulo }}<br>
-      </div>
-       
-    </div>
-      <!-- LINHA FIXA NO RODAPÉ DO CARD -->
-  <div class="cadeia-modulo">
-    {{ modulo.nm_cadeia_valor }}
-  </div>
-  </div>
-  </div>
-</div>
-
-
 
       <div class="row items-center">
         <q-btn
@@ -272,8 +261,8 @@ var dados = [];
 export default {
   data() {
     return {
-      filtroTexto: '',
-      filtroCadeia: 'Todas',
+      filtroTexto: "",
+      filtroCadeia: "Todas",
       tituloMenu: "",
       columns: [],
       isReady: false,
@@ -333,82 +322,83 @@ export default {
   },
 
   computed: {
+    qtdFiltrados() {
+      return this.modulosFiltrados.length;
+    },
 
-  qtdFiltrados () {
-    return this.modulosFiltrados.length
+    qtdLiberados() {
+      return Array.isArray(this.dataSourceConfig)
+        ? this.dataSourceConfig.length
+        : 0;
+    },
+
+    qtdTotal() {
+      return Array.isArray(this.dataSourceConfig)
+        ? this.dataSourceConfig.length
+        : 0;
+    },
+
+    opcoesCadeia() {
+      const lista = Array.isArray(this.dataSourceConfig)
+        ? this.dataSourceConfig
+        : [];
+      const unicas = Array.from(
+        new Set(
+          lista.map(m => (m.nm_cadeia_valor || "").trim()).filter(Boolean)
+        )
+      ).sort((a, b) => a.localeCompare(b));
+
+      return [
+        { label: "Todas Cadeias", value: "TODAS" },
+        ...unicas.map(x => ({ label: x, value: x })),
+      ];
+    },
+
+    modulosFiltrados() {
+      const lista = Array.isArray(this.dataSourceConfig)
+        ? this.dataSourceConfig
+        : [];
+
+      const texto = (this.filtroTexto || "").toLowerCase().trim();
+      const cadeia = (this.filtroCadeia || "TODAS").toLowerCase();
+
+      return lista.filter(m => {
+        const nome = (m.nm_modulo || "").toLowerCase();
+        const sigla = (m.sg_modulo || "").toLowerCase();
+        const cadeiaModulo = (m.nm_cadeia_valor || "").toLowerCase();
+
+        const okTexto = !texto || nome.includes(texto) || sigla.includes(texto);
+
+        const okCadeia = cadeia === "todas" || cadeiaModulo === cadeia;
+
+        return okTexto && okCadeia;
+      });
+    },
   },
-
-  qtdLiberados() {
-    return Array.isArray(this.dataSourceConfig) ? this.dataSourceConfig.length : 0
-  },
-
-    qtdTotal () {
-    return Array.isArray(this.dataSourceConfig)
-      ? this.dataSourceConfig.length
-      : 0
-  },
-
-  opcoesCadeia() {
-    const lista = Array.isArray(this.dataSourceConfig) ? this.dataSourceConfig : []
-    const unicas = Array.from(new Set(lista.map(m => (m.nm_cadeia_valor || '').trim()).filter(Boolean)))
-      .sort((a, b) => a.localeCompare(b))
-
-    return [
-      { label: 'Todas Cadeias', value: 'TODAS' },
-      ...unicas.map(x => ({ label: x, value: x }))
-    ]
-  },
-
-  modulosFiltrados () {
-    const lista = Array.isArray(this.dataSourceConfig)
-      ? this.dataSourceConfig
-      : []
-
-    const texto = (this.filtroTexto || '').toLowerCase().trim()
-    const cadeia = (this.filtroCadeia || 'TODAS').toLowerCase()
-
-    return lista.filter(m => {
-      const nome = (m.nm_modulo || '').toLowerCase()
-      const sigla = (m.sg_modulo || '').toLowerCase()
-      const cadeiaModulo = (m.nm_cadeia_valor || '').toLowerCase()
-
-      const okTexto =
-        !texto ||
-        nome.includes(texto) ||
-        sigla.includes(texto)
-
-      const okCadeia =
-        cadeia === 'todas' ||
-        cadeiaModulo === cadeia
-
-      return okTexto && okCadeia
-    })
-  },
-
-},
 
   methods: {
+    async toggleDashboard() {
+      // se está carregando, não faz nada
+      if (this.loadDashBoard) return;
 
-     async toggleDashboard () {
-  
-       // se está carregando, não faz nada
-       if (this.loadDashBoard) return
+      // abriu o painel?
+      this.dashBoard = !this.dashBoard;
+      //
 
-       // abriu o painel?
-       this.dashBoard = !this.dashBoard
-       //
-
-    // só carrega quando abrir e ainda não tem config
-    if (this.dashBoard && (!this.dashBoardConfig || this.dashBoardConfig.length === 0)) {
-      await this.carregaDados()
-    }
-  },
+      // só carrega quando abrir e ainda não tem config
+      if (
+        this.dashBoard &&
+        (!this.dashBoardConfig || this.dashBoardConfig.length === 0)
+      ) {
+        await this.carregaDados();
+      }
+    },
 
     formatLabel(pointInfo) {
       return `${pointInfo.argumentText}: ${pointInfo.valueText}`;
     },
 
-    onFocusedRowChanged: function (e) {
+    onFocusedRowChanged: function(e) {
       var data = e.row && e.row.data;
       this.linha = data;
       this.taskDetails = data && data.ds_informativo;
@@ -428,7 +418,7 @@ export default {
           this.cd_menu,
           this.cd_api
         ); //'titulo';
-    
+
         let sParametroApi = dados.nm_api_parametro;
         localStorage.cd_tipo_consulta = dados.cd_tipo_consulta;
 
@@ -446,38 +436,34 @@ export default {
         this.total = JSON.parse(JSON.parse(JSON.stringify(dados.coluna_total)));
 
         // 🔥 reset antes de preencher
-        this.dashBoardConfig = []
+        this.dashBoardConfig = [];
         //
 
-         // ⚡️ carrega em paralelo (bem mais rápido e reduz chance de “parecer travado”)
-    const promessas = (this.dataSourceConfig || []).map(async (m) => {
-      const json = {
-        cd_parametro: 0,
-        cd_modulo: m.cd_controle,
-        dt_inicial: localStorage.dt_inicial,
-        dt_final: localStorage.dt_final,
-        cd_usuario: this.cd_usuario
+        // ⚡️ carrega em paralelo (bem mais rápido e reduz chance de “parecer travado”)
+        const promessas = (this.dataSourceConfig || []).map(async m => {
+          const json = {
+            cd_parametro: 0,
+            cd_modulo: m.cd_controle,
+            dt_inicial: localStorage.dt_inicial,
+            dt_final: localStorage.dt_final,
+            cd_usuario: this.cd_usuario,
+          };
+
+          const busca = await Incluir.incluirRegistro("803/1265", json);
+          return busca && busca.length > 0 ? busca : null;
+        });
+
+        const resultados = await Promise.allSettled(promessas);
+
+        this.dashBoardConfig = resultados
+          .filter(r => r.status === "fulfilled" && r.value)
+          .map(r => r.value);
+      } catch (error) {
+        console.error("carregaDados erro:", error);
+      } finally {
+        // ✅ GARANTIA ABSOLUTA: spinner sempre para
+        this.loadDashBoard = false;
       }
-
-      const busca = await Incluir.incluirRegistro("803/1265", json)
-      return (busca && busca.length > 0) ? busca : null
-    })
-
-    const resultados = await Promise.allSettled(promessas)
-
-    this.dashBoardConfig = resultados
-      .filter(r => r.status === 'fulfilled' && r.value)
-      .map(r => r.value)
-
-  } catch (error) {
-    console.error('carregaDados erro:', error)
-  } finally {
-    // ✅ GARANTIA ABSOLUTA: spinner sempre para
-    this.loadDashBoard = false
-  }
-        
-
-
     },
 
     saveGridInstance(e) {
@@ -504,7 +490,7 @@ export default {
 
       api = "";
       dados = await Menu.montarMenu(this.cd_empresa, 0, 99); //'titulo'; Procedimento 938 -- pr_atualiza_modulo_acesso_usuario_empresa
-      
+
       api = dados.nm_identificacao_api;
 
       let sParametroApi = dados.nm_api_parametro;
@@ -519,15 +505,22 @@ export default {
       );
 
       //console.log('Selecao de Módulo --> ', dados)
+      localStorage.cd_modulo = dados[0].cd_modulo;
+      localStorage.nm_modulo = dados[0].nm_modulo;
+      localStorage.cd_api = dados[0].cd_api;
+      localStorage.nm_identificacao_api = dados[0].nm_identificacao_api;
+
+      //localStorage.cd_menu = dados[0].cd_menu;
 
       var dados_u;
+
       dados_u = await validaLogin.validar({
         nm_fantasia_usuario: localStorage.login,
         cd_senha_usuario: localStorage.password,
       });
 
       localStorage.cd_home = dados_u.cd_api;
-      
+
       this.$store._mutations.SET_Usuario = dados_u[0];
 
       this.$router.push({ name: "home" });
@@ -547,9 +540,9 @@ export default {
         component: e.component,
         worksheet: worksheet,
         autoFilterEnabled: true,
-      }).then(function () {
+      }).then(function() {
         // https://github.com/exceljs/exceljs#writing-xlsx
-        workbook.xlsx.writeBuffer().then(function (buffer) {
+        workbook.xlsx.writeBuffer().then(function(buffer) {
           saveAs(
             new Blob([buffer], { type: "application/octet-stream" }),
             filename
@@ -577,21 +570,21 @@ export default {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   grid-auto-rows: 1fr;
-  gap: 10px;               /* espaçamento entre cards */
-  margin-right: 10px;      /* espacinho na direita, igual empresas */
+  gap: 10px; /* espaçamento entre cards */
+  margin-right: 10px; /* espacinho na direita, igual empresas */
 }
 
 /* card do módulo */
 .modulo-card {
-  background: #ffffff;      /* fundo branco */
+  background: #ffffff; /* fundo branco */
   border-radius: 24px;
   padding: 24px 32px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.16);
-  color: #512da8;           /* deep-purple-7 */
+  color: #512da8; /* deep-purple-7 */
   display: flex;
   flex-direction: column;
   align-items: center;
-  height: 100%;             /* mesma altura por linha */
+  height: 100%; /* mesma altura por linha */
   box-sizing: border-box;
 }
 
@@ -606,7 +599,7 @@ export default {
   font-weight: 700;
   font-size: 18px;
   margin-bottom: 12px;
-  color: #e65100;           /* deep-orange-9 */
+  color: #e65100; /* deep-orange-9 */
 }
 
 /* nome do módulo */
@@ -615,7 +608,7 @@ export default {
   font-size: 16px;
   text-align: center;
   margin-bottom: 6px;
-  color: #512da8;           /* deep-purple-7 */
+  color: #512da8; /* deep-purple-7 */
 }
 
 /* descrição do módulo */
@@ -627,8 +620,8 @@ export default {
 }
 
 .logo-modulo {
-  background: #512da8;       /* deep-purple-7 */
-  
+  background: #512da8; /* deep-purple-7 */
+
   color: white;
   width: 64px;
   height: 64px;
@@ -640,7 +633,7 @@ export default {
   margin-bottom: 10px;
 }
 
-.logo-letter{
+.logo-letter {
   font-size: 32px;
   line-height: 1;
   font-weight: 800;
@@ -650,7 +643,7 @@ export default {
 
 /* parte de cima do card (tudo menos nm_cadeia_valor) */
 .modulo-card-body {
-  flex: 1;               /* ocupa o espaço variável */
+  flex: 1; /* ocupa o espaço variável */
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -665,19 +658,17 @@ export default {
   text-align: center;
   color: #333;
 }
-.filtros-modulos{
+.filtros-modulos {
   max-width: 1100px;
 }
 
-.card-modulo{
+.card-modulo {
   border-radius: 18px;
-  transition: transform .2s ease, box-shadow .2s ease;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
-.card-modulo:hover{
+.card-modulo:hover {
   transform: translateY(-4px);
-  box-shadow: 0 12px 28px rgba(0,0,0,.18);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.18);
 }
-
-
 </style>
