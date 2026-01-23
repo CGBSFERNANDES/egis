@@ -3479,6 +3479,9 @@ export default {
     },
 
     activeMenuTab(novo, antigo) {
+      // garante stack
+      if (!Array.isArray(this._tabStack)) this._tabStack = [];
+
       // evita lixo
       if (!antigo || antigo === novo) return;
 
@@ -12697,12 +12700,12 @@ if (descGenerica) {
 
           //console.log('payload da consulta:', payloadNew);
 
-          //console.log('payload da consulta:', payload);
+          console.log(" >>>> payload da consulta: >>>> ", payload);
 
           //
           //pr_egis_pesquisa_dados
           // chama o endpoint padrão de pesquisa
-
+          ///////////////////////////////////////////////////////////////////////////////
           const { data } = await api.post("/menu-pesquisa", payload);
           dados = data;
           //
