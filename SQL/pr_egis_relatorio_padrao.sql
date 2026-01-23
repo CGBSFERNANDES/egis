@@ -191,6 +191,13 @@ begin
 	return
 end
 
+--Ordem de Servico por Pedido--------------------------------------------------------------------------
+if @cd_relatorio = 436
+begin
+	exec pr_egis_ordem_servico_pedido_venda @json = @json
+	return
+end
+
 --Resumo de Comissão por Vendedor----------------------------------------------------------------------------
 if @cd_relatorio = 427
 begin
