@@ -1,32 +1,39 @@
 <!-- eslint-disable no-console -->
 <template>
   <div class="margin1">
-    <div style="display: flex; align-items: center; justify-content: center">
-      <q-btn
-        v-if="prop_form.nm_form"
-        rounded
-        color="orange-9"
-        text-color="white"
-        size="lg"
-        :label="`${prop_form.nm_form}`"
-      />
-    </div>
-    <div class="row justify-end">
-      <q-chip
-        v-if="cd_relatorioID"
-        rounded
-        color="deep-purple-7"
-        class="q-mt-sm q-ml-sm margin-menu"
-        size="16px"
-        text-color="white"
-        :label="`${cd_relatorioID}`"
-      />
-    </div>
-    <div class="text-h5 text-bold margin1">
-      {{ tituloForm }}
-      <q-badge v-if="prop_form.cd_movimento" align="top" color="blue">
-        {{ prop_form.cd_movimento }}
-      </q-badge>
+    <div class="row no-wrap items-start q-gutter-md">
+      <div class="col-auto flex flex-center bg-deep-purple-1 q-pa-md" style="border-radius: 80px;">
+        <q-icon name="tune" size="48px" color="deep-purple-7" />
+      </div>
+      <div class="col">
+        <div style="display: flex; align-items: center; justify-content: center">
+          <q-btn
+            v-if="prop_form.nm_form"
+            rounded
+            color="orange-9"
+            text-color="white"
+            size="lg"
+            :label="`${prop_form.nm_form}`"
+          />
+        </div>
+        <div class="row justify-end">
+          <q-chip
+            v-if="cd_relatorioID"
+            rounded
+            color="deep-purple-7"
+            class="q-mt-sm q-ml-sm margin-menu"
+            size="16px"
+            text-color="white"
+            :label="`${cd_relatorioID}`"
+          />
+        </div>
+        <div class="text-h5 text-bold margin1">
+          {{ tituloForm }}
+          <q-badge v-if="prop_form.cd_movimento" align="top" color="blue">
+            {{ prop_form.cd_movimento }}
+          </q-badge>
+        </div>
+      </div>
     </div>
     <!-- Mostra dataSource ou informa que não foi possível carregar -->
     <transition name="slide-fade">
