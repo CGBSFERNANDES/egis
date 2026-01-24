@@ -4843,6 +4843,35 @@ export default {
   width: 47.5%;
 }
 
+@media screen and (max-width: 1024px) {
+  #kanban {
+    white-space: normal;
+  }
+
+  .scrollable-board {
+    height: auto;
+  }
+
+  .scrollable-board .dx-scrollview-content {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .sortable-lists {
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+    margin: 0;
+  }
+
+  .list {
+    display: block;
+    max-width: 100%;
+    width: 100%;
+    white-space: normal;
+  }
+}
+
 @media (max-width: 900px) {
   .metadeTela {
     width: 100%;
