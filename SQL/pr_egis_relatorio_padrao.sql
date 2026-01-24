@@ -198,6 +198,13 @@ begin
 	return
 end
 
+--Solicitação de Adiantamento--------------------------------------------------------------------------
+if @cd_relatorio = 438
+begin
+	exec pr_egis_relatorio_solicitacao_adiantamento @json = @json
+	return
+end
+
 --Resumo de Comissão por Vendedor----------------------------------------------------------------------------
 if @cd_relatorio = 427
 begin
