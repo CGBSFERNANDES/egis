@@ -22,7 +22,7 @@
             icon="arrow_back"
             class="q-mr-sm seta-form"
             aria-label="Voltar"
-            @click="$emit('voltar')"
+            @click="onVoltar"
           />
           <span
             v-if="displayTitle"
@@ -10181,7 +10181,10 @@ if (descGenerica) {
     },
 
     onVoltar() {
-      if (this.embedMode) {
+      const hasVoltarListener =
+        this.$listeners && Object.prototype.hasOwnProperty.call(this.$listeners, "voltar");
+
+      if (this.embedMode || hasVoltarListener) {
         this.$emit("voltar");
         return;
       }
