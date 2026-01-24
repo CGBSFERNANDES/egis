@@ -622,7 +622,7 @@
 
         <q-separator />
 
-        <q-card-actions align="right">
+        <q-card-actions align="right" class="dlg-form-card__actions">
           <!-- Cancelar -->
           <q-btn
             rounded
