@@ -1,32 +1,80 @@
 <!-- eslint-disable no-console -->
 <template>
   <div class="margin1">
-    <div style="display: flex; align-items: center; justify-content: center">
-      <q-btn
-        v-if="prop_form.nm_form"
-        rounded
-        color="orange-9"
-        text-color="white"
-        size="lg"
-        :label="`${prop_form.nm_form}`"
-      />
+    <div
+      v-if="headerLayoutVersion === 1"
+      class="row no-wrap items-start q-gutter-md"
+    >
+      <div class="col-auto flex flex-center bg-deep-purple-1 q-pa-md" style="border-radius: 80px;">
+        <q-icon name="tune" size="48px" color="deep-purple-7" />
+      </div>
+      <div class="col">
+        <div class="row items-center justify-between">
+          <q-btn
+            v-if="prop_form.nm_form"
+            rounded
+            color="orange-9"
+            text-color="white"
+            size="lg"
+            :label="`${prop_form.nm_form}`"
+          />
+          <q-chip
+            v-if="cd_relatorioID"
+            rounded
+            color="deep-purple-7"
+            class="q-ml-sm margin-menu"
+            size="16px"
+            text-color="white"
+            :label="`${cd_relatorioID}`"
+          />
+        </div>
+        <div class="text-h5 text-bold margin1">
+          {{ tituloForm }}
+          <q-badge v-if="prop_form.cd_movimento" align="top" color="blue">
+            {{ prop_form.cd_movimento }}
+          </q-badge>
+        </div>
+      </div>
     </div>
-    <div class="row justify-end">
-      <q-chip
-        v-if="cd_relatorioID"
-        rounded
-        color="deep-purple-7"
-        class="q-mt-sm q-ml-sm margin-menu"
-        size="16px"
-        text-color="white"
-        :label="`${cd_relatorioID}`"
-      />
-    </div>
-    <div class="text-h5 text-bold margin1">
-      {{ tituloForm }}
-      <q-badge v-if="prop_form.cd_movimento" align="top" color="blue">
-        {{ prop_form.cd_movimento }}
-      </q-badge>
+    <div
+      v-else-if="headerLayoutVersion === 2"
+      class="row no-wrap items-center q-gutter-md q-pa-md bg-grey-1 rounded-borders"
+    >
+      <div class="col-auto flex flex-center bg-deep-purple-1 q-pa-md" style="border-radius: 80px;">
+        <q-icon name="tune" size="48px" color="deep-purple-7" />
+      </div>
+      <div class="col">
+        <div class="row items-center justify-between">
+          <div class="text-h5 text-bold">
+            {{ tituloForm }}
+            <q-badge v-if="prop_form.cd_movimento" align="top" color="blue">
+              {{ prop_form.cd_movimento }}
+            </q-badge>
+          </div>
+          <q-chip
+            v-if="cd_relatorioID"
+            rounded
+            color="deep-purple-7"
+            class="q-ml-sm margin-menu"
+            size="16px"
+            text-color="white"
+            :label="`${cd_relatorioID}`"
+          />
+        </div>
+        <div class="row items-center q-gutter-sm q-mt-xs">
+          <q-btn
+            v-if="prop_form.nm_form"
+            rounded
+            color="orange-9"
+            text-color="white"
+            size="md"
+            :label="`${prop_form.nm_form}`"
+          />
+          <div class="text-caption text-grey-7">
+            {{ prop_form.ds_form || '' }}
+          </div>
+        </div>
+      </div>
     </div>
     <!-- Mostra dataSource ou informa que não foi possível carregar -->
     <transition name="slide-fade">
@@ -844,6 +892,7 @@ export default {
   name: 'cadastroFormEspecial',
   data() {
     return {
+      headerLayoutVersion: 1,
       tituloForm: '',
       cd_empresa: localStorage.cd_empresa,
       cd_usuario: localStorage.cd_usuario,
