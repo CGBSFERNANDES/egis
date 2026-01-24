@@ -3,148 +3,244 @@
     <meta charset="utf-8" />
     <style>
       body {
-        font-family: Arial, sans-serif;
-        font-size: 12px;
+        font-family: Arial, Helvetica, sans-serif;
         color: #333;
-      }
-      h1 {
-        font-size: 18px;
-        margin: 0;
+        font-size: 12px;
       }
       .header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
         border-bottom: 2px solid #1976d2;
-        padding-bottom: 8px;
+        padding-bottom: 10px;
+        margin-bottom: 15px;
       }
-      .company {
-        font-size: 11px;
-        line-height: 1.4;
+      .header .logo {
+        float: left;
+        width: 120px;
+      }
+      .header .empresa {
+        margin-left: 130px;
+      }
+      .titulo {
+        font-size: 18px;
+        font-weight: bold;
+        color: #1976d2;
+      }
+      .subtitulo {
+        font-size: 13px;
+        margin-top: 4px;
       }
       .section {
         margin-top: 12px;
       }
       .label {
         font-weight: bold;
-        color: #444;
+      }
+      .info-grid {
+        width: 100%;
+      }
+      .info-grid td {
+        padding: 4px 6px;
+        vertical-align: top;
       }
       table {
         width: 100%;
         border-collapse: collapse;
-        margin-top: 6px;
+        margin-top: 10px;
       }
       th,
       td {
-        border: 1px solid #d9d9d9;
+        border: 1px solid #dcdcdc;
         padding: 6px;
-        font-size: 11px;
         text-align: left;
+        font-size: 11px;
       }
       th {
-        background: #f4f4f4;
+        background-color: #f3f3f3;
+      }
+      .tabs {
+        margin-top: 15px;
+      }
+      .tabs input[type="radio"] {
+        display: none;
+      }
+      .tabs label {
+        display: inline-block;
+        padding: 6px 12px;
+        margin-right: 4px;
+        background: #f3f3f3;
+        cursor: pointer;
+        border: 1px solid #dcdcdc;
+        border-bottom: none;
+      }
+      .tabs label:hover {
+        background: #e8e8e8;
+      }
+      .tab-content {
+        display: none;
+        border: 1px solid #dcdcdc;
+        padding: 10px;
+      }
+      #tab-servicos:checked ~ #content-servicos {
+        display: block;
+      }
+      #tab-despesas:checked ~ #content-despesas {
+        display: block;
       }
     </style>
   </head>
   <body>
     <div class="header">
-      <div>
+      <div class="logo">
         <img
-          src="https://egisnet.com.br/img/NEWPRINT.bmp"
-          alt="Logo"
-          style="max-height:60px;"
+          src="https://egisnet.com.br/img/Logo_EgisMob.jpg"
+          style="max-width:110px;"
         />
       </div>
-      <div style="text-align:right;">
-        <h1>Ordem de Serviço por Pedido</h1>
-        <div style="font-size:11px;">Gerado em: 23/01/2026 15:01:12</div>
+      <div class="empresa">
+        <div class="titulo">Ordem de Serviço</div>
+        <div class="subtitulo">EGIS</div>
+        <div class="subtitulo">
+          Rua Armando Backix, 127 - São Bernardo do Campo / SP
+        </div>
+        <div class="subtitulo">
+          (11) 4351-5348 | trilha@trilhacontabilidade.com.br
+        </div>
       </div>
-    </div>
-    <div class="company">
-      <strong>2024 - GRUPO NEWPRINT</strong><br />
-      Avenida Santo Albano, 129 - 04296-000<br />
-      SAO PAULO - SP - BRASI<br />
-      Fone: (11) 4306-7039 | Email: contato@newprintctp.com.br
+      <div style="clear:both"></div>
     </div>
     <div class="section">
-      <p>
-        <span class="label">OS:</span> 12664 &nbsp;
-        <span class="label">Data:</span> 27/02/2024 &nbsp;
-        <span class="label">Pedido:</span> 1726
-      </p>
-      <p>
-        <span class="label">Cliente:</span> LB_NOVA ESPERANÇA &nbsp;
-        <span class="label">Razão Social:</span> JOSILANIA TEIXEIRA MARTINS
-        54381363353
-      </p>
-      <p>
-        <span class="label">CNPJ:</span> 37.640.630/0001-30 &nbsp;
-        <span class="label">Email:</span> lbartes@terra.com.br
-      </p>
-      <p>
-        <span class="label">Contato:</span> &nbsp;
-        <span class="label">Telefone:</span> 11 -97204-9350
-      </p>
-      <p>
-        <span class="label">Status:</span> Ativa &nbsp;
-        <span class="label">Condição:</span> ANTECIPADO
-      </p>
-      <p>
-        <span class="label">Usuário:</span> SIDNEIJ &nbsp;
-        <span class="label">Fechamento:</span>
-      </p>
-      <p><span class="label">Obs. Fechamento:</span></p>
-    </div>
-    <div class="section">Ordem de Serviço por Pedido de Venda</div>
-    <div class="section">
-      <h3>Produtos</h3>
-      <table>
-        <thead>
-          <tr>
-            <th>Item</th>
-            <th>Produto</th>
-            <th>Descrição</th>
-            <th>Obs.</th>
-            <th>Qtde</th>
-            <th>Vl. Unit.</th>
-            <th>Vl. Total</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td>1</td>
-            <td>508X645X030_MATRIZ</td>
-            <td>508X645X030_MA</td>
-            <td>SACOLA CASA DOS OCULOS</td>
-            <td style="text-align:right;">2</td>
-            <td style="text-align:right;">27</td>
-            <td style="text-align:right;">54</td>
-          </tr>
-          <tr>
-            <td>2</td>
-            <td>508X645X030_MATRIZ</td>
-            <td>508X645X030_MA</td>
-            <td>FRIZZO CAIXA - 21-02-24 (2</td>
-            <td style="text-align:right;">4</td>
-            <td style="text-align:right;">27</td>
-            <td style="text-align:right;">108</td>
-          </tr>
-        </tbody>
+      <table class="info-grid">
+        <tr>
+          <td><span class="label">Ordem:</span> 7434</td>
+          <td><span class="label">Data:</span> 22/01/2026</td>
+          <td><span class="label">Analista:</span> Fagner</td>
+        </tr>
+        <tr>
+          <td><span class="label">Cliente:</span> SPECIAL SPRINGS</td>
+          <td>
+            <span class="label">Razão Social:</span> SPECIAL SPRINGS DO BRASIL -
+            DISTR. IMPORT. EXPORT. DE COMPON
+          </td>
+          <td><span class="label">Contato:</span></td>
+        </tr>
+        <tr>
+          <td><span class="label">Departamento:</span> Diretoria</td>
+          <td><span class="label">Centro de Custo:</span></td>
+          <td><span class="label">Atividade:</span> Desenvolvimento</td>
+        </tr>
+        <tr>
+          <td><span class="label">Tipo Treinamento:</span></td>
+          <td><span class="label">Usuário Liberação:</span></td>
+          <td><span class="label">Horas Totais:</span> 0.166667</td>
+        </tr>
+        <tr>
+          <td colspan="3"><span class="label">Observação:</span></td>
+        </tr>
       </table>
     </div>
+    <div class="section">Ordem de Serviço Consultoria</div>
     <div class="section">
-      <h3>Serviços</h3>
-      <table>
-        <thead>
-          <tr>
-            <th>Serviço</th>
-            <th>Qtde</th>
-            <th>Vl. Unit.</th>
-            <th>Vl. Total</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
+      <table class="info-grid">
+        <tr>
+          <td><span class="label">Total Serviços:</span> 400.00</td>
+          <td><span class="label">Total Despesas:</span> 0.00</td>
+          <td><span class="label">Total Geral:</span> 400.00</td>
+        </tr>
       </table>
+    </div>
+    <div class="tabs">
+      <input type="radio" id="tab-servicos" name="tabs" checked />
+      <label for="tab-servicos">Serviços</label>
+      <input type="radio" id="tab-despesas" name="tabs" />
+      <label for="tab-despesas">Despesas</label>
+      <div class="tab-content" id="content-servicos">
+        <table>
+          <thead>
+            <tr>
+              <th>cd_ordem_servico</th>
+              <th>cd_item_ordem_servico</th>
+              <th>dt_item_ordem_servico</th>
+              <th>nm_hora_inicio_ordem</th>
+              <th>nm_hora_fim_ordem</th>
+              <th>qt_item_normal_ordem</th>
+              <th>qt_item_extra1_ordem</th>
+              <th>qt_item_extra2_ordem</th>
+              <th>qt_item_desloc_ordem</th>
+              <th>nm_item_obs_ordem</th>
+              <th>cd_usuario</th>
+              <th>dt_usuario</th>
+              <th>cd_servico</th>
+              <th>nm_hora_intervalo</th>
+              <th>vl_servico_ordem_servico</th>
+              <th>ds_servico_ordem_servico</th>
+              <th>vl_item_total_servico</th>
+              <th>cd_nota_debito_despesa</th>
+              <th>ic_fatura_item_ordem</th>
+              <th>nm_hora_total</th>
+              <th>nm_servico</th>
+              <th>nm_fantasia_analista</th>
+              <th>ic_extra</th>
+              <th>ic_desloc</th>
+              <th>vl_total_servico</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>7434</td>
+              <td>1</td>
+              <td>Jan 22 2026 12:00AM</td>
+              <td>10:00:00</td>
+              <td>14:00:00</td>
+              <td>0.166667</td>
+              <td>0</td>
+              <td>0</td>
+              <td>0</td>
+              <td></td>
+              <td>1</td>
+              <td>Jan 22 2026 6:20PM</td>
+              <td>11</td>
+              <td></td>
+              <td>100</td>
+              <td>Desenvolvimento Específico</td>
+              <td></td>
+              <td></td>
+              <td>1</td>
+              <td>04:00</td>
+              <td>Desenvolvimento Específico</td>
+              <td>Fagner</td>
+              <td>0</td>
+              <td>0</td>
+              <td>400</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="tab-content" id="content-despesas">
+        <table>
+          <thead>
+            <tr>
+              <th>cd_ordem_servico</th>
+              <th>cd_item_despesa_ordem</th>
+              <th>cd_tipo_despesa</th>
+              <th>nm_obs_tipo_despesa</th>
+              <th>qt_item_despesa_ordem</th>
+              <th>vl_item_despesa_ordem</th>
+              <th>cd_usuario</th>
+              <th>dt_usuario</th>
+              <th>ic_empresa_despesa</th>
+              <th>ic_cliente_despesa</th>
+              <th>cd_documento_despesa</th>
+              <th>dt_despesa</th>
+              <th>ic_consultor_despesa</th>
+              <th>cd_documento_pagar</th>
+              <th>cd_nota_debito_despesa</th>
+              <th>dt_vencimento_despesa</th>
+              <th>ic_desconto_consultor</th>
+              <th>cd_identificacao_document</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
     </div>
   </body>
 </html>
