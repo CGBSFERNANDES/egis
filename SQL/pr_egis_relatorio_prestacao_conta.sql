@@ -70,6 +70,10 @@ BEGIN
         @html_itens            NVARCHAR(MAX) = '';
 
     DECLARE
+        @vl_receber FLOAT = 0,
+        @vl_pagar   FLOAT = 0;
+
+    DECLARE
         @dt_prestacao              DATE,
         @nm_tipo_prestacao         VARCHAR(200),
         @nm_motivo_prestacao       VARCHAR(200),
@@ -336,9 +340,15 @@ BEGIN
             @html_itens = (
                 SELECT
                     N'<tr>' +
+                    N'<td style="text-align:center;">' + CAST(ROW_NUMBER() OVER (ORDER BY nm_tipo_despesa) AS NVARCHAR(10)) + N'</td>' +
                     N'<td>' + ISNULL(nm_tipo_despesa, '') + N'</td>' +
-                    N'<td>' + ISNULL(sg_centro_custo, '') + N'</td>' +
+                    N'<td></td>' +
+                    N'<td style="text-align:right;"></td>' +
+                    N'<td style="text-align:right;"></td>' +
                     N'<td style="text-align:right;">' + ISNULL(dbo.fn_formata_valor(vl_total_despesa), '') + N'</td>' +
+                    N'<td></td>' +
+                    N'<td></td>' +
+                    N'<td style="text-align:center;">' + ISNULL(sg_centro_custo, '') + N'</td>' +
                     N'</tr>'
                 FROM #composicao
                 ORDER BY nm_tipo_despesa
@@ -351,78 +361,104 @@ BEGIN
         /*-----------------------------------------------------------------------------------------
           6) Montagem do HTML
         -----------------------------------------------------------------------------------------*/
+        SET @vl_receber = CASE WHEN @vl_resultado > 0 THEN @vl_resultado ELSE 0 END;
+        SET @vl_pagar = CASE WHEN @vl_resultado < 0 THEN @vl_resultado * -1 ELSE 0 END;
+
         SET @html =
             N'<!DOCTYPE html>' +
             N'<html><head><meta charset="utf-8" />' +
             N'<style>' +
-            N'body{font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#333;margin:20px;}' +
-            N'.header{display:flex;align-items:center;border-bottom:2px solid ' + @nm_cor_empresa + N';padding-bottom:10px;margin-bottom:15px;}' +
-            N'.logo{width:120px;}' +
-            N'.empresa{flex:1;padding-left:10px;}' +
-            N'.titulo{font-size:18px;font-weight:bold;color:' + @nm_cor_empresa + N';}' +
-            N'.subtitulo{font-size:12px;color:#666;}' +
-            N'table{width:100%;border-collapse:collapse;margin-top:10px;}' +
-            N'th,td{border:1px solid #ccc;padding:6px;}' +
-            N'th{background:#f2f2f2;text-align:left;}' +
-            N'.section-title{margin-top:15px;font-weight:bold;color:' + @nm_cor_empresa + N';}' +
-            N'.totais td{font-weight:bold;}' +
+            N'body{font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#000;margin:0;}' +
+            N'.container{width:100%;border:1px solid #333;}' +
+            N'.header{width:100%;border-bottom:1px solid #333;}' +
+            N'.header td{vertical-align:middle;padding:8px;}' +
+            N'.title{font-size:22px;font-weight:bold;text-align:center;padding:6px 0;}' +
+            N'.subtitle{font-size:12px;text-align:center;padding:4px 0;border-top:1px solid #333;border-bottom:1px solid #333;}' +
+            N'.info{width:100%;border-collapse:collapse;}' +
+            N'.info td{padding:4px 6px;}' +
+            N'.label{font-weight:bold;}' +
+            N'.section{border-top:1px solid #333;border-bottom:1px solid #333;font-weight:bold;padding:4px 6px;}' +
+            N'.bar{background:#e5e5e5;font-weight:bold;text-align:center;border-top:1px solid #333;border-bottom:1px solid #333;padding:4px 6px;}' +
+            N'.table{width:100%;border-collapse:collapse;}' +
+            N'.table th,.table td{border:1px solid #333;padding:4px 6px;}' +
+            N'.table th{background:#f2f2f2;text-align:center;}' +
+            N'.total{font-weight:bold;text-align:center;border:1px solid #333;padding:6px;}' +
             N'</style></head><body>' +
-            N'<div class="header">' +
-            N'<div class="logo"><img src="' + @logo + N'" style="max-width:110px;"></div>' +
-            N'<div class="empresa">' +
-            N'<div class="titulo">' + ISNULL(@nm_fantasia_empresa, '') + N'</div>' +
-            N'<div class="subtitulo">' + ISNULL(@nm_endereco_empresa, '') + N', ' + ISNULL(@cd_numero_endereco, '') +
-                N' - ' + ISNULL(@nm_bairro_empresa, '') + N' - ' + ISNULL(@nm_cidade_empresa, '') +
-                N'/' + ISNULL(@sg_estado_empresa, '') + N' - ' + ISNULL(@cd_cep_empresa, '') + N'</div>' +
-            N'<div class="subtitulo">Telefone: ' + ISNULL(@cd_telefone_empresa, '') + N' | E-mail: ' + ISNULL(@nm_email_internet, '') +
-                N' | CNPJ: ' + ISNULL(@cd_cnpj_empresa, '') + N'</div>' +
-            N'</div>' +
-            N'<div class="subtitulo">' + ISNULL(@data_hora_atual, '') + N'</div>' +
-            N'</div>' +
-            N'<div class="titulo">' + ISNULL(@nm_titulo_relatorio, @titulo) + N'</div>' +
-
-            N'<div class="section-title">Dados da Prestação</div>' +
-            N'<table>' +
-            N'<tr><th>Prestação</th><td>' + CAST(@cd_prestacao AS VARCHAR(20)) + N'</td>' +
-                N'<th>Data</th><td>' + ISNULL(CONVERT(VARCHAR, @dt_prestacao, 103), '') + N'</td></tr>' +
-            N'<tr><th>Tipo</th><td>' + ISNULL(@nm_tipo_prestacao, '') + N'</td>' +
-                N'<th>Motivo</th><td>' + ISNULL(@nm_motivo_prestacao, '') + N'</td></tr>' +
-            N'<tr><th>Funcionário</th><td>' + ISNULL(@nm_funcionario, '') + N'</td>' +
-                N'<th>Chapa/CPF</th><td>' + ISNULL(@cd_chapa_funcionario, '') + N' / ' + ISNULL(@cd_cpf_funcionario, '') + N'</td></tr>' +
-            N'<tr><th>Setor</th><td>' + ISNULL(@nm_setor_funcionario, '') + N'</td>' +
-                N'<th>Departamento</th><td>' + ISNULL(@nm_departamento, '') + N'</td></tr>' +
-            N'<tr><th>Centro de Custo</th><td>' + ISNULL(@nm_centro_custo, '') + N'</td>' +
-                N'<th>Moeda</th><td>' + ISNULL(@nm_moeda, '') + N'</td></tr>' +
-            N'<tr><th>Banco</th><td>' + ISNULL(@nm_banco, '') + N' (' + ISNULL(@cd_banco, '') + N')</td>' +
-                N'<th>Agência/Conta</th><td>' + ISNULL(@cd_agencia_funcionario, '') + N' / ' + ISNULL(@cd_conta_funcionario, '') + N'</td></tr>' +
-            N'<tr><th>Local Viagem</th><td>' + ISNULL(@nm_local_viagem, '') + N'</td>' +
-                N'<th>Período</th><td>' + ISNULL(CONVERT(VARCHAR, @dt_inicio_viagem, 103), '') + N' a ' +
-                ISNULL(CONVERT(VARCHAR, @dt_fim_viagem, 103), '') + N'</td></tr>' +
-            N'<tr><th>Projeto</th><td>' + ISNULL(@nm_projeto_viagem, '') + N'</td>' +
-                N'<th>Identificação</th><td>' + ISNULL(@cd_identificacao_projeto, '') + N'</td></tr>' +
-            N'<tr><th>Assunto</th><td>' + ISNULL(@nm_assunto_viagem, '') + N'</td>' +
-                N'<th>Cartão Crédito</th><td>' + ISNULL(@nm_cartao_credito, '') + N'</td></tr>' +
-            N'<tr><th>Autorização</th><td colspan="3">' + ISNULL(@nm_funcionario_autorizacao, '') + N'</td></tr>' +
+            N'<table class="container" cellpadding="0" cellspacing="0">' +
+            N'<tr><td>' +
+            N'<table class="header" cellpadding="0" cellspacing="0">' +
+            N'<tr>' +
+            N'<td style="width:35%;"><img src="' + @logo + N'" style="max-width:160px;"></td>' +
+            N'<td style="width:30%;text-align:center;font-weight:bold;">' + ISNULL(@nm_fantasia_empresa, '') + N'</td>' +
+            N'<td style="width:35%;text-align:right;font-weight:bold;">DATA/HORA: ' + ISNULL(@data_hora_atual, '') + N'</td>' +
+            N'</tr>' +
             N'</table>' +
+            N'</td></tr>' +
+            N'<tr><td class="title">' + ISNULL(@nm_titulo_relatorio, @titulo) + N'</td></tr>' +
+            N'<tr><td class="subtitle">O PRESENTE RELATÓRIO VISA O ACERTO E A LIQUIDAÇÃO DAS DESPESAS ABAIXO APRESENTADAS</td></tr>' +
 
-            N'<div class="section-title">Totais</div>' +
-            N'<table class="totais">' +
-            N'<tr><th>Adiantamento</th><td style="text-align:right;">' + ISNULL(dbo.fn_formata_valor(@vl_adiantamento), '') + N'</td>' +
-                N'<th>Despesas</th><td style="text-align:right;">' + ISNULL(dbo.fn_formata_valor(@vl_despesas), '') + N'</td></tr>' +
-            N'<tr><th>Não Reembolsável</th><td style="text-align:right;">' + ISNULL(dbo.fn_formata_valor(@vl_nao_reembolsavel), '') + N'</td>' +
-                N'<th>Reembolsável</th><td style="text-align:right;">' + ISNULL(dbo.fn_formata_valor(@vl_reembolsavel), '') + N'</td></tr>' +
-            N'<tr><th>Devolução Moeda</th><td style="text-align:right;">' + ISNULL(dbo.fn_formata_valor(@vl_devolucao_moeda), '') + N'</td>' +
-                N'<th>Imposto</th><td style="text-align:right;">' + ISNULL(dbo.fn_formata_valor(@vl_imposto_prestacao), '') + N'</td></tr>' +
-            N'<tr><th>Resultado</th><td style="text-align:right;">' + ISNULL(dbo.fn_formata_valor(@vl_resultado), '') + N'</td>' +
-                N'<th>Tipo Depósito</th><td>' + ISNULL(@ic_tipo_deposito_prestacao, '') + N'</td></tr>' +
+            N'<tr><td>' +
+            N'<table class="info" cellpadding="0" cellspacing="0">' +
+            N'<tr>' +
+            N'<td class="label">Data da Prestação:</td><td>' + ISNULL(CONVERT(VARCHAR, @dt_prestacao, 103), '') + N'</td>' +
+            N'<td class="label" style="text-align:right;">Prestação Nº:</td><td style="text-align:right;">' + CAST(@cd_prestacao AS VARCHAR(20)) + N'</td>' +
+            N'</tr>' +
+            N'<tr>' +
+            N'<td class="label">Funcionário:</td><td>' + ISNULL(@nm_funcionario, '') + N'</td>' +
+            N'<td class="label" style="text-align:right;">Matrícula:</td><td style="text-align:right;">' + ISNULL(@cd_chapa_funcionario, '') + N'</td>' +
+            N'</tr>' +
+            N'<tr>' +
+            N'<td class="label">Departamento:</td><td>' + ISNULL(@nm_departamento, '') + N'</td>' +
+            N'<td class="label" style="text-align:right;">CPF:</td><td style="text-align:right;">' + ISNULL(@cd_cpf_funcionario, '') + N'</td>' +
+            N'</tr>' +
+            N'<tr>' +
+            N'<td class="label">Banco:</td><td>' + ISNULL(@nm_banco, '') + N'</td>' +
+            N'<td class="label" style="text-align:right;">Agência:</td><td style="text-align:right;">' + ISNULL(@cd_agencia_funcionario, '') + N'</td>' +
+            N'</tr>' +
+            N'<tr>' +
+            N'<td class="label">Conta:</td><td>' + ISNULL(@cd_conta_funcionario, '') + N'</td>' +
+            N'<td class="label" style="text-align:right;">Centro de Custo:</td><td style="text-align:right;">' + ISNULL(@nm_centro_custo, '') + N'</td>' +
+            N'</tr>' +
+            N'<tr>' +
+            N'<td class="label">Período:</td><td>' + ISNULL(CONVERT(VARCHAR, @dt_inicio_viagem, 103), '') + N' a ' +
+                ISNULL(CONVERT(VARCHAR, @dt_fim_viagem, 103), '') + N'</td>' +
+            N'<td class="label" style="text-align:right;">Local:</td><td style="text-align:right;">' + ISNULL(@nm_local_viagem, '') + N'</td>' +
+            N'</tr>' +
+            N'<tr>' +
+            N'<td class="label">Assunto:</td><td>' + ISNULL(@nm_assunto_viagem, '') + N'</td>' +
+            N'<td class="label" style="text-align:right;">Cartão de Crédito:</td><td style="text-align:right;">' + ISNULL(@nm_cartao_credito, '') + N'</td>' +
+            N'</tr>' +
             N'</table>' +
+            N'</td></tr>' +
 
-            N'<div class="section-title">Composição de Despesas</div>' +
-            N'<table>' +
-            N'<tr><th>Tipo Despesa</th><th>Centro Custo</th><th style="text-align:right;">Valor</th></tr>' +
+            N'<tr><td class="section">A Receber</td></tr>' +
+            N'<tr><td style="padding:4px 6px;">' + ISNULL(dbo.fn_formata_valor(@vl_receber), '') + N'</td></tr>' +
+            N'<tr><td class="section">A Pagar</td></tr>' +
+            N'<tr><td style="padding:4px 6px;">' + ISNULL(dbo.fn_formata_valor(@vl_pagar), '') + N'</td></tr>' +
+            N'<tr><td class="section">Importante</td></tr>' +
+            N'<tr><td style="padding:4px 6px;"></td></tr>' +
+
+            N'<tr><td class="bar">Discriminação das Despesas</td></tr>' +
+            N'<tr><td>' +
+            N'<table class="table" cellpadding="0" cellspacing="0">' +
+            N'<tr>' +
+            N'<th>Item</th>' +
+            N'<th>Despesa</th>' +
+            N'<th>Nº Doc</th>' +
+            N'<th>Qtd.</th>' +
+            N'<th>Vl. Unitário</th>' +
+            N'<th>Valor Total</th>' +
+            N'<th>Cliente/Finalidade</th>' +
+            N'<th>Observação</th>' +
+            N'<th>C.C.</th>' +
+            N'</tr>' +
             ISNULL(@html_itens, '') +
             N'</table>' +
+            N'</td></tr>' +
 
+            N'<tr><td class="total">Total de Despesas: ' + ISNULL(dbo.fn_formata_valor(@vl_despesas), '') + N'</td></tr>' +
+            N'<tr><td class="bar">RESUMO</td></tr>' +
+            N'</table>' +
             N'</body></html>';
 
         /*-----------------------------------------------------------------------------------------
