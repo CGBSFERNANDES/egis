@@ -9016,6 +9016,7 @@ if (descGenerica) {
       const fromEntrada = Number(
         this.ncd_menu_entrada || this.cd_menu_entrada || 0
       );
+
       if (fromEntrada > 0) return String(fromEntrada);
 
       // ✅ fallback para o form normal
@@ -9029,6 +9030,7 @@ if (descGenerica) {
       if (fromSession > 0) return String(fromSession || 0);
 
       return localStorage.cd_menu || 0;
+      //
     },
 
     // salvar o CRUD (inclusão/alteração)
@@ -9303,9 +9305,8 @@ if (descGenerica) {
         );
 
         if (!unico.cd_menu) {
-          unico.cd_menu =
-            this.getCdMenuAtivoParaCrud() ||
-            localStorage.getItem("cd_menu") ||
+          unico.cd_menu = this.getCdMenuAtivoParaCrud() || po;
+          localStorage.getItem("cd_menu") ||
             sessionStorage.getItem("cd_menu") ||
             "";
         }
