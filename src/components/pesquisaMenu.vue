@@ -8,7 +8,7 @@
 
     <q-card-section class="q-pt-none">
       <div class="row q-col-gutter-md items-center">
-        <div class="col-12 col-md-6">
+        <div class="col-12 col-md-4">
           <q-input
             dense
             outlined
@@ -17,7 +17,17 @@
             clearable
           />
         </div>
-        <div class="col-12 col-md-6 text-right text-grey-6">
+        <div class="col-12 col-md-4">
+          <q-toggle
+            v-model="exibirComoGrid"
+            color="deep-purple-7"
+            checked-icon="view_module"
+            unchecked-icon="view_list"
+            :label="exibirComoGrid ? 'grid' : 'lista'"
+            keep-color
+          />
+        </div>
+        <div class="col-12 col-md-4 text-right text-grey-6">
           {{ menusFiltrados.length }} de {{ menusDisponiveis.length }} menus
         </div>
       </div>
@@ -27,7 +37,7 @@
       <div v-if="carregando" class="row justify-center q-pa-md">
         <q-spinner color="primary" size="40px" />
       </div>
-      <div v-else class="menus-grid">
+      <div v-else-if="exibirComoGrid" class="menus-grid">
         <div
           v-for="menu in menusFiltrados"
           :key="menu.path || menu.text"
@@ -52,6 +62,27 @@
           Nenhum menu encontrado.
         </div>
       </div>
+      <q-list v-else class="menus-list">
+        <q-item
+          v-for="menu in menusFiltrados"
+          :key="menu.path || menu.text"
+          clickable
+          @click="selecionarMenu(menu)"
+        >
+          <q-item-section avatar>
+            <div class="menu-list-avatar">
+              {{ (menu.text || '').charAt(0) }}
+            </div>
+          </q-item-section>
+          <q-item-section>
+            <q-item-label class="menu-list-title">{{ menu.text }}</q-item-label>
+            <q-item-label caption v-if="menu.path">{{ menu.path }}</q-item-label>
+          </q-item-section>
+        </q-item>
+        <q-item v-if="menusFiltrados.length === 0">
+          <q-item-section class="text-grey-6">Nenhum menu encontrado.</q-item-section>
+        </q-item>
+      </q-list>
     </q-card-section>
   </q-card>
 </template>
@@ -67,6 +98,7 @@ export default {
   data() {
     return {
       filtroTexto: "",
+      exibirComoGrid: true,
       items: [],
       carregando: false,
     }
@@ -86,6 +118,10 @@ export default {
     },
   },
   async created() {
+    const preferencia = localStorage.getItem("pesquisaMenu:exibirComoGrid")
+    if (preferencia !== null) {
+      this.exibirComoGrid = preferencia === "true"
+    }
     await this.carregarMenus()
   },
   methods: {
@@ -150,6 +186,12 @@ export default {
       await this.abrirMenu(menu)
       this.$emit("menu-selecionado")
     },
+    salvarPreferenciaGrid() {
+      localStorage.setItem(
+        "pesquisaMenu:exibirComoGrid",
+        String(this.exibirComoGrid)
+      )
+    },
     async abrirMenu(menu) {
       const dados = await Rota.apiMenu(menu.path)
       this.$store._mutations.SET_Rotas = dados
@@ -208,6 +250,11 @@ export default {
       sessionStorage.setItem("egis:returnTo", this.$route.fullPath)
     },
   },
+  watch: {
+    exibirComoGrid() {
+      this.salvarPreferenciaGrid()
+    },
+  },
 }
 </script>
 
@@ -221,6 +268,29 @@ export default {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 12px;
+}
+
+.menus-list {
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.menu-list-avatar {
+  background: #512da8;
+  color: #fff;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.menu-list-title {
+  font-weight: 700;
+  color: #512da8;
 }
 
 .menu-card {
