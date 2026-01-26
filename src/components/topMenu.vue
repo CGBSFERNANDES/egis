@@ -214,7 +214,7 @@
           dense
           rounded
           color="deep-purple-7"
-          class="q-mt-sm q-ml-sm margin-menu"
+          class="q-mt-sm q-ml-sm menu-chip-right"
           size="12px"
           text-color="white"
           :label="`${cdMenu || cd_menu}`"
@@ -273,10 +273,20 @@ export default {
 .toolbar-scroll {
   overflow-x: auto;
   white-space: nowrap;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.toolbar-scroll::-webkit-scrollbar {
+  display: none;
 }
 
 .seta-form {
   margin-left: 10px;
   color: #512da8;
+}
+
+.menu-chip-right {
+  margin-left: auto;
 }
 </style>
