@@ -295,6 +295,9 @@ export default {
         }
         for (let g = 0; g < this.items.length; g++) {
           if (this.items[g].text != "Home") {
+            if (!Array.isArray(this.items[g].items)) {
+              continue;
+            }
             for (let t = 0; t < this.items[g].items.length; t++) {
               if (
                 this.items[g].items[t].text
