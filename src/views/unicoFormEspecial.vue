@@ -9300,6 +9300,14 @@ if (descGenerica) {
           //-----------
         );
 
+        if (!unico.cd_menu) {
+          unico.cd_menu =
+            this.getCdMenuAtivoParaCrud() ||
+            localStorage.getItem("cd_menu") ||
+            sessionStorage.getItem("cd_menu") ||
+            "";
+        }
+
         // payload final = array com 1 objeto
         let payload = unico;
         //
