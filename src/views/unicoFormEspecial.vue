@@ -8,243 +8,49 @@
     <!-- TOPO no estilo -->
 
     <div v-if="!hideChrome && !isEmbeddedClean" class="row items-center">
-      <transition name="slide-fade">
-        <!-- título + seta + badge -->
-        <h2
-          class="content-block col-8 row items-center no-wrap toolbar-scroll"
-          v-show="displayTitle"
-        >
-          <!-- seta voltar -->
-          <q-btn
-            flat
-            round
-            dense
-            icon="arrow_back"
-            class="q-mr-sm seta-form"
-            aria-label="Voltar"
-            @click="onVoltar"
-          />
-          <span
-            v-if="displayTitle"
-            :class="ic_modal_pesquisa === 'S' ? 'titulo-modal' : ''"
-          >
-            {{ displayTitle }}
-          </span>
-
-          <!--{{ tituloMenu || title }}-->
-
-          <!-- badge com total de registros -->
-
-          <div style="display: flex; align-items: center;">
-            <q-badge
-              v-if="(qt_registro || recordCount) >= 0"
-              align="middle"
-              rounded
-              color="red"
-              :label="qt_registro || recordCount"
-              class="q-ml-sm bg-form"
-            />
-          </div>
-
-          <template v-if="mostrarToolbar">
-            <slot name="toolbar-left" :engine="this" />
-          </template>
-
-          <template v-if="!uiLite && mostrarToolbar">
-            <q-btn
-              v-if="cd_tabela > 0 && !isHidden('novo')"
-              dense
-              rounded
-              color="deep-purple-7"
-              :class="['q-mt-sm', 'q-ml-sm', cd_tabela != 0 ? 'fo-margin' : '']"
-              icon="add"
-              @click="toolbarNovo"
-            >
-              <q-tooltip>Novo Registro</q-tooltip>
-            </q-btn>
-
-            <q-btn
-              v-if="cd_tabela > 0 && !isHidden('novo')"
-              dense
-              rounded
-              color="deep-purple-7"
-              :class="['q-mt-sm', 'q-ml-sm']"
-              icon="filter_alt"
-              @click="toolbarFiltros"
-            >
-              <q-tooltip>Filtros</q-tooltip>
-            </q-btn>
-
-            <q-btn
-              v-if="!isHidden('refresh')"
-              dense
-              rounded
-              icon="refresh"
-              color="deep-purple-7"
-              :class="[
-                'q-mt-sm',
-                'q-ml-sm',
-                cd_tabela === 0 ? 'fo-margin' : '',
-              ]"
-              @click="toolbarRefresh"
-            >
-              <q-tooltip>Atualizar os Dados</q-tooltip>
-            </q-btn>
-
-            <q-btn
-              v-if="cd_form_modal > 0"
-              rounded
-              dense
-              color="deep-purple-7"
-              class="q-mt-sm q-ml-sm"
-              icon="tune"
-              :disable="cd_form_modal <= 0"
-              @click="toolbarDetalhe"
-            >
-              <q-tooltip>Detalhe</q-tooltip>
-            </q-btn>
-
-            <q-btn
-              v-if="!isHidden('excel')"
-              rounded
-              dense
-              color="deep-purple-7"
-              icon="far fa-file-excel"
-              class="q-mt-sm q-ml-sm"
-              @click="toolbarExcel"
-            >
-              <q-tooltip>Exportar Excel</q-tooltip>
-            </q-btn>
-
-            <q-btn
-              v-if="!isHidden('pdf')"
-              rounded
-              dense
-              color="deep-purple-7"
-              class="q-mt-sm q-ml-sm"
-              icon="picture_as_pdf"
-              @click="toolbarPDF"
-            >
-              <q-tooltip>Exportar PDF</q-tooltip>
-            </q-btn>
-            <q-btn
-              v-if="!isHidden('relatorio')"
-              rounded
-              dense
-              color="deep-purple-7"
-              class="q-mt-sm q-ml-sm"
-              icon="description"
-              @click="toolbarRelatorio"
-            >
-              <q-tooltip>Abrir Relatório</q-tooltip>
-            </q-btn>
-
-            <q-btn
-              v-if="!isHidden('dash')"
-              dense
-              rounded
-              color="deep-purple-7"
-              icon="dashboard"
-              class="q-mt-sm q-ml-sm"
-              @click="toolbarDash"
-            >
-              <q-tooltip>Dashboard dos dados</q-tooltip>
-            </q-btn>
-
-            <!-- Botão de processos (3 pontinhos) -->
-            <q-btn
-              v-if="cd_menu_processo > 0"
-              dense
-              rounded
-              color="deep-purple-7"
-              class="q-mt-sm q-ml-sm"
-              icon="more_horiz"
-              @click="toolbarProcessos"
-            >
-              <q-tooltip>Processos</q-tooltip>
-            </q-btn>
-            <q-btn
-              v-if="!isHidden('mapaAtributos')"
-              rounded
-              dense
-              color="deep-purple-7"
-              class="q-mt-sm q-ml-sm"
-              icon="view_list"
-              @click="toolbarMapaAtributos"
-            >
-              <q-tooltip>Mapa de Atributos</q-tooltip>
-            </q-btn>
-
-            <q-btn
-              v-if="false && !isHidden('info')"
-              dense
-              rounded
-              color="deep-purple-7"
-              class="q-mt-sm q-ml-sm"
-              icon="info"
-              @click.stop.prevent="toolbarInfo"
-            >
-              <q-tooltip>Informações</q-tooltip>
-            </q-btn>
-
-            <q-btn
-              v-if="filtros && filtros.length"
-              dense
-              rounded
-              color="deep-purple-7"
-              class="q-mt-sm q-ml-sm"
-              icon="filter_alt_off"
-              @click="toolbarDrawerFiltros"
-            >
-              <q-tooltip>Seleção de Filtros</q-tooltip>
-            </q-btn>
-
-            <!-- TOGGLE: GRID x CARDS (só aparece quando meta permite) -->
-
-            <q-toggle
-              v-if="String(ic_card_menu || 'N').toUpperCase() === 'S'"
-              v-model="exibirComoCards"
-              color="deep-purple-7"
-              checked-icon="view_module"
-              unchecked-icon="view_list"
-              :label="exibirComoCards ? 'cards' : 'grid'"
-              keep-color
-              class="q-mt-sm q-ml-sm"
-            />
-
-            <!-- TOGGLE TreeView x Grid -->
-
-            <q-toggle
-              v-if="String(ic_treeview_menu || 'N').toUpperCase() === 'S'"
-              v-model="exibirComoTree"
-              color="deep-purple-7"
-              checked-icon="account_tree"
-              unchecked-icon="view_list"
-              :label="exibirComoTree ? 'tree' : 'grid'"
-              keep-color
-              class="q-mt-sm q-ml-sm"
-            />
-
-            <q-chip
-              v-if="cdMenu || cd_menu"
-              dense
-              rounded
-              color="deep-purple-7"
-              class="q-mt-sm q-ml-sm margin-menu"
-              size="12px"
-              text-color="white"
-              :label="`${cdMenu || cd_menu}`"
-              @click.native.stop.prevent="showAvisoConfig = true"
-            >
-              <q-tooltip>identificação</q-tooltip>
-            </q-chip>
-          </template>
-
-          <template v-if="mostrarToolbar">
-            <slot name="toolbar-right" :engine="this" />
-          </template>
-        </h2>
-      </transition>
+      <top-menu
+        :display-title="displayTitle"
+        :ic_modal_pesquisa="ic_modal_pesquisa"
+        :qt_registro="qt_registro"
+        :record-count="recordCount"
+        :mostrar-toolbar="mostrarToolbar"
+        :ui-lite="uiLite"
+        :cd_tabela="cd_tabela"
+        :cd_form_modal="cd_form_modal"
+        :cd_menu_processo="cd_menu_processo"
+        :filtros="filtros"
+        :ic_card_menu="ic_card_menu"
+        :exibir-como-cards="exibirComoCards"
+        :ic_treeview_menu="ic_treeview_menu"
+        :exibir-como-tree="exibirComoTree"
+        :cd-menu="cdMenu"
+        :cd_menu="cd_menu"
+        :is-hidden="isHidden"
+        :engine="this"
+        @voltar="onVoltar"
+        @novo="toolbarNovo"
+        @filtros="toolbarFiltros"
+        @refresh="toolbarRefresh"
+        @detalhe="toolbarDetalhe"
+        @excel="toolbarExcel"
+        @pdf="toolbarPDF"
+        @relatorio="toolbarRelatorio"
+        @dash="toolbarDash"
+        @processos="toolbarProcessos"
+        @mapa-atributos="toolbarMapaAtributos"
+        @info="toolbarInfo"
+        @drawer-filtros="toolbarDrawerFiltros"
+        @update:exibirComoCards="exibirComoCards = $event"
+        @update:exibirComoTree="exibirComoTree = $event"
+        @menu-chip="showAvisoConfig = true"
+      >
+        <template #toolbar-left="{ engine }">
+          <slot name="toolbar-left" :engine="engine" />
+        </template>
+        <template #toolbar-right="{ engine }">
+          <slot name="toolbar-right" :engine="engine" />
+        </template>
+      </top-menu>
 
       <modal-composicao
         v-if="mostrarBotaoModalComposicao && this.ic_grid_modal === 'N'"
@@ -1725,6 +1531,7 @@ import DashboardDinamico from "@/components/dashboardDinamico.vue"; // ajuste o 
 import ModalComposicao from "@/components/ModalComposicao.vue";
 import ModalGridComposicao from "@/components/ModalGridComposicao.vue";
 import filtroComponente from "@/components/filtroComponente.vue";
+import TopMenu from "@/components/topMenu.vue";
 
 //import { locale } from 'devextreme/localization';
 
@@ -2605,6 +2412,7 @@ export default {
     ModalComposicao,
     ModalGridComposicao,
     filtroComponente,
+    TopMenu,
     UnicoFormEspecial: () => import("@/views/unicoFormEspecial.vue"),
   },
 
