@@ -9026,7 +9026,9 @@ if (descGenerica) {
       if (fromState > 0) return String(fromState);
 
       const fromSession = Number(sessionStorage.getItem("cd_menu") || 0);
-      return String(fromSession || 0);
+      if (fromSession > 0) return String(fromSession || 0);
+
+      return localStorage.cd_menu || 0;
     },
 
     // salvar o CRUD (inclusão/alteração)
@@ -9277,7 +9279,7 @@ if (descGenerica) {
             //  this.cd_menu_principal || this.cd_menu || sessionStorage.getItem("cd_menu") || 0
             //),
             //Menuj
-            cd_menu: this.getCdMenuAtivoParaCrud(),
+            cd_menu: this.getCdMenuAtivoParaCrud() || localStorage.cd_menu,
             //
             cd_form: "0",
             cd_parametro_form, // Number(this.modoCRUD), // 1/2/3 conforme sua ação
@@ -9318,7 +9320,9 @@ if (descGenerica) {
 
         // debug
         console.log(
-          "JSON que vai para a rota:",
+          "JSON que vai para a rota -> pr_egis_api_crud_dados_especial :",
+          this.getCdMenuAtivoParaCrud(),
+          localStorage.cd_menu,
           cd_parametro_form,
           payload,
           dadosTecnicos
@@ -10182,7 +10186,8 @@ if (descGenerica) {
 
     onVoltar() {
       const hasVoltarListener =
-        this.$listeners && Object.prototype.hasOwnProperty.call(this.$listeners, "voltar");
+        this.$listeners &&
+        Object.prototype.hasOwnProperty.call(this.$listeners, "voltar");
 
       if (this.embedMode || hasVoltarListener) {
         this.$emit("voltar");
