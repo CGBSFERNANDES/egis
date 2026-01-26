@@ -2,7 +2,7 @@
   <transition name="slide-fade">
     <!-- título + seta + badge -->
     <h2
-      class="content-block col-8 row items-center no-wrap toolbar-scroll"
+      class="content-block col-12 row items-center no-wrap toolbar-scroll"
       v-show="displayTitle"
     >
       <!-- seta voltar -->
