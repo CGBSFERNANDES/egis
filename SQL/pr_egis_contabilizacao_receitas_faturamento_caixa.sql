@@ -435,7 +435,52 @@ BEGIN
             SET @html_detalhe = '<tr><td colspan="10" style="text-align:center;">Sem registros no período.</td></tr>';
         END
 
-        SET @html_rodape = '</tbody></table>';
+        DECLARE
+            @vl_total_debito   DECIMAL(18, 2) = 0,
+            @vl_total_credito  DECIMAL(18, 2) = 0,
+            @html_resumo       NVARCHAR(MAX) = '',
+            @html_totais       NVARCHAR(MAX) = '';
+
+        SELECT
+            @vl_total_debito  = ISNULL(SUM(r.vl_debito), 0),
+            @vl_total_credito = ISNULL(SUM(r.vl_credito), 0)
+        FROM #Resultado AS r;
+
+        SET @html_resumo =
+            '<br /><table style="width:100%; border-collapse:collapse; font-family: Arial; font-size:12px;" border="1">' +
+            '<thead style="background:#f0f0f0;">' +
+            '  <tr>' +
+            '    <th>Débito</th>' +
+            '    <th>Crédito</th>' +
+            '    <th>Valor</th>' +
+            '    <th>Tipo de Contabilização</th>' +
+            '  </tr>' +
+            '</thead><tbody>' +
+            ISNULL((
+                SELECT
+                    '<tr>' +
+                    '<td>' + ISNULL(MAX(r.cd_mascara_conta_debito), '') + ' - ' + ISNULL(MAX(r.nm_conta_debito), '') + '</td>' +
+                    '<td>' + ISNULL(MAX(r.cd_mascara_conta_credito), '') + ' - ' + ISNULL(MAX(r.nm_conta_credito), '') + '</td>' +
+                    '<td style="text-align:right;">' + CAST(ISNULL(dbo.fn_formata_valor(SUM(r.vl_credito)), 0) AS NVARCHAR(20)) + '</td>' +
+                    '<td>' + ISNULL(r.nm_tipo_contabilizacao, '') + '</td>' +
+                    '</tr>'
+                FROM #Resultado AS r
+                GROUP BY r.nm_tipo_contabilizacao
+                FOR XML PATH(''), TYPE
+            ).value('.', 'nvarchar(max)'), '') +
+            '</tbody></table>';
+
+        SET @html_totais =
+            '<br /><table style="width:100%; border-collapse:collapse; font-family: Arial; font-size:12px;" border="1">' +
+            '<tr>' +
+            '  <td style="text-align:right;"><strong>Total Débito</strong></td>' +
+            '  <td style="text-align:right;">' + CAST(ISNULL(dbo.fn_formata_valor(@vl_total_debito), 0) AS NVARCHAR(20)) + '</td>' +
+            '  <td style="text-align:right;"><strong>Total Crédito</strong></td>' +
+            '  <td style="text-align:right;">' + CAST(ISNULL(dbo.fn_formata_valor(@vl_total_credito), 0) AS NVARCHAR(20)) + '</td>' +
+            '</tr>' +
+            '</table>';
+
+        SET @html_rodape = '</tbody></table>' + @html_totais + @html_resumo;
 
         SET @html =
             '<html><head><meta charset="UTF-8"></head><body>' +
