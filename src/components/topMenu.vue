@@ -209,6 +209,10 @@
           @input="onToggleTree"
         />
 
+        <template v-if="mostrarToolbar">
+          <slot name="toolbar-right" :engine="engine" />
+        </template>
+
         <q-chip
           v-if="cdMenu || cd_menu"
           dense
@@ -222,10 +226,6 @@
         >
           <q-tooltip>identificação</q-tooltip>
         </q-chip>
-      </template>
-
-      <template v-if="mostrarToolbar">
-        <slot name="toolbar-right" :engine="engine" />
       </template>
     </h2>
   </transition>
