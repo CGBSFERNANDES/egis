@@ -170,6 +170,13 @@ begin
 	return
 end
 
+--Contabilização das Receitas/Faturamento Caixa--------------------------------------------------------------------------------------
+if @cd_relatorio = 439
+begin
+	exec pr_egis_contabilizacao_receitas_faturamento_caixa @json = @json
+	return
+end
+
 --Ordem de Servio Grfica----------------------------------------------------------------------------------
 if @cd_relatorio = 433
 begin
