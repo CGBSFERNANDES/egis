@@ -146,6 +146,22 @@
           </div>
         </dx-item>
 
+        <dx-item location="after">
+          <div slot-scope="_">
+            <q-btn
+              flat
+              dense
+              round
+              icon="search"
+              color="deep-purple-7"
+              class="q-ml-md"
+              @click="popup_pesquisa_menu = true"
+            >
+              <q-tooltip self="center middle" class="bg-black"> Pesquisa de Menu </q-tooltip>
+            </q-btn>
+          </div>
+        </dx-item>
+
         <!-- Sininho: Avisos dos Módulos (antes do user-panel) -->
 
         <dx-item location="after">
@@ -403,6 +419,13 @@
       </q-card>
     </q-dialog>
 
+    <q-dialog v-model="popup_pesquisa_menu">
+      <PesquisaMenu
+        @close="popup_pesquisa_menu = false"
+        @menu-selecionado="popup_pesquisa_menu = false"
+      />
+    </q-dialog>
+
     <q-dialog seamless full-width v-model="collapse" position="top">
       <q-card class="collapse-card">
         <q-bar style="background-color: #f63b00">
@@ -518,6 +541,7 @@ export default {
     DigisacWebchat: () => import('../components/webChat.vue'),
     grid: () => import('../views/grid.vue'),
     ValidacaoCredito: () => import('../views/validacaoCredito.vue'),
+    PesquisaMenu: () => import('../components/pesquisaMenu.vue'),
     Atividade,
   },
 
@@ -537,6 +561,7 @@ export default {
       popup_senha_colaboradores: false,
       popup_validacao_credito: false,
       popup_colaboradores: false,
+      popup_pesquisa_menu: false,
       colaborador_selecionado: null,
       nm_senha_digitada: '',
       options: [
