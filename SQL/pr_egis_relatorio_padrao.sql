@@ -198,10 +198,10 @@ begin
 	return
 end
 
---Depreciacao do Periodo de Apuracao----------------------------------------------------------------------------------
-if @cd_relatorio = 444
+--Inventário do Bem do Ativo----------------------------------------------------------------------------------
+if @cd_relatorio = 445
 begin
-	exec pr_egis_relatorio_depreciacao_periodo @json = @json
+	exec pr_egis_relatorio_inventario_ativo_periodo @json = @json
 	return
 end
 
