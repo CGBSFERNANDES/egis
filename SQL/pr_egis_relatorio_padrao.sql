@@ -191,6 +191,13 @@ begin
 	return
 end
 
+--Baixa do Bem----------------------------------------------------------------------------------
+if @cd_relatorio = 443
+begin
+	exec pr_egis_relatorio_baixa_bem @json = @json
+	return
+end
+
 --Ordem de Servio Grfica----------------------------------------------------------------------------------
 if @cd_relatorio = 433
 begin
