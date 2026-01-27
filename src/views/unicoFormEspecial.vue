@@ -2483,6 +2483,7 @@ export default {
       carregandoContexto: false,
       cd_chave_pesquisa: 0,
       cd_chave_registro_local: Number(this.cd_chave_registro || 0),
+      _preservarRowsNoRefresh: false,
       menuTabs: [], // tabs vindas do sqlTabs
       activeMenuTab: "principal", // 'principal' = grid principal
       returnTo: null,
@@ -3453,7 +3454,29 @@ export default {
       const tab = this._tabAntesModal || this.activeMenuTab || "principal";
       const estavaFilha = this._estavaEmTabFilha === true;
 
-      await this.onRefreshConsulta();
+      this._preservarRowsNoRefresh = true;
+      try {
+        await this.onRefreshConsulta();
+      } finally {
+        this._preservarRowsNoRefresh = false;
+      }
+
+      if (
+        rowsAntes.length > 0 &&
+        (!Array.isArray(this.rows) || this.rows.length === 0)
+      ) {
+        this.rows = rowsAntes;
+        this.dashboardRows = rowsAntes;
+        this.qt_registro = rowsAntes.length;
+
+        this.$nextTick(() => {
+          const inst = this.$refs?.grid?.instance;
+          if (inst) {
+            inst.option("dataSource", this.rows);
+            inst.refresh();
+          }
+        });
+      }
 
       if (
         rowsAntes.length > 0 &&
@@ -12734,10 +12757,17 @@ if (descGenerica) {
         this.ic_pesquisa_banco = "S";
         //
         //Dados do Retorno do Back-End procedure pr_egis_pesquisa_dados ou pr do Menu
-        this.rows = (dados || []).map((it, idx) => ({
+        const dadosNormalizados = (dados || []).map((it, idx) => ({
           id: it.id || idx + 1,
           ...it,
         }));
+
+        const devePreservarRows =
+          this._preservarRowsNoRefresh && dadosNormalizados.length === 0;
+
+        if (!devePreservarRows) {
+          this.rows = dadosNormalizados;
+        }
         //
         //Chave-pk--
         this.garantirPkNoRows();
