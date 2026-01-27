@@ -70,9 +70,9 @@
                 :key="`${String(campo.nm_atributo || 'x')}_${String(campo.nu_ordem || campo.qt_ordem_atributo || idx)}`"
                 :ref="`fld_${campo.nm_atributo}`"
                 ref-in-for
-                class="col-12 col-sm-6" style="margin-bottom: 4px;"
+                class="col-12 col-sm-6" style="margin-bottom: 2px;"
               >
-                <div class="text-caption text-grey-8" style="margin-bottom: 2px;">
+                <div class="text-caption text-grey-8" style="margin-bottom: 1px;">
                   {{ labelCampo(campo) }}
                 </div>
 

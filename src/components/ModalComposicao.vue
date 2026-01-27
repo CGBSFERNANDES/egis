@@ -44,7 +44,7 @@
             <div
               v-for="(campo, index) in meta"
               :key="campo.nm_atributo || campo.cd_atributo || index"
-              class="row q-mb-sm items-center"
+              class="row q-mb-xs items-center"
             >
               <div class="col-4 text-weight-medium">
                 {{ labelCampo(campo) }}
