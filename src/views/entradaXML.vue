@@ -2176,6 +2176,31 @@ window.open(url,'_blank');
     })
   },
 
+  validarXmlAssinatura (xmlString) {
+    if (!xmlString) {
+      return { valido: false, mensagem: 'XML inválido: conteúdo vazio.' }
+    }
+
+    const parser = new DOMParser()
+    const xmlDoc = parser.parseFromString(xmlString, 'application/xml')
+    const parseError = xmlDoc.getElementsByTagName('parsererror')
+    if (parseError && parseError.length) {
+      return { valido: false, mensagem: 'XML inválido: formato não reconhecido.' }
+    }
+
+    const infNfeTags = xmlDoc.getElementsByTagNameNS('*', 'infNFe')
+    if (!infNfeTags || !infNfeTags.length) {
+      return { valido: false, mensagem: 'XML inválido: não contém infNFe.' }
+    }
+
+    const signatureTags = xmlDoc.getElementsByTagNameNS('*', 'Signature')
+    if (!signatureTags || !signatureTags.length) {
+      return { valido: false, mensagem: 'XML inválido: assinatura digital não encontrada.' }
+    }
+
+    return { valido: true, mensagem: '' }
+  },
+
   onFilesSelected (valOrEvent) {
     // se vier do input nativo
     if (valOrEvent && valOrEvent.target && valOrEvent.target.files) {
@@ -2386,6 +2411,18 @@ window.open(url,'_blank');
       for (const file of arquivos) {
         const xml = await this.lerArquivoXml(file);
         const chave = this.extrairChaveAcesso(xml, file.name) || null;
+
+        if (driver.tipo === 'NFE') {
+          const validacao = this.validarXmlAssinatura(xml);
+          if (!validacao.valido) {
+            this.$q?.notify?.({
+              type: 'warning',
+              position: 'center',
+              message: `${file.name}: ${validacao.mensagem}`
+            });
+            continue;
+          }
+        }
         
         let body = '' 
 
@@ -2451,6 +2488,18 @@ window.open(url,'_blank');
     } else if (this.form.ds_xml) {
       // 2) fallback: sem arquivos, mas XML digitado/colado manualmente
       const chave = this.extrairChaveAcesso(this.form.ds_xml, '') || null;
+
+      if (driver.tipo === 'NFE') {
+        const validacao = this.validarXmlAssinatura(this.form.ds_xml);
+        if (!validacao.valido) {
+          this.$q?.notify?.({
+            type: 'warning',
+            position: 'center',
+            message: validacao.mensagem
+          });
+          return;
+        }
+      }
 
       const body = driver.tipo === 'NFSE'
         ? [{
