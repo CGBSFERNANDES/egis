@@ -3449,10 +3449,28 @@ export default {
     },
 
     async onSucessoModal() {
+      const rowsAntes = Array.isArray(this.rows) ? [...this.rows] : [];
       const tab = this._tabAntesModal || this.activeMenuTab || "principal";
       const estavaFilha = this._estavaEmTabFilha === true;
 
       await this.onRefreshConsulta();
+
+      if (
+        rowsAntes.length > 0 &&
+        (!Array.isArray(this.rows) || this.rows.length === 0)
+      ) {
+        this.rows = rowsAntes;
+        this.dashboardRows = rowsAntes;
+        this.qt_registro = rowsAntes.length;
+
+        this.$nextTick(() => {
+          const inst = this.$refs?.grid?.instance;
+          if (inst) {
+            inst.option("dataSource", this.rows);
+            inst.refresh();
+          }
+        });
+      }
 
       // se estava em tab filha, tenta reabrir ela
       //this.limparSelecaoGrid();
@@ -5886,7 +5904,7 @@ if (descGenerica) {
       // this.loading = true
 
       if (typeof this.consultar === "function") {
-        this.consultar();
+        return this.consultar();
       } else {
         console.warn("Função consultar() não encontrada no componente.");
       }
