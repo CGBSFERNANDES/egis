@@ -198,6 +198,13 @@ begin
 	return
 end
 
+--Depreciacao do Periodo de Apuracao----------------------------------------------------------------------------------
+if @cd_relatorio = 444
+begin
+	exec pr_egis_relatorio_depreciacao_periodo @json = @json
+	return
+end
+
 --Ordem de Servio Grfica----------------------------------------------------------------------------------
 if @cd_relatorio = 433
 begin
