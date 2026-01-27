@@ -288,5 +288,6 @@ export default {
 
 .menu-chip-right {
   margin-left: auto;
+  margin-right: 30px;
 }
 </style>

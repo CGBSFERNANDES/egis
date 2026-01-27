@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Teste - Vue2 + Quasar + DevExtreme</title>
+
+    <!-- Quasar (Vue 2) -->
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/quasar@1.22.10/dist/quasar.min.css"
+    />
+
+    <!-- DevExtreme -->
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/devextreme@23.2.6/dist/css/dx.light.css"
+    />
+  </head>
+
+  <body style="background:#f5f5f5;">
+    <div id="q-app">
+      <q-layout view="hHh lpR fFf">
+        <q-header elevated>
+          <q-toolbar>
+            <q-toolbar-title>Roteirização (Teste)</q-toolbar-title>
+          </q-toolbar>
+        </q-header>
+
+        <q-page-container>
+          <q-page padding>
+            <div class="row q-col-gutter-md items-center">
+              <div class="col-12 col-sm-3">
+                <q-input
+                  filled
+                  v-model="dataEntrega"
+                  label="Data (YYYY-MM-DD)"
+                  dense
+                />
+              </div>
+
+              <div class="col-12 col-sm-9">
+                <q-btn
+                  color="primary"
+                  label="Consultar"
+                  @click="consultar"
+                  class="q-mr-sm"
+                />
+                <q-btn
+                  color="secondary"
+                  label="Atualizar Roteiro"
+                  @click="atualizarRoteiro"
+                />
+                <span class="q-ml-md text-caption"
+                  >Itinerários: {{ itinerarios.length }}</span
+                >
+              </div>
+            </div>
+
+            <q-separator class="q-my-md" />
+
+            <div class="row q-col-gutter-md">
+              <div
+                v-for="it in itinerarios"
+                :key="it.id"
+                class="col-12 col-md-4"
+              >
+                <q-card bordered>
+                  <q-card-section>
+                    <div style="font-weight:700">{{ it.titulo }}</div>
+                    <div style="font-size:12px;opacity:.85">
+                      Veículo: {{ it.veiculo }}<br />
+                      Motorista: {{ it.motorista }}<br />
+                      Colunas: {{ it.produtos.join(', ') || '-' }}
+                    </div>
+                  </q-card-section>
+
+                  <q-separator />
+
+                  <q-card-section>
+                    <div :id="'grid-'+it.id" style="height:280px;"></div>
+                  </q-card-section>
+
+                  <q-separator />
+
+                  <q-card-section class="text-caption">
+                    Total caixas: {{ it.totalCaixas.toFixed(2) }}
+                  </q-card-section>
+                </q-card>
+              </div>
+            </div>
+
+            <q-separator class="q-my-md" />
+
+            <q-card bordered v-if="selecionado">
+              <q-card-section>
+                <div style="font-weight:700">Detalhe</div>
+                <div style="font-size:12px;opacity:.85">
+                  {{ selecionado.titulo }} — {{ selecionado.motorista }} ({{
+                  selecionado.veiculo }})
+                </div>
+              </q-card-section>
+              <q-separator />
+              <q-card-section>
+                <div id="detail-grid" style="height:260px;"></div>
+              </q-card-section>
+            </q-card>
+          </q-page>
+        </q-page-container>
+      </q-layout>
+    </div>
+
+    <!-- Vue2 + Quasar -->
+    <script src="https://cdn.jsdelivr.net/npm/vue@2/dist/vue.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/quasar@1.22.10/dist/quasar.umd.min.js"></script>
+
+    <!-- DevExtreme JS (PRECISA CARREGAR) -->
+    <script src="https://unpkg.com/devextreme@23.2.6/dist/js/dx.all.js"></script>
+
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/devextreme@23.2.6/dist/css/dx.light.css"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/devextreme@23.2.6/dist/js/dx.all.js"></script>
+
+    <script>
+      console.log(
+        "dx.all carregou?",
+        !!window.DevExpress,
+        window.DevExpress?.VERSION
+      );
+    </script>
+
+    <script>
+      function mockBuscarRoteiros(dataEntrega) {
+        const base = {
+          "2026-01-26": [
+            {
+              id: 1,
+              titulo: "ITINERÁRIO EVERALDO",
+              motorista: "EVERALDO",
+              veiculo: "DWM 1B31",
+              entregas: [
+                {
+                  cliente: "PLANO & PLANO",
+                  itens: [
+                    { produto: "CAIXA_20", qtd: 20 },
+                    { produto: "CAIXA_40", qtd: 0 },
+                  ],
+                },
+                {
+                  cliente: "SALON LINE",
+                  itens: [{ produto: "CAIXA_20", qtd: 20 }],
+                },
+                {
+                  cliente: "TRANENGE",
+                  itens: [{ produto: "CAIXA_20", qtd: 20 }],
+                },
+              ],
+            },
+            {
+              id: 2,
+              titulo: "ITINERÁRIO LEONIDAS",
+              motorista: "LEONIDAS",
+              veiculo: "DJC 9D90",
+              entregas: [
+                { cliente: "MAIAN", itens: [{ produto: "CAIXA_20", qtd: 20 }] },
+                {
+                  cliente: "SALON LINE",
+                  itens: [{ produto: "CAIXA_20", qtd: 20 }],
+                },
+              ],
+            },
+            {
+              id: 3,
+              titulo: "ITINERÁRIO MÁRIO",
+              motorista: "MÁRIO",
+              veiculo: "LCN 7881",
+              entregas: [
+                {
+                  cliente: "SOUSA ARAUJO",
+                  itens: [
+                    { produto: "CAIXA_10", qtd: 10 },
+                    { produto: "CAIXA_20", qtd: 0 },
+                  ],
+                },
+                {
+                  cliente: "SORVESA",
+                  itens: [{ produto: "CAIXA_10", qtd: 10 }],
+                },
+              ],
+            },
+          ],
+        };
+
+        return (
+          base[dataEntrega] || [
+            {
+              id: 10,
+              titulo: "ITINERÁRIO TESTE",
+              motorista: "MOTORISTA X",
+              veiculo: "AAA 0000",
+              entregas: [
+                {
+                  cliente: "CLIENTE 1",
+                  itens: [
+                    { produto: "P1", qtd: 5 },
+                    { produto: "P2", qtd: 2 },
+                  ],
+                },
+                { cliente: "CLIENTE 2", itens: [{ produto: "P2", qtd: 7 }] },
+              ],
+            },
+          ]
+        );
+      }
+
+      function montarPivot(it) {
+        const produtos = Array.from(
+          new Set(it.entregas.flatMap(e => e.itens.map(i => i.produto)))
+        );
+
+        const columns = [
+          {
+            dataField: "cliente",
+            caption: "Cliente",
+            minWidth: 180,
+            fixed: true,
+          },
+          ...produtos.map(p => ({
+            dataField: `p_${p}`,
+            caption: p,
+            dataType: "number",
+            alignment: "right",
+            format: "#,##0.00",
+            width: 110,
+          })),
+          {
+            dataField: "total",
+            caption: "Total",
+            dataType: "number",
+            alignment: "right",
+            format: "#,##0.00",
+            width: 110,
+          },
+        ];
+
+        const rows = it.entregas.map((e, idx) => {
+          const row = { id: idx + 1, cliente: e.cliente };
+          produtos.forEach(p => (row[`p_${p}`] = 0));
+          e.itens.forEach(i => {
+            row[`p_${i.produto}`] += i.qtd;
+          });
+          row.total = produtos.reduce((s, p) => s + row[`p_${p}`], 0);
+          return row;
+        });
+
+        const totalCaixas = rows.reduce((s, r) => s + (r.total || 0), 0);
+
+        return { produtos, columns, rows, totalCaixas };
+      }
+
+      new Vue({
+        el: "#q-app",
+        data() {
+          return {
+            dataEntrega: "2026-01-26",
+            itinerarios: [],
+            selecionado: null,
+            _gridInstances: {},
+            _detailInstance: null,
+          };
+        },
+        mounted() {
+          // Guard: se DevExtreme não carregou, para aqui
+          if (
+            !window.DevExpress ||
+            !DevExpress.ui ||
+            !DevExpress.ui.dxDataGrid
+          ) {
+            console.error(
+              "DevExtreme não carregou. Veja dx.all.js no Network (status 200)."
+            );
+            return;
+          }
+          this.consultar();
+        },
+        methods: {
+          consultar() {
+            const raw = mockBuscarRoteiros(this.dataEntrega);
+
+            this.itinerarios = raw.map(it => {
+              const pivot = montarPivot(it);
+              return { ...it, ...pivot };
+            });
+
+            this.selecionado = this.itinerarios[0] || null;
+
+            this.$nextTick(() => {
+              this.renderizarTodosGrids();
+              this.renderizarDetail();
+            });
+          },
+
+          atualizarRoteiro() {
+            this.consultar();
+            this.$q.notify({
+              type: "positive",
+              message: "Roteiro atualizado (mock).",
+            });
+          },
+
+          selecionar(it) {
+            this.selecionado = it;
+            this.$nextTick(() => this.renderizarDetail());
+          },
+
+          renderizarTodosGrids() {
+            if (!this._gridInstances || typeof this._gridInstances !== "object")
+              this._gridInstances = {};
+
+            const idsAtuais = new Set((this.itinerarios || []).map(i => i.id));
+
+            Object.keys(this._gridInstances).forEach(id => {
+              if (!idsAtuais.has(Number(id))) {
+                try {
+                  this._gridInstances[id].dispose();
+                } catch (e) {}
+                delete this._gridInstances[id];
+              }
+            });
+
+            (this.itinerarios || []).forEach(it => {
+              const elId = "grid-" + it.id;
+              const el = document.getElementById(elId);
+              if (!el) return;
+
+              if (this._gridInstances[it.id]) {
+                this._gridInstances[it.id].option({
+                  dataSource: it.rows,
+                  columns: it.columns,
+                });
+                return;
+              }
+
+              this._gridInstances[it.id] = new DevExpress.ui.dxDataGrid(el, {
+                dataSource: it.rows,
+                columns: it.columns,
+                keyExpr: "id",
+                showBorders: true,
+                columnAutoWidth: true,
+                wordWrapEnabled: true,
+                rowAlternationEnabled: true,
+                hoverStateEnabled: true,
+                height: 280,
+                paging: { enabled: false },
+                scrolling: { mode: "virtual" },
+                onRowClick: () => this.selecionar(it),
+                summary: {
+                  totalItems: [
+                    {
+                      column: "total",
+                      summaryType: "sum",
+                      valueFormat: "#,##0.00",
+                      displayFormat: "Total: {0}",
+                    },
+                  ],
+                },
+              });
+            });
+          },
+
+          renderizarDetail() {
+            if (!this.selecionado) return;
+
+            const data = this.selecionado.entregas.flatMap((e, idxCliente) =>
+              e.itens.map((i, idxItem) => ({
+                id: `${idxCliente}-${idxItem}`,
+                cliente: e.cliente,
+                produto: i.produto,
+                qtd: i.qtd,
+              }))
+            );
+
+            const columns = [
+              { dataField: "cliente", caption: "Cliente", minWidth: 220 },
+              { dataField: "produto", caption: "Produto", width: 160 },
+              {
+                dataField: "qtd",
+                caption: "Qtd",
+                dataType: "number",
+                alignment: "right",
+                format: "#,##0.00",
+                width: 120,
+              },
+            ];
+
+            const el = document.getElementById("detail-grid");
+            if (!el) return;
+
+            if (this._detailInstance) {
+              this._detailInstance.option({ dataSource: data, columns });
+              return;
+            }
+
+            this._detailInstance = new DevExpress.ui.dxDataGrid(el, {
+              dataSource: data,
+              columns,
+              keyExpr: "id",
+              showBorders: true,
+              columnAutoWidth: true,
+              rowAlternationEnabled: true,
+              height: 260,
+              paging: { enabled: false },
+              scrolling: { mode: "virtual" },
+              summary: {
+                totalItems: [
+                  {
+                    column: "qtd",
+                    summaryType: "sum",
+                    valueFormat: "#,##0.00",
+                    displayFormat: "Total: {0}",
+                  },
+                ],
+              },
+            });
+          },
+        },
+      });
+    </script>
+  </body>
+</html>

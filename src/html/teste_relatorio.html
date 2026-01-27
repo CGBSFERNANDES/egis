@@ -1,246 +1,757 @@
 <html>
   <head>
-    <meta charset="utf-8" />
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Baixa de Aquisicao do Bem</title>
     <style>
       body {
-        font-family: Arial, Helvetica, sans-serif;
+        font-family: Arial, sans-serif;
         color: #333;
-        font-size: 12px;
-      }
-      .header {
-        border-bottom: 2px solid #1976d2;
-        padding-bottom: 10px;
-        margin-bottom: 15px;
-      }
-      .header .logo {
-        float: left;
-        width: 120px;
-      }
-      .header .empresa {
-        margin-left: 130px;
-      }
-      .titulo {
-        font-size: 18px;
-        font-weight: bold;
-        color: #1976d2;
-      }
-      .subtitulo {
-        font-size: 13px;
-        margin-top: 4px;
-      }
-      .section {
-        margin-top: 12px;
-      }
-      .label {
-        font-weight: bold;
-      }
-      .info-grid {
-        width: 100%;
-      }
-      .info-grid td {
-        padding: 4px 6px;
-        vertical-align: top;
+        padding: 20px;
       }
       table {
         width: 100%;
         border-collapse: collapse;
-        margin-top: 10px;
+        margin-bottom: 20px;
+      }
+      table,
+      th,
+      td {
+        border: 1px solid #ddd;
       }
       th,
       td {
-        border: 1px solid #dcdcdc;
         padding: 6px;
-        text-align: left;
-        font-size: 11px;
+        text-align: center;
+        font-size: 12px;
       }
       th {
-        background-color: #f3f3f3;
+        background-color: #f2f2f2;
       }
-      .tabs {
-        margin-top: 15px;
+      tr:nth-child(even) {
+        background-color: #f9f9f9;
       }
-      .tabs input[type="radio"] {
-        display: none;
+      .header {
+        padding: 5px;
+        text-align: center;
       }
-      .tabs label {
-        display: inline-block;
-        padding: 6px 12px;
-        margin-right: 4px;
-        background: #f3f3f3;
-        cursor: pointer;
-        border: 1px solid #dcdcdc;
-        border-bottom: none;
+      .section-title {
+        background-color: #1976d2;
+        color: white;
+        padding: 6px;
+        border-radius: 4px;
+        font-size: 18px;
       }
-      .tabs label:hover {
-        background: #e8e8e8;
+      img {
+        max-width: 250px;
+        margin-right: 10px;
       }
-      .tab-content {
-        display: none;
-        border: 1px solid #dcdcdc;
-        padding: 10px;
+      .title {
+        color: #1976d2;
       }
-      #tab-servicos:checked ~ #content-servicos {
-        display: block;
+      .report-date-time {
+        text-align: right;
+        margin-top: 20px;
       }
-      #tab-despesas:checked ~ #content-despesas {
-        display: block;
+      .group-row {
+        background-color: #e6eef7;
+        font-weight: bold;
+      }
+      .subtotal-row {
+        background-color: #f5f5f5;
+        font-weight: bold;
+      }
+      .total-row {
+        background-color: #dfe7f1;
+        font-weight: bold;
       }
     </style>
   </head>
   <body>
-    <div class="header">
-      <div class="logo">
+    <div
+      style="display:flex; justify-content: space-between; align-items:center;"
+    >
+      <div style="width:35%; margin-right:20px">
         <img
-          src="https://egisnet.com.br/img/Logo_EgisMob.jpg"
-          style="max-width:110px;"
+          src="https://egisnet.com.br/img/Logo_zerograu.jpg"
+          alt="Logo da Empresa"
         />
       </div>
-      <div class="empresa">
-        <div class="titulo">Ordem de Serviço</div>
-        <div class="subtitulo">EGIS</div>
-        <div class="subtitulo">
-          Rua Armando Backix, 127 - São Bernardo do Campo / SP
-        </div>
-        <div class="subtitulo">
-          (11) 4351-5348 | trilha@trilhacontabilidade.com.br
-        </div>
-      </div>
-      <div style="clear:both"></div>
-    </div>
-    <div class="section">
-      <table class="info-grid">
-        <tr>
-          <td><span class="label">Ordem:</span> 7434</td>
-          <td><span class="label">Data:</span> 22/01/2026</td>
-          <td><span class="label">Analista:</span> Fagner</td>
-        </tr>
-        <tr>
-          <td><span class="label">Cliente:</span> SPECIAL SPRINGS</td>
-          <td>
-            <span class="label">Razão Social:</span> SPECIAL SPRINGS DO BRASIL -
-            DISTR. IMPORT. EXPORT. DE COMPON
-          </td>
-          <td><span class="label">Contato:</span></td>
-        </tr>
-        <tr>
-          <td><span class="label">Departamento:</span> Diretoria</td>
-          <td><span class="label">Centro de Custo:</span></td>
-          <td><span class="label">Atividade:</span> Desenvolvimento</td>
-        </tr>
-        <tr>
-          <td><span class="label">Tipo Treinamento:</span></td>
-          <td><span class="label">Usuário Liberação:</span></td>
-          <td><span class="label">Horas Totais:</span> 0.166667</td>
-        </tr>
-        <tr>
-          <td colspan="3"><span class="label">Observação:</span></td>
-        </tr>
-      </table>
-    </div>
-    <div class="section">Ordem de Serviço Consultoria</div>
-    <div class="section">
-      <table class="info-grid">
-        <tr>
-          <td><span class="label">Total Serviços:</span> 400.00</td>
-          <td><span class="label">Total Despesas:</span> 0.00</td>
-          <td><span class="label">Total Geral:</span> 400.00</td>
-        </tr>
-      </table>
-    </div>
-    <div class="tabs">
-      <input type="radio" id="tab-servicos" name="tabs" checked />
-      <label for="tab-servicos">Serviços</label>
-      <input type="radio" id="tab-despesas" name="tabs" />
-      <label for="tab-despesas">Despesas</label>
-      <div class="tab-content" id="content-servicos">
-        <table>
-          <thead>
-            <tr>
-              <th>cd_ordem_servico</th>
-              <th>cd_item_ordem_servico</th>
-              <th>dt_item_ordem_servico</th>
-              <th>nm_hora_inicio_ordem</th>
-              <th>nm_hora_fim_ordem</th>
-              <th>qt_item_normal_ordem</th>
-              <th>qt_item_extra1_ordem</th>
-              <th>qt_item_extra2_ordem</th>
-              <th>qt_item_desloc_ordem</th>
-              <th>nm_item_obs_ordem</th>
-              <th>cd_usuario</th>
-              <th>dt_usuario</th>
-              <th>cd_servico</th>
-              <th>nm_hora_intervalo</th>
-              <th>vl_servico_ordem_servico</th>
-              <th>ds_servico_ordem_servico</th>
-              <th>vl_item_total_servico</th>
-              <th>cd_nota_debito_despesa</th>
-              <th>ic_fatura_item_ordem</th>
-              <th>nm_hora_total</th>
-              <th>nm_servico</th>
-              <th>nm_fantasia_analista</th>
-              <th>ic_extra</th>
-              <th>ic_desloc</th>
-              <th>vl_total_servico</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>7434</td>
-              <td>1</td>
-              <td>Jan 22 2026 12:00AM</td>
-              <td>10:00:00</td>
-              <td>14:00:00</td>
-              <td>0.166667</td>
-              <td>0</td>
-              <td>0</td>
-              <td>0</td>
-              <td></td>
-              <td>1</td>
-              <td>Jan 22 2026 6:20PM</td>
-              <td>11</td>
-              <td></td>
-              <td>100</td>
-              <td>Desenvolvimento Específico</td>
-              <td></td>
-              <td></td>
-              <td>1</td>
-              <td>04:00</td>
-              <td>Desenvolvimento Específico</td>
-              <td>Fagner</td>
-              <td>0</td>
-              <td>0</td>
-              <td>400</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-      <div class="tab-content" id="content-despesas">
-        <table>
-          <thead>
-            <tr>
-              <th>cd_ordem_servico</th>
-              <th>cd_item_despesa_ordem</th>
-              <th>cd_tipo_despesa</th>
-              <th>nm_obs_tipo_despesa</th>
-              <th>qt_item_despesa_ordem</th>
-              <th>vl_item_despesa_ordem</th>
-              <th>cd_usuario</th>
-              <th>dt_usuario</th>
-              <th>ic_empresa_despesa</th>
-              <th>ic_cliente_despesa</th>
-              <th>cd_documento_despesa</th>
-              <th>dt_despesa</th>
-              <th>ic_consultor_despesa</th>
-              <th>cd_documento_pagar</th>
-              <th>cd_nota_debito_despesa</th>
-              <th>dt_vencimento_despesa</th>
-              <th>ic_desconto_consultor</th>
-              <th>cd_identificacao_document</th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-        </table>
+      <div style="width:65%; padding-left:10px">
+        <p class="title">ZERO GRAU</p>
+        <p><strong>RUA D, 400 - 78580-000 - ALTA FLORESTA - MT - BR</strong></p>
+        <p>
+          <strong>Fone: </strong>(66) 3521-2927 -
+          <strong>CNPJ: </strong>04.123.657/0001-05 -
+          <strong>I.E: </strong>131983610
+        </p>
+        <p>- conteclider@gmail.com</p>
       </div>
     </div>
+    <div class="section-title">Relatorio de Baixa do Bem</div>
+    <p><strong>Periodo:</strong> 01/01/2000 a 31/01/2026</p>
+    <table>
+      <tr>
+        <th>Sem Identificacao</th>
+        <th>Seguro</th>
+        <th>Garantia</th>
+        <th>Data Baixa</th>
+        <th>Bem</th>
+        <th>Descricao Bem</th>
+        <th>Patrimonio</th>
+        <th>Grupo</th>
+        <th>Centro de Custo</th>
+        <th>Status</th>
+        <th>Nota Saida</th>
+        <th>Item Nota</th>
+        <th>Qt Item</th>
+        <th>Cliente</th>
+        <th>Nome Cliente</th>
+        <th>Departamento</th>
+        <th>Qt Bem</th>
+        <th>Planta</th>
+        <th>Seguradora</th>
+        <th>Operacao</th>
+        <th>Valor Original</th>
+        <th>Tipo Baixa</th>
+        <th>Descricao Baixa</th>
+      </tr>
+      <tr class="group-row">
+        <td colspan="23">Data de Aquisicao: 10/03/2022</td>
+      </tr>
+      <tr>
+        <td>S</td>
+        <td>N</td>
+        <td>N</td>
+        <td>04/08/2025</td>
+        <td>363</td>
+        <td>FREZER HORIZONTAL</td>
+        <td>controle363</td>
+        <td>FREEZER HORIZONTAL</td>
+        <td>ZERO GRAU</td>
+        <td>Baixado</td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td>7592</td>
+        <td>SUPER BOA SAFRA</td>
+        <td>Cadastro</td>
+        <td></td>
+        <td>ZERO GRAU</td>
+        <td></td>
+        <td></td>
+        <td>0,00</td>
+        <td>3</td>
+        <td>Obsolescência Tecnológica</td>
+      </tr>
+      <tr class="subtotal-row">
+        <td colspan="16">Sub-total</td>
+        <td>0</td>
+        <td colspan="3"></td>
+        <td>0,00</td>
+        <td colspan="2"></td>
+      </tr>
+      <tr class="group-row">
+        <td colspan="23">Data de Aquisicao: 07/04/2022</td>
+      </tr>
+      <tr>
+        <td>S</td>
+        <td>N</td>
+        <td>N</td>
+        <td>31/07/2025</td>
+        <td>665</td>
+        <td>FREZER HORIZONTAL</td>
+        <td>C9509G1248236</td>
+        <td>FREEZER HORIZONTAL</td>
+        <td>ZERO GRAU</td>
+        <td>Baixado</td>
+        <td>364727</td>
+        <td>1</td>
+        <td>1</td>
+        <td>13836</td>
+        <td>BOA PARADA</td>
+        <td>Vendas</td>
+        <td></td>
+        <td>ZERO GRAU</td>
+        <td></td>
+        <td></td>
+        <td>0,00</td>
+        <td>7</td>
+        <td>Troca</td>
+      </tr>
+      <tr class="subtotal-row">
+        <td colspan="16">Sub-total</td>
+        <td>0</td>
+        <td colspan="3"></td>
+        <td>0,00</td>
+        <td colspan="2"></td>
+      </tr>
+      <tr class="group-row">
+        <td colspan="23">Data de Aquisicao: 22/04/2022</td>
+      </tr>
+      <tr>
+        <td>S</td>
+        <td>N</td>
+        <td>N</td>
+        <td>03/06/2025</td>
+        <td>764</td>
+        <td>FREZER HORIZONTAL ARTICO 400LT</td>
+        <td>C9N0701462039</td>
+        <td></td>
+        <td></td>
+        <td>Baixado</td>
+        <td>180707</td>
+        <td>1</td>
+        <td>1</td>
+        <td>2354</td>
+        <td>DROGARIA EBENEZER</td>
+        <td>Vendas</td>
+        <td></td>
+        <td>ZERO GRAU</td>
+        <td></td>
+        <td></td>
+        <td>0,00</td>
+        <td>6</td>
+        <td>Destrato</td>
+      </tr>
+      <tr class="subtotal-row">
+        <td colspan="16">Sub-total</td>
+        <td>0</td>
+        <td colspan="3"></td>
+        <td>0,00</td>
+        <td colspan="2"></td>
+      </tr>
+      <tr class="group-row">
+        <td colspan="23">Data de Aquisicao: 26/04/2022</td>
+      </tr>
+      <tr>
+        <td>S</td>
+        <td>N</td>
+        <td>N</td>
+        <td>02/06/2025</td>
+        <td>822</td>
+        <td>FREZER HORIZONTAL 411</td>
+        <td>720085002</td>
+        <td>FREEZER HORIZONTAL</td>
+        <td></td>
+        <td>Ativo</td>
+        <td>180700</td>
+        <td>1</td>
+        <td>1</td>
+        <td>5151</td>
+        <td>DROGARIA PAG BEM MENOS</td>
+        <td>Vendas</td>
+        <td></td>
+        <td>ZERO GRAU</td>
+        <td></td>
+        <td></td>
+        <td>0,00</td>
+        <td>6</td>
+        <td>Destrato</td>
+      </tr>
+      <tr class="subtotal-row">
+        <td colspan="16">Sub-total</td>
+        <td>0</td>
+        <td colspan="3"></td>
+        <td>0,00</td>
+        <td colspan="2"></td>
+      </tr>
+      <tr class="group-row">
+        <td colspan="23">Data de Aquisicao: 28/05/2022</td>
+      </tr>
+      <tr>
+        <td>S</td>
+        <td>N</td>
+        <td>N</td>
+        <td>26/05/2025</td>
+        <td>1317</td>
+        <td>FREZER HORIZONTAL</td>
+        <td>916001921</td>
+        <td>FREEZER HORIZONTAL</td>
+        <td>ZERO GRAU</td>
+        <td>Ativo</td>
+        <td>179432</td>
+        <td>1</td>
+        <td>1</td>
+        <td>3284</td>
+        <td>SORVETES ITALIANO</td>
+        <td>Vendas</td>
+        <td></td>
+        <td>ZERO GRAU</td>
+        <td></td>
+        <td></td>
+        <td>0,00</td>
+        <td>6</td>
+        <td>Destrato</td>
+      </tr>
+      <tr class="subtotal-row">
+        <td colspan="16">Sub-total</td>
+        <td>0</td>
+        <td colspan="3"></td>
+        <td>0,00</td>
+        <td colspan="2"></td>
+      </tr>
+      <tr class="group-row">
+        <td colspan="23">Data de Aquisicao: 19/10/2022</td>
+      </tr>
+      <tr>
+        <td>S</td>
+        <td>N</td>
+        <td>N</td>
+        <td>22/12/2025</td>
+        <td>2455</td>
+        <td>FREZER HORIZONTAL</td>
+        <td>C9S17B1244882</td>
+        <td>FREEZER HORIZONTAL</td>
+        <td>ZERO GRAU</td>
+        <td>Baixado</td>
+        <td>384903</td>
+        <td>1</td>
+        <td>1</td>
+        <td>12346</td>
+        <td>SINKAS BAR</td>
+        <td>Vendas</td>
+        <td></td>
+        <td>ZERO GRAU</td>
+        <td></td>
+        <td></td>
+        <td>0,00</td>
+        <td>7</td>
+        <td>Troca</td>
+      </tr>
+      <tr class="subtotal-row">
+        <td colspan="16">Sub-total</td>
+        <td>0</td>
+        <td colspan="3"></td>
+        <td>0,00</td>
+        <td colspan="2"></td>
+      </tr>
+      <tr class="group-row">
+        <td colspan="23">Data de Aquisicao: 26/01/2023</td>
+      </tr>
+      <tr>
+        <td>S</td>
+        <td>N</td>
+        <td>N</td>
+        <td>03/06/2025</td>
+        <td>2638</td>
+        <td>FREZER HORIZONTAL 324 LT</td>
+        <td>C9S05L1143049</td>
+        <td>FREEZER HORIZONTAL</td>
+        <td></td>
+        <td>Ativo</td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td>4154</td>
+        <td>MERCADO KAUE</td>
+        <td>Vendas</td>
+        <td></td>
+        <td>ZERO GRAU</td>
+        <td></td>
+        <td></td>
+        <td>0,00</td>
+        <td>6</td>
+        <td>Destrato</td>
+      </tr>
+      <tr class="subtotal-row">
+        <td colspan="16">Sub-total</td>
+        <td>0</td>
+        <td colspan="3"></td>
+        <td>0,00</td>
+        <td colspan="2"></td>
+      </tr>
+      <tr class="group-row">
+        <td colspan="23">Data de Aquisicao: 28/03/2023</td>
+      </tr>
+      <tr>
+        <td>S</td>
+        <td>N</td>
+        <td>N</td>
+        <td>30/06/2025</td>
+        <td>2820</td>
+        <td>FREZER HORIZONTAL</td>
+        <td>C4S29D0808476</td>
+        <td>FREEZER HORIZONTAL</td>
+        <td></td>
+        <td>Baixado</td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td>2219</td>
+        <td>LAN HOUSE EXTREME</td>
+        <td>Vendas</td>
+        <td></td>
+        <td>ZERO GRAU</td>
+        <td></td>
+        <td></td>
+        <td>0,00</td>
+        <td>2</td>
+        <td>Desgaste Físico</td>
+      </tr>
+      <tr class="subtotal-row">
+        <td colspan="16">Sub-total</td>
+        <td>0</td>
+        <td colspan="3"></td>
+        <td>0,00</td>
+        <td colspan="2"></td>
+      </tr>
+      <tr class="group-row">
+        <td colspan="23">Data de Aquisicao: 01/06/2023</td>
+      </tr>
+      <tr>
+        <td>S</td>
+        <td>N</td>
+        <td>N</td>
+        <td>02/06/2025</td>
+        <td>3156</td>
+        <td>FREZER HORIZONTAL</td>
+        <td>123037558</td>
+        <td></td>
+        <td></td>
+        <td>Ativo</td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td>11317</td>
+        <td>MERCEARIA CORREA</td>
+        <td>Vendas</td>
+        <td></td>
+        <td>ZERO GRAU</td>
+        <td></td>
+        <td></td>
+        <td>0,00</td>
+        <td>6</td>
+        <td>Destrato</td>
+      </tr>
+      <tr class="subtotal-row">
+        <td colspan="16">Sub-total</td>
+        <td>0</td>
+        <td colspan="3"></td>
+        <td>0,00</td>
+        <td colspan="2"></td>
+      </tr>
+      <tr class="group-row">
+        <td colspan="23">Data de Aquisicao: 13/07/2023</td>
+      </tr>
+      <tr>
+        <td>S</td>
+        <td>N</td>
+        <td>N</td>
+        <td>03/06/2025</td>
+        <td>3238</td>
+        <td>FREZER HORIZONTAL 411 LT</td>
+        <td>919253174</td>
+        <td>FREEZER HORIZONTAL</td>
+        <td></td>
+        <td>Ativo</td>
+        <td>180773</td>
+        <td>1</td>
+        <td>1</td>
+        <td>13177</td>
+        <td>MERCEARIA E DISTRIBUIDORA JS</td>
+        <td>Vendas</td>
+        <td></td>
+        <td>ZERO GRAU</td>
+        <td></td>
+        <td></td>
+        <td>0,00</td>
+        <td>6</td>
+        <td>Destrato</td>
+      </tr>
+      <tr class="subtotal-row">
+        <td colspan="16">Sub-total</td>
+        <td>0</td>
+        <td colspan="3"></td>
+        <td>0,00</td>
+        <td colspan="2"></td>
+      </tr>
+      <tr class="group-row">
+        <td colspan="23">Data de Aquisicao: 30/11/2023</td>
+      </tr>
+      <tr>
+        <td>S</td>
+        <td>N</td>
+        <td>N</td>
+        <td>02/06/2025</td>
+        <td>3751</td>
+        <td>FREZER HORIZONTAL</td>
+        <td>1018251749</td>
+        <td>FREEZER HORIZONTAL</td>
+        <td></td>
+        <td>Ativo</td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td>10478</td>
+        <td>SUPERMERCADO SUPERMIX</td>
+        <td>Vendas</td>
+        <td></td>
+        <td>ZERO GRAU</td>
+        <td></td>
+        <td></td>
+        <td>0,00</td>
+        <td>6</td>
+        <td>Destrato</td>
+      </tr>
+      <tr class="subtotal-row">
+        <td colspan="16">Sub-total</td>
+        <td>0</td>
+        <td colspan="3"></td>
+        <td>0,00</td>
+        <td colspan="2"></td>
+      </tr>
+      <tr class="group-row">
+        <td colspan="23">Data de Aquisicao: 28/02/2024</td>
+      </tr>
+      <tr>
+        <td>S</td>
+        <td>N</td>
+        <td>N</td>
+        <td>09/06/2025</td>
+        <td>3897</td>
+        <td>FREZER HORIZONTAL</td>
+        <td>218080489</td>
+        <td>FREEZER HORIZONTAL</td>
+        <td></td>
+        <td>Ativo</td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td>11501</td>
+        <td>RESTAU FOGAO DE MINAS</td>
+        <td>Vendas</td>
+        <td></td>
+        <td>ZERO GRAU</td>
+        <td></td>
+        <td></td>
+        <td>0,00</td>
+        <td>6</td>
+        <td>Destrato</td>
+      </tr>
+      <tr class="subtotal-row">
+        <td colspan="16">Sub-total</td>
+        <td>0</td>
+        <td colspan="3"></td>
+        <td>0,00</td>
+        <td colspan="2"></td>
+      </tr>
+      <tr class="group-row">
+        <td colspan="23">Data de Aquisicao: 28/02/2025</td>
+      </tr>
+      <tr>
+        <td>S</td>
+        <td>N</td>
+        <td>N</td>
+        <td>04/06/2025</td>
+        <td>4738</td>
+        <td>GELADEIRA VERTICAL</td>
+        <td>2025000020</td>
+        <td>GELADEIRA VERTICAL</td>
+        <td></td>
+        <td>Ativo</td>
+        <td>180794</td>
+        <td>1</td>
+        <td>1</td>
+        <td>12676</td>
+        <td>STATION ACAI</td>
+        <td>Cadastro</td>
+        <td></td>
+        <td>ZERO GRAU</td>
+        <td></td>
+        <td></td>
+        <td>0,00</td>
+        <td>6</td>
+        <td>Destrato</td>
+      </tr>
+      <tr>
+        <td>S</td>
+        <td>N</td>
+        <td>N</td>
+        <td>04/06/2025</td>
+        <td>4737</td>
+        <td>GELADEIRA VERTICAL 570LT</td>
+        <td>2025000048</td>
+        <td>FREEZER HORIZONTAL</td>
+        <td></td>
+        <td></td>
+        <td>180793</td>
+        <td>1</td>
+        <td>1</td>
+        <td>9386</td>
+        <td>SUPERMERCADO VIEIRA</td>
+        <td>Cadastro</td>
+        <td></td>
+        <td>ZERO GRAU</td>
+        <td></td>
+        <td></td>
+        <td>0,00</td>
+        <td>6</td>
+        <td>Destrato</td>
+      </tr>
+      <tr>
+        <td>S</td>
+        <td>N</td>
+        <td>N</td>
+        <td>05/06/2025</td>
+        <td>4740</td>
+        <td>FREEZER HORIZONTAL 411LT</td>
+        <td>0225012104</td>
+        <td>FREEZER HORIZONTAL</td>
+        <td></td>
+        <td>Ativo</td>
+        <td>180823</td>
+        <td>1</td>
+        <td>1</td>
+        <td>12676</td>
+        <td>STATION ACAI</td>
+        <td>Cadastro</td>
+        <td></td>
+        <td>ZERO GRAU</td>
+        <td></td>
+        <td></td>
+        <td>0,00</td>
+        <td>6</td>
+        <td>Destrato</td>
+      </tr>
+      <tr>
+        <td>S</td>
+        <td>N</td>
+        <td>N</td>
+        <td>03/09/2025</td>
+        <td>4899</td>
+        <td>GELADEIRA VERTICAL</td>
+        <td>2025070735</td>
+        <td>GELADEIRA VERTICAL</td>
+        <td>ZERO GRAU</td>
+        <td>Baixado</td>
+        <td>368748</td>
+        <td>1</td>
+        <td>1</td>
+        <td>13882</td>
+        <td>COMERCIAL MARTINS</td>
+        <td>Cadastro</td>
+        <td></td>
+        <td>ZERO GRAU</td>
+        <td></td>
+        <td></td>
+        <td>0,00</td>
+        <td>6</td>
+        <td>Destrato</td>
+      </tr>
+      <tr class="subtotal-row">
+        <td colspan="16">Sub-total</td>
+        <td>0</td>
+        <td colspan="3"></td>
+        <td>0,00</td>
+        <td colspan="2"></td>
+      </tr>
+      <tr class="group-row">
+        <td colspan="23">Data de Aquisicao: 02/07/2025</td>
+      </tr>
+      <tr>
+        <td>S</td>
+        <td>N</td>
+        <td>N</td>
+        <td>01/12/2025</td>
+        <td>4979</td>
+        <td>GELADEIRA VERTICAL</td>
+        <td>2025070749</td>
+        <td>GELADEIRA VERTICAL</td>
+        <td>ZERO GRAU</td>
+        <td>Ativo</td>
+        <td>376373</td>
+        <td>1</td>
+        <td>1</td>
+        <td></td>
+        <td></td>
+        <td>Cadastro</td>
+        <td></td>
+        <td>ZERO GRAU</td>
+        <td></td>
+        <td></td>
+        <td>0,00</td>
+        <td>3</td>
+        <td>Obsolescência Tecnológica</td>
+      </tr>
+      <tr class="subtotal-row">
+        <td colspan="16">Sub-total</td>
+        <td>0</td>
+        <td colspan="3"></td>
+        <td>0,00</td>
+        <td colspan="2"></td>
+      </tr>
+      <tr class="group-row">
+        <td colspan="23">Data de Aquisicao: 01/10/2025</td>
+      </tr>
+      <tr>
+        <td>S</td>
+        <td>N</td>
+        <td>N</td>
+        <td>17/10/2025</td>
+        <td>13811</td>
+        <td>0825008864</td>
+        <td>0825008864</td>
+        <td>FREEZER HORIZONTAL</td>
+        <td>ZERO GRAU</td>
+        <td>Ativo</td>
+        <td>380363</td>
+        <td>1</td>
+        <td>1</td>
+        <td>5646</td>
+        <td>RESTAURANTE E LANCHONETE SANTA</td>
+        <td>Cadastro</td>
+        <td></td>
+        <td>ZERO GRAU</td>
+        <td></td>
+        <td></td>
+        <td>0,00</td>
+        <td>6</td>
+        <td>Destrato</td>
+      </tr>
+      <tr>
+        <td>S</td>
+        <td>N</td>
+        <td>N</td>
+        <td>15/12/2025</td>
+        <td>13945</td>
+        <td>GELADEIRA VERTICAL</td>
+        <td>2025113813</td>
+        <td>GELADEIRA VERTICAL</td>
+        <td>ZERO GRAU</td>
+        <td>Ativo</td>
+        <td>389699</td>
+        <td>1</td>
+        <td>1</td>
+        <td></td>
+        <td></td>
+        <td>Cadastro</td>
+        <td></td>
+        <td>ZERO GRAU</td>
+        <td></td>
+        <td></td>
+        <td>0,00</td>
+        <td>6</td>
+        <td>Destrato</td>
+      </tr>
+      <tr class="subtotal-row">
+        <td colspan="16">Sub-total</td>
+        <td>0</td>
+        <td colspan="3"></td>
+        <td>0,00</td>
+        <td colspan="2"></td>
+      </tr>
+      <tr class="total-row">
+        <td colspan="16">Total Geral</td>
+        <td>0</td>
+        <td colspan="3"></td>
+        <td>0,00</td>
+        <td colspan="2"></td>
+      </tr>
+    </table>
+
+    <p></p>
+    <div class="report-date-time">Gerado em: 27/01/2026 12:42:11</div>
   </body>
 </html>

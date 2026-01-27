@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+
+    <!-- (Opcional, mas ajuda no visual) -->
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@quasar/extras/material-icons/material-icons.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/quasar@1.22.10/dist/quasar.min.css"
+    />
+
+    <title>Quasar Teste</title>
+  </head>
+
+  <body>
+    <div id="q-app"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/vue@2/dist/vue.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/quasar@1.22.10/dist/quasar.umd.min.js"></script>
+
+    <script>
+      // ESSENCIAL no modo UMD:
+      Vue.use(Quasar);
+
+      new Vue({
+        el: "#q-app",
+        template: `
+        <q-layout view="hHh lpR fFf">
+          <q-header elevated>
+            <q-toolbar>
+              <q-icon name="local_shipping" class="q-mr-sm"/>
+              <q-toolbar-title>Teste Quasar OK</q-toolbar-title>
+            </q-toolbar>
+          </q-header>
+
+          <q-page-container>
+            <q-page padding>
+              <q-card bordered>
+                <q-card-section>
+                  <div class="text-h6">Renderizou!</div>
+                  <div class="text-caption">Se você está vendo isso, Quasar está funcionando.</div>
+                </q-card-section>
+
+                <q-card-section>
+                  <q-input filled v-model="msg" label="Teste input" />
+                  <div class="q-mt-sm">Valor: {{ msg }}</div>
+                </q-card-section>
+              </q-card>
+            </q-page>
+          </q-page-container>
+        </q-layout>
+      `,
+        data() {
+          return { msg: "ok" };
+        },
+      });
+    </script>
+  </body>
+</html>

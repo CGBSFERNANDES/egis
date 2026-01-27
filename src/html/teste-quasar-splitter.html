@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@quasar/extras/material-icons/material-icons.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/quasar@1.22.10/dist/quasar.min.css"
+    />
+
+    <title>Roteirização - Quasar + Splitter + Tables</title>
+
+    <style>
+      body {
+        background: #f5f5f5;
+      }
+      .panel-card {
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+      }
+      .panel-body {
+        flex: 1;
+        min-height: 0;
+      } /* permite scroll interno */
+      .wrap {
+        white-space: normal;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div id="q-app"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/vue@2/dist/vue.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/quasar@1.22.10/dist/quasar.umd.min.js"></script>
+
+    <script>
+      // ESSENCIAL no modo UMD:
+      Vue.use(Quasar);
+
+      // -----------------------------
+      // Mock de dados
+      // -----------------------------
+      function mockBuscarRoteiros(dataEntrega) {
+        const base = {
+          "2026-01-26": [
+            {
+              id: 1,
+              titulo: "ITINERÁRIO EVERALDO",
+              motorista: "EVERALDO",
+              veiculo: "DWM 1B31",
+              entregas: [
+                {
+                  cliente: "PLANO & PLANO",
+                  itens: [
+                    { produto: "CAIXA_20", qtd: 20 },
+                    { produto: "CAIXA_40", qtd: 0 },
+                  ],
+                },
+                {
+                  cliente: "SALON LINE",
+                  itens: [{ produto: "CAIXA_20", qtd: 20 }],
+                },
+                {
+                  cliente: "TRANENGE",
+                  itens: [{ produto: "CAIXA_20", qtd: 20 }],
+                },
+              ],
+            },
+            {
+              id: 2,
+              titulo: "ITINERÁRIO LEONIDAS",
+              motorista: "LEONIDAS",
+              veiculo: "DJC 9D90",
+              entregas: [
+                { cliente: "MAIAN", itens: [{ produto: "CAIXA_20", qtd: 20 }] },
+                {
+                  cliente: "SALON LINE",
+                  itens: [{ produto: "CAIXA_20", qtd: 20 }],
+                },
+              ],
+            },
+            {
+              id: 3,
+              titulo: "ITINERÁRIO MÁRIO",
+              motorista: "MÁRIO",
+              veiculo: "LCN 7881",
+              entregas: [
+                {
+                  cliente: "SOUSA ARAUJO",
+                  itens: [
+                    { produto: "CAIXA_10", qtd: 10 },
+                    { produto: "CAIXA_20", qtd: 0 },
+                  ],
+                },
+                {
+                  cliente: "SORVESA",
+                  itens: [{ produto: "CAIXA_10", qtd: 10 }],
+                },
+              ],
+            },
+          ],
+        };
+
+        return (
+          base[dataEntrega] || [
+            {
+              id: 10,
+              titulo: "ITINERÁRIO TESTE",
+              motorista: "MOTORISTA X",
+              veiculo: "AAA 0000",
+              entregas: [
+                {
+                  cliente: "CLIENTE 1",
+                  itens: [
+                    { produto: "P1", qtd: 5 },
+                    { produto: "P2", qtd: 2 },
+                    { produto: "P3", qtd: 1 },
+                  ],
+                },
+                { cliente: "CLIENTE 2", itens: [{ produto: "P2", qtd: 7 }] },
+              ],
+            },
+          ]
+        );
+      }
+
+      // Pivot: produtos viram colunas dinâmicas
+      function montarPivot(it) {
+        const produtos = Array.from(
+          new Set(it.entregas.flatMap(e => e.itens.map(i => i.produto)))
+        );
+
+        const columns = [
+          {
+            name: "cliente",
+            label: "Cliente",
+            field: "cliente",
+            align: "left",
+            sortable: true,
+          },
+          ...produtos.map(p => ({
+            name: `p_${p}`,
+            label: p,
+            field: row => row[`p_${p}`],
+            align: "right",
+            sortable: true,
+          })),
+          {
+            name: "total",
+            label: "Total",
+            field: "total",
+            align: "right",
+            sortable: true,
+          },
+        ];
+
+        const rows = it.entregas.map((e, idx) => {
+          const row = { id: idx + 1, cliente: e.cliente };
+          produtos.forEach(p => (row[`p_${p}`] = 0));
+          e.itens.forEach(i => {
+            row[`p_${i.produto}`] += i.qtd;
+          });
+          row.total = produtos.reduce((s, p) => s + row[`p_${p}`], 0);
+          return row;
+        });
+
+        const totalCaixas = rows.reduce((s, r) => s + (r.total || 0), 0);
+
+        return { produtos, columns, rows, totalCaixas };
+      }
+
+      // -----------------------------
+      // APP
+      // -----------------------------
+      new Vue({
+        el: "#q-app",
+        template: `
+        <q-layout view="hHh lpR fFf">
+          <q-header elevated>
+            <q-toolbar>
+              <q-icon name="local_shipping" class="q-mr-sm"/>
+              <q-toolbar-title>Roteirização (Quasar + Splitter)</q-toolbar-title>
+            </q-toolbar>
+          </q-header>
+
+          <q-page-container>
+            <q-page padding>
+
+              <div class="row q-col-gutter-md items-center">
+                <div class="col-12 col-sm-3">
+                  <q-input filled dense v-model="dataEntrega" label="Data (YYYY-MM-DD)" />
+                </div>
+                <div class="col-12 col-sm-9">
+                  <q-btn color="primary" label="Consultar" @click="consultar" class="q-mr-sm" />
+                  <q-btn color="secondary" label="Atualizar Roteiro" @click="atualizarRoteiro" />
+                  <span class="q-ml-md text-caption">Itinerários: {{ itinerarios.length }}</span>
+                </div>
+              </div>
+
+              <q-separator class="q-my-md" />
+
+              <q-splitter v-model="split" style="height: calc(100vh - 210px);" separator-class="bg-grey-4">
+                <!-- TOP: N tabelas -->
+                <template v-slot:before>
+                  <div class="q-pa-sm" style="height: 100%;">
+                    <div class="row q-col-gutter-md" style="height: 100%;">
+                      <div v-for="it in itinerarios" :key="it.id" class="col-12 col-md-4" style="height: 100%;">
+                        <q-card bordered class="panel-card">
+                          <q-card-section>
+                            <div class="text-subtitle2">{{ it.titulo }}</div>
+                            <div class="text-caption">
+                              Veículo: {{ it.veiculo }}<br>
+                              Motorista: {{ it.motorista }}<br>
+                              Colunas: {{ it.produtos.join(', ') || '-' }}
+                            </div>
+                          </q-card-section>
+
+                          <q-separator/>
+
+                          <q-card-section class="panel-body q-pa-none">
+                            <q-table
+                              dense
+                              flat
+                              :data="it.rows"
+                              :columns="it.columns"
+                              row-key="id"
+                              :pagination.sync="noPagination"
+                              :rows-per-page-options="[0]"
+                              hide-bottom
+                              :wrap-cells="true"
+                              @row-click="() => selecionarItinerario(it)"
+                            >
+                              <template v-slot:body-cell="props">
+                                <q-td :props="props" class="wrap">{{ props.value }}</q-td>
+                              </template>
+                            </q-table>
+                          </q-card-section>
+
+                          <q-separator/>
+
+                          <q-card-section class="text-caption">
+                            Total caixas: {{ it.totalCaixas.toFixed(2) }}
+                            <q-btn
+                              dense flat size="sm"
+                              class="q-ml-sm"
+                              color="primary"
+                              label="Selecionar"
+                              @click="selecionarItinerario(it)"
+                            />
+                          </q-card-section>
+                        </q-card>
+                      </div>
+                    </div>
+                  </div>
+                </template>
+
+                <!-- BOTTOM: detalhe -->
+                <template v-slot:after>
+                  <div class="q-pa-sm" style="height: 100%;">
+                    <q-card bordered class="panel-card" v-if="selecionado">
+                      <q-card-section>
+                        <div class="text-subtitle2">Detalhe</div>
+                        <div class="text-caption">
+                          {{ selecionado.titulo }} — {{ selecionado.motorista }} ({{ selecionado.veiculo }})
+                        </div>
+                      </q-card-section>
+
+                      <q-separator/>
+
+                      <q-card-section class="panel-body q-pa-none">
+                        <q-table
+                          dense
+                          flat
+                          :data="detailRows"
+                          :columns="detailColumns"
+                          row-key="id"
+                          :pagination.sync="noPagination"
+                          :rows-per-page-options="[0]"
+                          hide-bottom
+                          :wrap-cells="true"
+                        />
+                      </q-card-section>
+                    </q-card>
+
+                    <q-card bordered v-else>
+                      <q-card-section class="text-caption">
+                        Selecione um itinerário acima.
+                      </q-card-section>
+                    </q-card>
+                  </div>
+                </template>
+              </q-splitter>
+
+            </q-page>
+          </q-page-container>
+        </q-layout>
+      `,
+        data() {
+          return {
+            split: 60,
+            dataEntrega: "2026-01-26",
+            itinerarios: [],
+            selecionado: null,
+            noPagination: { page: 1, rowsPerPage: 0 },
+
+            detailColumns: [
+              {
+                name: "cliente",
+                label: "Cliente",
+                field: "cliente",
+                align: "left",
+                sortable: true,
+              },
+              {
+                name: "produto",
+                label: "Produto",
+                field: "produto",
+                align: "left",
+                sortable: true,
+              },
+              {
+                name: "qtd",
+                label: "Qtd",
+                field: "qtd",
+                align: "right",
+                sortable: true,
+              },
+            ],
+            detailRows: [],
+          };
+        },
+        mounted() {
+          this.consultar();
+        },
+        methods: {
+          consultar() {
+            const raw = mockBuscarRoteiros(this.dataEntrega);
+
+            this.itinerarios = raw.map(it => {
+              const pivot = montarPivot(it);
+              return { ...it, ...pivot };
+            });
+
+            this.selecionarItinerario(this.itinerarios[0] || null);
+          },
+
+          atualizarRoteiro() {
+            this.consultar();
+            this.$q.notify({
+              type: "positive",
+              message: "Roteiro atualizado (mock).",
+            });
+          },
+
+          selecionarItinerario(it) {
+            this.selecionado = it;
+
+            if (!it) {
+              this.detailRows = [];
+              return;
+            }
+
+            this.detailRows = it.entregas.flatMap((e, idxCliente) =>
+              e.itens.map((i, idxItem) => ({
+                id: `${idxCliente}-${idxItem}`,
+                cliente: e.cliente,
+                produto: i.produto,
+                qtd: i.qtd,
+              }))
+            );
+          },
+        },
+      });
+    </script>
+  </body>
+</html>
