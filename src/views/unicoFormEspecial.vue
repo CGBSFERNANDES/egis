@@ -235,6 +235,7 @@
                         filled
                         stack-label
                         readonly
+                        :required="isObrigatorio(attr)"
                         class="campo-azul"
                       >
                         <template v-slot:append>
@@ -251,6 +252,20 @@
                                 attr.nm_atributo_consulta}`
                             "
                           />
+                          <q-btn
+                            v-if="
+                              formData[attr.cd_chave_retorno || attr.nm_atributo] ||
+                                descricaoLookup(attr)
+                            "
+                            icon="close"
+                            flat
+                            round
+                            dense
+                            color="deep-orange-7"
+                            :disable="isReadonly(attr)"
+                            @click="limparPesquisaDinamica(attr)"
+                            title="Limpar pesquisa"
+                          />
                         </template>
                       </q-input>
                     </div>
@@ -265,8 +280,12 @@
                         filled
                         clearable
                         stack-label
+                        :required="isObrigatorio(attr)"
                         :readonly="isReadonly(attr)"
                         :input-class="inputClass(attr)"
+                        :maxlength="tamanhoMaximo(attr)"
+                        :hint="hintTamanho(attr)"
+                        @clear="limparPesquisaDinamica(attr)"
                         @blur="validarCampoDinamico(attr)"
                         class="campo-azul"
                       />
@@ -293,6 +312,7 @@
                         filled
                         clearable
                         stack-label
+                        :required="isObrigatorio(attr)"
                         :readonly="isReadonly(attr)"
                         :input-class="inputClass(attr)"
                         :class="
@@ -334,6 +354,7 @@
                   clearable
                   :dense="false"
                   stack-label
+                  :required="isObrigatorio(attr)"
                   :readonly="isReadonly(attr)"
                   :input-class="inputClass(attr)"
                   :hide-hint="false"
@@ -402,8 +423,11 @@
                   clearable
                   :dense="false"
                   stack-label
+                  :required="isObrigatorio(attr)"
                   :readonly="isReadonly(attr)"
                   :input-class="inputClass(attr)"
+                  :maxlength="tamanhoMaximo(attr)"
+                  :hint="hintTamanho(attr)"
                 >
                   <template v-if="isDateField(attr)" v-slot:prepend>
                     <q-icon name="event" />
@@ -8560,6 +8584,10 @@ if (descGenerica) {
       return attr.ic_atributo_chave === "S";
     },
 
+    isObrigatorio(attr) {
+      return attr && attr.ic_obrigatorio === "S";
+    },
+
     isAutoNum(attr) {
       // cobre as duas grafias que vi no projeto
       return attr.ic_numeracao_automatica === "S";
@@ -8598,8 +8626,31 @@ if (descGenerica) {
     labelCampo(attr) {
       const base =
         attr.nm_atributo_consulta || attr.ds_atributo || attr.nm_atributo;
-      const estrela = this.isAutoNum(attr) ? " *" : "";
+      const estrela = this.isObrigatorio(attr) ? " *" : "";
       return base + estrela;
+    },
+
+    tamanhoMaximo(attr) {
+      if (!attr) return null;
+      const raw = attr.qt_tamanho_atributo;
+      const max = Number(raw);
+      if (!Number.isFinite(max) || max <= 0) return null;
+      const tipo = String(attr.tipo_coluna || attr.ic_tipo || attr.tipo || "")
+        .toLowerCase()
+        .trim();
+      if (!tipo || !(tipo.includes("varchar") || tipo.includes("char")))
+        return null;
+      return max;
+    },
+
+    hintTamanho(attr) {
+      const max = this.tamanhoMaximo(attr);
+      if (!max) return "";
+      const chave = attr?.cd_chave_retorno || attr?.nm_atributo;
+      const valor = chave ? this.formData?.[chave] : null;
+      const atual =
+        valor !== undefined && valor !== null ? String(valor).length : 0;
+      return `${atual}/${max}`;
     },
 
     // 2.4 lista de valores
@@ -8664,6 +8715,31 @@ if (descGenerica) {
           attr.nm_atributo,
           attr.cd_menu_pesquisa
         );
+    },
+
+    limparPesquisaDinamica(attr) {
+      if (!attr) return;
+      const campoChave = attr.cd_chave_retorno || attr.nm_atributo;
+      const descKeyInterna = `__lookup_desc__${attr.nm_atributo ||
+        campoChave ||
+        "x"}`;
+      const candidatos = [
+        attr.nm_campo_mostra_combo_box,
+        attr.nm_atributo_lookup,
+        attr.nm_atributo_consulta,
+        attr.nm_atributo,
+        campoChave,
+        descKeyInterna,
+      ].filter(Boolean);
+
+      candidatos.forEach(k => {
+        if (this.formData && this.formData.hasOwnProperty(k)) {
+          this.$set(this.formData, k, null);
+        }
+        if (this.record && this.record.hasOwnProperty(k)) {
+          this.$set(this.record, k, null);
+        }
+      });
     },
 
     //
@@ -8897,6 +8973,25 @@ if (descGenerica) {
         if (faltando.length) {
           this.notifyWarn(
             `Preencha os campos obrigatórios: ${faltando.join(", ")}`
+          );
+          this.salvando = false;
+          return;
+        }
+
+        const estourados = (this.atributosForm || [])
+          .filter(a => this.tamanhoMaximo(a))
+          .filter(a => {
+            const chave = a.cd_chave_retorno || a.nm_atributo;
+            if (!chave) return false;
+            const valor = this.formData[chave];
+            if (valor === undefined || valor === null) return false;
+            return String(valor).length > this.tamanhoMaximo(a);
+          })
+          .map(a => this.labelCampo(a));
+
+        if (estourados.length) {
+          this.notifyWarn(
+            `Campos excedendo o tamanho permitido: ${estourados.join(", ")}`
           );
           this.salvando = false;
           return;
