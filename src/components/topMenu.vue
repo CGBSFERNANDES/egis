@@ -290,4 +290,12 @@ export default {
   margin-left: auto;
   margin-right: 30px;
 }
+
+.titulo-modal {
+  font-size: 20px;
+  line-height: 24px;
+  font-weight: 600;
+  white-space: normal;
+  word-break: break-word;
+}
 </style>
