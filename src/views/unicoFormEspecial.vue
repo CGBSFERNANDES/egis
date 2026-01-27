@@ -12501,7 +12501,7 @@ if (descGenerica) {
 
           const payload = [
             {
-              cd_parametro,
+              cd_parametro: this.getCdParametroContexto(),
               cd_menu,
               cd_usuario: localStorage.cd_usuario || this.cd_usuario || 0,
               cd_chave_pesquisa:
@@ -12544,10 +12544,11 @@ if (descGenerica) {
               //this.ic_json_parametro === "S"
               //  ? JSON.stringify([{ ic_json_parametro: "S", ...campos }])
               //  : JSON.stringify({ ic_json_parametro: "N", ...campos });
+
               this.ic_json_parametro === "S"
                 ? [
                     {
-                      cd_parametro,
+                      cd_parametro: this.getCdParametroContexto(),
                       cd_usuario:
                         localStorage.cd_usuario || this.cd_usuario || 0,
                       ic_json_parametro: "S",
@@ -12583,6 +12584,8 @@ if (descGenerica) {
           // chama a procedure
           //onsole.log('Chamando procedure:', this.nome_procedure);
           //
+
+          console.log("payloadExec --> ", payloadExec);
 
           const { data } = await api.post(
             `/exec/${this.nome_procedure}`,

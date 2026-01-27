@@ -1807,38 +1807,38 @@ export default {
         if (this.cd_cnpj.length < 18) {
           notify('Digite o CNPJ corretamente')
           return
-        } else {
-          var response = await funcao.BuscaCNPJ(this.cd_cnpj)
-          this.fantasia = response.nm_fantasia_cnpj
-          this.razao_social = response.nm_razao_social_cnpj
-          this.data_nasc = response.dt_abertura
-          this.telefone = response.cd_telefone_cnpj
-          this.email = response.nm_email
-          this.vl_capital_social = response.vl_capital_social
-          this.cep = response.cd_cep
-          this.endereco = response.nm_endereco_cnpj
-          this.numero = response.cd_numero_cnpj
-          this.complemento = response.nm_complemento
-          this.bairro = response.nm_bairro
-          this.cd_inscestadual = response.cd_inscestual
-          if (response.cd_estado) {
-            let est = this.lookup_estado.find((e) => {
-              return (e.cd_estado = response.cd_estado)
-            })
-            if (est) {
-              this.estado = est
-            }
-          }
-          if (response.cd_cidade) {
-            let cid = this.lookup_cidade_natural.find((e) => {
-              return (e.cd_cidade = response.cd_cidade)
-            })
-            if (cid) {
-              this.cidade = cid
-            }
-          }
         }
-      } catch {
+        //else {
+        //  var response = await funcao.BuscaCNPJ(this.cd_cnpj)
+        //  this.fantasia = response.nm_fantasia_cnpj
+        //  this.razao_social = response.nm_razao_social_cnpj
+        //  this.data_nasc = response.dt_abertura
+        //  this.telefone = response.cd_telefone_cnpj
+        //  this.email = response.nm_email
+        //  this.vl_capital_social = response.vl_capital_social
+        //  this.cep = response.cd_cep
+        //  this.endereco = response.nm_endereco_cnpj
+        //  this.numero = response.cd_numero_cnpj
+        //  this.complemento = response.nm_complemento
+        //  this.bairro = response.nm_bairro
+        //  this.cd_inscestadual = response.cd_inscestual
+        //  if (response.cd_estado) {
+        //    let est = this.lookup_estado.find((e) => {
+        //      return (e.cd_estado = response.cd_estado)
+        //    })
+        //    if (est) {
+        //      this.estado = est
+        //    }
+        //  }
+        //  if (response.cd_cidade) {
+        //    let cid = this.lookup_cidade_natural.find((e) => {
+        //      return (e.cd_cidade = response.cd_cidade)
+        //    })
+        //    if (cid) {
+        //      this.cidade = cid
+        //    }
+        //  }
+        //}
         this.load = true
 
         localStorage.cd_cnpj = this.cd_cnpj
@@ -1865,30 +1865,56 @@ export default {
         }
         //carrega os dados do cliente
         this.razao_social = this.dataSourceConfig[0].nm_razao_social
-        this.cep = this.dataSourceConfig[0].nm_cep.replace('.', '')
-        this.bairro = this.dataSourceConfig[0].nm_bairro
+          ? this.dataSourceConfig[0].nm_razao_social
+          : ''
+        this.cep = this.dataSourceConfig[0].nm_cep
+          ? this.dataSourceConfig[0].nm_cep.replace('.', '')
+          : ''
+        this.bairro = this.dataSourceConfig[0].nm_bairro ? this.dataSourceConfig[0].nm_bairro : ''
         this.endereco = this.dataSourceConfig[0].nm_endereco
+          ? this.dataSourceConfig[0].nm_endereco
+          : ''
         this.numero = this.dataSourceConfig[0].cd_numero ? this.dataSourceConfig[0].cd_numero : ''
         this.complemento = this.dataSourceConfig[0].nm_complemento
-        this.estado = await this.lookup_estado_natural.find(
-          (element) => element.cd_estado == this.dataSourceConfig[0].cd_estado
-        )
-        this.cidade = this.lookup_cidade_natural.find(
-          (element) => element.cd_cidade == this.dataSourceConfig[0].cd_cidade
-        )
-        this.lookup_cidade_filtrado = this.lookup_cidade_natural.filter(
-          (element) => element.cd_estado == this.estado.cd_estado
-        )
-        this.cd_pais = this.dataSourceConfig[0].cd_pais
+          ? this.dataSourceConfig[0].nm_complemento
+          : ''
+        if (this.dataSourceConfig[0].cd_estado) {
+          this.estado = this.dataSourceConfig[0].cd_estado
+            ? await this.lookup_estado_natural.find(
+                (element) => element.cd_estado == this.dataSourceConfig[0].cd_estado
+              )
+            : null
+          this.cidade = this.dataSourceConfig[0].cd_cidade
+            ? this.lookup_cidade_natural.find(
+                (element) => element.cd_cidade == this.dataSourceConfig[0].cd_cidade
+              )
+            : null
+          this.lookup_cidade_filtrado = this.estado.cd_estado
+            ? this.lookup_cidade_natural.filter(
+                (element) => element.cd_estado == this.estado.cd_estado
+              )
+            : null
+        }
+        this.cd_pais = this.dataSourceConfig[0].cd_pais ? this.dataSourceConfig[0].cd_pais : 0
         this.data_nasc = this.dataSourceConfig[0].dt_abertura
-        this.email = this.dataSourceConfig[0].nm_email
+          ? this.dataSourceConfig[0].dt_abertura
+          : ''
+        this.email = this.dataSourceConfig[0].nm_email ? this.dataSourceConfig[0].nm_email : ''
         this.fantasia = this.dataSourceConfig[0].nm_fantasia
+          ? this.dataSourceConfig[0].nm_fantasia
+          : ''
         this.telefone = this.dataSourceConfig[0].nm_telefone
+          ? this.dataSourceConfig[0].nm_telefone
+          : ''
         this.vl_capital_social = this.dataSourceConfig[0].vl_capital_social
+          ? this.dataSourceConfig[0].vl_capital_social
+          : ''
         this.FormataVal(3)
         if (!!this.cep == true) {
           await this.onBuscaCep()
         }
+      } catch (error) {
+        console.error(error)
       } finally {
         this.load = false
       }
@@ -1936,22 +1962,24 @@ export default {
             this.endereco = this.dataSourceConfig[0].logradouro ?? ''
             this.bairro = this.dataSourceConfig[0].bairro ?? ''
             this.complemento = this.dataSourceConfig[0].complemento ?? ''
-            this.estado = this.dataSourceConfig[0].cd_estado
-              ? this.lookup_estado_natural.find(
-                  (element) => element.cd_estado == this.dataSourceConfig[0].cd_estado
-                )
-              : ''
-            let cidade_obj = this.dataSourceConfig[0].cd_cidade
-              ? this.lookup_cidade_natural.filter(
-                  (element) => element.cd_cidade == this.dataSourceConfig[0].cd_cidade
-                )
-              : ''
-            this.cidade = cidade_obj[0]
-            this.lookup_cidade_filtrado = this.estado.cd_estado
-              ? this.lookup_cidade_natural.filter(
-                  (element) => element.cd_estado == this.estado.cd_estado
-                )
-              : ''
+            if (this.dataSourceConfig[0].cd_estado) {
+              this.estado = this.dataSourceConfig[0].cd_estado
+                ? this.lookup_estado_natural.find(
+                    (element) => element.cd_estado == this.dataSourceConfig[0].cd_estado
+                  )
+                : ''
+              let cidade_obj = this.dataSourceConfig[0].cd_cidade
+                ? this.lookup_cidade_natural.filter(
+                    (element) => element.cd_cidade == this.dataSourceConfig[0].cd_cidade
+                  )
+                : ''
+              this.cidade = cidade_obj[0]
+              this.lookup_cidade_filtrado = this.estado.cd_estado
+                ? this.lookup_cidade_natural.filter(
+                    (element) => element.cd_estado == this.estado.cd_estado
+                  )
+                : ''
+            }
             this.cd_pais = this.dataSourceConfig[0].cd_pais ?? 0
           } catch (err) {
             // eslint-disable-next-line no-console

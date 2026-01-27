@@ -312,12 +312,12 @@ import notify from 'devextreme/ui/notify'
 import Menu from '../http/menu'
 import Incluir from '../http/incluir_registro'
 import 'whatwg-fetch'
-
+import funcao from '../http/funcoes-padroes.js'
 import { jsPDF } from 'jspdf'
 import 'jspdf-autotable'
 import { exportDataGrid } from 'devextreme/excel_exporter'
 import lookup from '../http/lookup'
-
+import axios from 'axios'
 var cd_empresa = 0
 var cd_menu = 0
 var cd_api = 0
@@ -618,12 +618,63 @@ export default {
           this.api, //pr_egisnet_controle_caixa
           salvar_operacao_caixa
         )
+        // Gera o Boleto Itau
+        if (salvar_operacao_caixa.ic_geracao_boleto === 'S') {
+          const [config_itau] = JSON.parse(this.$store._mutations.SET_Usuario.config_itau)
+          const today = new Date()
+          // Hoje
+          const todayFormatted = today.toISOString().split('T')[0]
+          // D+1
+          const tomorrow = new Date(today)
+          tomorrow.setDate(today.getDate() + 1)
+
+          const tomorrowFormatted = tomorrow.toISOString().split('T')[0]
+          const options = {
+            method: 'POST',
+            url: 'https://egis-store.com.br/servico-itau/api/boletos',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            data: {
+              cd_empresa: '360',
+              cd_usuario: localStorage.cd_usuario,
+              cd_movimento_caixa: result_update[0].cd_movimento_caixa,
+              cd_documento_receber: result_update[0].cd_documento_receber,
+              ic_ambiente_prod_hml: config_itau.ic_ambiente_prod_hml, //efetivacao ou validacao
+              id_beneficiario: config_itau.id_beneficiario,
+              assunto_email: config_itau.assunto_email,
+              mensagem_email: config_itau.mensagem_email,
+              valor_titulo: funcao.FormataValorParaAPIItau(salvar_operacao_caixa.vl_dinheiro),
+              data_emissao: todayFormatted,
+              email_pagador: config_itau.email_pagador,
+              nome_pagador: this.$store._mutations.SET_Usuario.nm_fantasia_empresa,
+              cd_cpf_cnpj_pagador: this.$store._mutations.SET_Usuario.cd_cgc_empresa,
+              logradouro_pagador: this.$store._mutations.SET_Usuario.nm_endereco_empresa,
+              bairro_pagador: this.$store._mutations.SET_Usuario.nm_bairro_empresa,
+              cidade_pagador: this.$store._mutations.SET_Usuario.nm_cidade_empresa,
+              sigla_uf_pagador: this.$store._mutations.SET_Usuario.sg_estado_empresa,
+              cep_pagador: this.$store._mutations.SET_Usuario.cd_cep_empresa,
+              nosso_numero: result_update[0].cd_nosso_numero, //Não pode repetir
+              data_vencimento: tomorrowFormatted,
+            },
+          }
+          const axiosInstance = axios.create()
+          await axiosInstance(options)
+            .then(async (res) => {
+              notify(res.Msg)
+            })
+            .catch((error) => {
+              console.error('Erro:', error)
+              notify('Não foi possível gerar o boleto!', 'error')
+            })
+        }
+        /////////////////////
         notify(result_update[0].Msg)
         await this.carregaDados()
         this.show_grid_item = false
       } catch (error) {
         console.error(error)
-        notify('Não foi possível salvar o registro!', 'error')
+        notify('Não foi possível gerar o boleto!', 'error')
       } finally {
         this.loading = false
         this.ic_confirma_valores_divergentes = false
