@@ -177,6 +177,13 @@ begin
 	return
 end
 
+--Contabilização do CMV - Custo Mercadoria Vendida----------------------------------------------------------------------------------
+if @cd_relatorio = 441
+begin
+	exec pr_egis_contabilizacao_custo_mercadoria_caixa @json = @json
+	return
+end
+
 --Ordem de Servio Grfica----------------------------------------------------------------------------------
 if @cd_relatorio = 433
 begin
