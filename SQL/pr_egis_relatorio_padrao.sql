@@ -191,6 +191,13 @@ begin
 	return
 end
 
+--Aquisição de Bem do Ativo----------------------------------------------------------------------------------
+if @cd_relatorio = 442
+begin
+	exec pr_egis_relatorio_aquisicao_bem @json = @json
+	return
+end
+
 --Ordem de Servio Grfica----------------------------------------------------------------------------------
 if @cd_relatorio = 433
 begin
