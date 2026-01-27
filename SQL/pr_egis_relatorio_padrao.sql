@@ -191,10 +191,10 @@ begin
 	return
 end
 
---Aquisição de Bem do Ativo----------------------------------------------------------------------------------
-if @cd_relatorio = 442
+--Baixa do Bem----------------------------------------------------------------------------------
+if @cd_relatorio = 443
 begin
-	exec pr_egis_relatorio_aquisicao_bem @json = @json
+	exec pr_egis_relatorio_baixa_bem @json = @json
 	return
 end
 
