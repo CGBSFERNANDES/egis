@@ -12481,6 +12481,8 @@ if (descGenerica) {
 
         // campos vem dinâmicos do seu form
         const camposNormalizados = normalizePayload(campos);
+        const camposNormalizadosPayload = { ...camposNormalizados };
+        delete camposNormalizadosPayload.cd_parametro;
 
         //console.log('campos da consulta:', camposNormalizados);
         //console.log(campos);
@@ -12551,7 +12553,7 @@ if (descGenerica) {
                       cd_usuario:
                         localStorage.cd_usuario || this.cd_usuario || 0,
                       ic_json_parametro: "S",
-                      ...camposNormalizados,
+                      ...camposNormalizadosPayload,
                       ...(ic_cliente === "S" && cd_cliente > 0
                         ? { cd_cliente }
                         : {}),
@@ -12562,7 +12564,7 @@ if (descGenerica) {
                   ]
                 : {
                     ic_json_parametro: "N",
-                    ...camposNormalizados,
+                    ...camposNormalizadosPayload,
                     ...(ic_cliente === "S" && cd_cliente > 0
                       ? { cd_cliente }
                       : {}),
