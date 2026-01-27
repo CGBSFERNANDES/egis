@@ -280,6 +280,27 @@
 
     <!-- TODO: precisa ajustar DIALOG DO MAPA DE ATRIBUTOS -->
 
+    <q-dialog v-model="dlgValidacaoXml">
+      <q-card style="max-width: 640px; width: 90vw;">
+        <q-card-section class="row items-center">
+          <q-icon name="warning" color="orange-8" size="32px" class="q-mr-sm" />
+          <div class="text-h6">Validação do XML</div>
+          <q-space />
+          <q-btn icon="close" flat round dense v-close-popup />
+        </q-card-section>
+
+        <q-separator />
+
+        <q-card-section>
+          <div class="text-body1">{{ validacaoXmlMensagem }}</div>
+        </q-card-section>
+
+        <q-card-actions align="right">
+          <q-btn color="deep-purple-7" label="Ok" v-close-popup />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
+
     <q-dialog v-model="dlgMapaAtributos">
       <q-card style="min-width: 760px; max-width: 96vw">
         <q-card-section class="row items-center q-pb-none">
@@ -847,6 +868,8 @@ export default {
       isDialogInfoOpen: false,
       infoTitulo: "",
       infoTexto: "",
+      dlgValidacaoXml: false,
+      validacaoXmlMensagem: "",
 
       // mapa de atributos
       dlgMapaAtributos: false,
@@ -2201,6 +2224,11 @@ window.open(url,'_blank');
     return { valido: true, mensagem: '' }
   },
 
+  abrirDialogValidacaoXml (mensagem) {
+    this.validacaoXmlMensagem = mensagem
+    this.dlgValidacaoXml = true
+  },
+
   onFilesSelected (valOrEvent) {
     // se vier do input nativo
     if (valOrEvent && valOrEvent.target && valOrEvent.target.files) {
@@ -2415,11 +2443,7 @@ window.open(url,'_blank');
         if (driver.tipo === 'NFE') {
           const validacao = this.validarXmlAssinatura(xml);
           if (!validacao.valido) {
-            this.$q?.notify?.({
-              type: 'warning',
-              position: 'center',
-              message: `${file.name}: ${validacao.mensagem}`
-            });
+            this.abrirDialogValidacaoXml(`${file.name}: ${validacao.mensagem}`)
             continue;
           }
         }
@@ -2492,11 +2516,7 @@ window.open(url,'_blank');
       if (driver.tipo === 'NFE') {
         const validacao = this.validarXmlAssinatura(this.form.ds_xml);
         if (!validacao.valido) {
-          this.$q?.notify?.({
-            type: 'warning',
-            position: 'center',
-            message: validacao.mensagem
-          });
+          this.abrirDialogValidacaoXml(validacao.mensagem)
           return;
         }
       }
