@@ -67,6 +67,15 @@
                   :hint="campo.ds_campo_help || ''"
                   :readonly="isSomenteLeitura(campo)"
                   :class="{ 'leitura-azul': isSomenteLeitura(campo) }"
+                  :input-style="{
+                    textAlign: 'center',
+                    paddingTop: '8px',
+                    paddingBottom: '8px',
+                    lineHeight: '20px',
+                    backgroundColor: isSomenteLeitura(campo) ? '#e3f2fd' : undefined,
+                    color: isSomenteLeitura(campo) ? '#000000' : undefined,
+                    fontWeight: isSomenteLeitura(campo) ? 'bold' : undefined
+                  }"
                   :style="estiloCampo(campo)"
                   :bg-color="bgColorCampo(campo)"
                 >
