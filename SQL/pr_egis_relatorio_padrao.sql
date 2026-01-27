@@ -177,6 +177,13 @@ begin
 	return
 end
 
+--Contabilização de Entradas--------------------------------------------------------------------------------------
+if @cd_relatorio = 440
+begin
+	exec pr_egis_contabilizacao_entrada_recebimento @json = @json
+	return
+end
+
 --Contabilização do CMV - Custo Mercadoria Vendida----------------------------------------------------------------------------------
 if @cd_relatorio = 441
 begin
