@@ -15,7 +15,7 @@
           <!-- TÍTULO + BOTÃO FECHAR -->
           <div class="row items-start justify-between">
             <div>
-              <div class="text-h6 text-weight-bold">
+              <div class="text-h6 text-weight-bold modal-grid-title">
                 {{ tituloMenu || '' }} - {{ tituloModal || 'Composição' }}
                 <q-badge rounded class="q-ml-sm top-badge" color="deep-orange-7" :label="String(cdModalBadge)" />
                 <q-badge 
@@ -70,9 +70,9 @@
                 :key="`${String(campo.nm_atributo || 'x')}_${String(campo.nu_ordem || campo.qt_ordem_atributo || idx)}`"
                 :ref="`fld_${campo.nm_atributo}`"
                 ref-in-for
-                class="col-12 col-sm-6" style="margin-bottom: 4px;"
+                class="col-12 col-sm-6" style="margin-bottom: 2px;"
               >
-                <div class="text-caption text-grey-8" style="margin-bottom: 2px;">
+                <div class="text-caption text-grey-8" style="margin-bottom: 1px;">
                   {{ labelCampo(campo) }}
                 </div>
 
@@ -3145,6 +3145,14 @@ recalcularCampos () {
   position: relative;
   top: -10px;
   margin-left: -1px;
+}
+
+.modal-grid-title {
+  font-size: 20px;
+  line-height: 24px;
+  font-weight: 600;
+  white-space: normal;
+  word-break: break-word;
 }
 
 /* opcional: deixa a grid mais “limpa” */

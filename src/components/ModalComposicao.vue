@@ -44,7 +44,7 @@
             <div
               v-for="(campo, index) in meta"
               :key="campo.nm_atributo || campo.cd_atributo || index"
-              class="row q-mb-sm items-center"
+              class="row q-mb-xs items-center"
             >
               <div class="col-4 text-weight-medium">
                 {{ labelCampo(campo) }}
@@ -67,6 +67,15 @@
                   :hint="campo.ds_campo_help || ''"
                   :readonly="isSomenteLeitura(campo)"
                   :class="{ 'leitura-azul': isSomenteLeitura(campo) }"
+                  :input-style="{
+                    textAlign: 'center',
+                    paddingTop: '8px',
+                    paddingBottom: '8px',
+                    lineHeight: '20px',
+                    backgroundColor: isSomenteLeitura(campo) ? '#e3f2fd' : undefined,
+                    color: isSomenteLeitura(campo) ? '#000000' : undefined,
+                    fontWeight: isSomenteLeitura(campo) ? 'bold' : undefined
+                  }"
                   :style="estiloCampo(campo)"
                   :bg-color="bgColorCampo(campo)"
                 >
