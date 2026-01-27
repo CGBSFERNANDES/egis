@@ -198,6 +198,13 @@ begin
 	return
 end
 
+--Inventário do Bem do Ativo----------------------------------------------------------------------------------
+if @cd_relatorio = 445
+begin
+	exec pr_egis_relatorio_inventario_ativo_periodo @json = @json
+	return
+end
+
 --Ordem de Servio Grfica----------------------------------------------------------------------------------
 if @cd_relatorio = 433
 begin
