@@ -254,10 +254,25 @@ SET @html_empresa = '
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title >'+isnull(@titulo,'')+'</title>
     <style>
+        @page {
+            size: A4;
+            margin: 10mm;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        html,
+        body {
+            width: 210mm;
+            margin: 0;
+        }
+
         body {
             font-family: Arial, sans-serif;
             color: #333;
-			padding:20px;
+			padding: 10mm;
         }
 
         h2 {
@@ -268,6 +283,7 @@ SET @html_empresa = '
             width: 100%;
             border-collapse: collapse;
             margin-bottom: 20px;
+            table-layout: fixed;
         }
 
         table,
@@ -280,6 +296,7 @@ SET @html_empresa = '
         td {
             padding: 10px;
 			text-align: center;
+            word-wrap: break-word;
         }
 
         th {
@@ -309,8 +326,9 @@ SET @html_empresa = '
 		}
 
         img {
-            max-width: 250px;
+            max-width: 100%;
             margin-right: 10px;
+            height: auto;
         }
 
         .company-info {
@@ -333,13 +351,19 @@ SET @html_empresa = '
             margin-top: 50px;
         }
 
+        .report-wrapper {
+            width: 100%;
+            max-width: 190mm;
+            margin: 0 auto;
+        }
+
         p {
             margin: 5px;
             padding: 0;
         }
 
         .tamanhoTabela {
-			font-size:14px;
+			font-size:13px;
             text-align: center;
         }
 
@@ -1186,6 +1210,7 @@ set @html_rodape ='        <tr>
        <p style="text-align:right">Gerado em: '+@data_hora_atual+'</p><br>
 	   <p style="font-size: 18px;"><b>Pedido: '+cast(isnull(@cd_pedido_venda,0)as varchar(20))+'</b></p>
     </div>
+	</div>
 	</body>
 	</html>'
 
