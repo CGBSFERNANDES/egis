@@ -257,11 +257,13 @@ SET @html_empresa = '
         body {
             font-family: Arial, sans-serif;
             color: #333;
-			padding:20px;
+			padding: 20px;
+            font-size: 12px;
         }
 
         h2 {
             color: #333;
+            font-size: 18px;
         }
 
         table {
@@ -278,7 +280,7 @@ SET @html_empresa = '
 
         th,
         td {
-            padding: 10px;
+            padding: 6px;
 			text-align: center;
         }
 
@@ -303,7 +305,7 @@ SET @html_empresa = '
 			padding: 5px;
 			margin-bottom: 10px;
 			border-radius: 5px;
-			font-size: 100%;
+			font-size: 14px;
 			margin-left: 0;
 			margin-right: 0;
 		}
@@ -325,12 +327,17 @@ SET @html_empresa = '
 
         .title {
             color: #1976D2;
+            font-size: 14px;
         }
 
         .report-date-time {
             text-align: right;
             margin-bottom: 5px;
             margin-top: 50px;
+        }
+
+        h1 {
+            font-size: 22px;
         }
 
         p {
@@ -342,10 +349,55 @@ SET @html_empresa = '
 			font-size:14px;
             text-align: center;
         }
+
+        @media print {
+            @page {
+                size: A4;
+                margin: 10mm;
+            }
+
+            * {
+                box-sizing: border-box;
+            }
+
+            html,
+            body {
+                width: 210mm;
+                margin: 0;
+            }
+
+            body {
+                padding: 10mm;
+            }
+
+            table {
+                table-layout: fixed;
+            }
+
+            th,
+            td {
+                word-wrap: break-word;
+            }
+
+            img {
+                max-width: 100%;
+                height: auto;
+            }
+
+            .report-wrapper {
+                width: 100%;
+                max-width: 190mm;
+                margin: 0 auto;
+            }
+
+            body {
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+        }
     </style>
 </head>
 <body>
-   
     <div style="display: flex; justify-content: space-between; align-items:center">
 		<div style="width:35%; margin-right:20px">
 			<img src="'+@logo+'" alt="Logo da Empresa">
