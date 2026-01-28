@@ -336,11 +336,13 @@ export default {
     abrirModalComposicao() {
       this.dialogModalComposicao = false;
       this.dialogModalGridComposicao = false;
-      if (this.ic_grid_modal === "S") {
-        this.dialogModalGridComposicao = true;
-        return;
-      }
-      this.dialogModalComposicao = true;
+      this.$nextTick(() => {
+        if (this.ic_grid_modal === "S") {
+          this.dialogModalGridComposicao = true;
+          return;
+        }
+        this.dialogModalComposicao = true;
+      });
     },
     async CarregaGrids() {
       this.mostra_grid = false;
