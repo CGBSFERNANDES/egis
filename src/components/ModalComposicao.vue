@@ -123,7 +123,7 @@
       </q-card-actions>
     </q-card>
 
-    <q-dialog v-model="showUnicoEspecial" persistent>
+    <q-dialog v-if="showUnicoEspecial" v-model="showUnicoEspecial" persistent>
       <q-card style="min-width: 95vw; min-height: 90vh;">
         <UnicoFormEspecial
           :cd_menu_entrada="this.cd_menu_item_modal"
@@ -896,7 +896,8 @@ export default {
 
           this.cd_modal = first.cd_modal || 0;
           this.nm_procedimento = first.nm_procedimento;
-          this.cd_parametro_procedimento = first.cd_carga_parametro;
+          this.cd_parametro_procedimento =
+            first.cd_carga_parametro || first.cd_parametro;
           //
           this.tituloModal =
             first.nm_titulo_form || first.nm_titulo || "Composição";
@@ -1019,6 +1020,7 @@ export default {
         }
 
         // 🔴 carrega opções dos lookups (Tipo Pagamento, Caixa, Conta Bancária)
+        await this.carregarDadosIniciais();
         await this.carregarLookupsDiretos();
         //
       } catch (e) {
@@ -1038,6 +1040,94 @@ export default {
         });
       } finally {
         this.loading = false;
+      }
+    },
+
+    async carregarDadosIniciais() {
+      try {
+        const m0 = (Array.isArray(this.meta) ? this.meta[0] : null) || {};
+        const nmProcDados = String(m0.nm_procedimento_dados || "").trim();
+        if (!nmProcDados) return;
+
+        const cdCargaParametro = Number(
+          m0.cd_carga_parametro ||
+            m0.cd_parametro_carga ||
+            m0.cd_carga_parametro_procedimento ||
+            0
+        );
+
+        const cfg = this.headerBanco
+          ? { headers: { "x-banco": this.headerBanco } }
+          : undefined;
+
+        let selecionados = Array.isArray(this.registrosSelecionados)
+          ? this.registrosSelecionados
+          : [];
+
+        if (!selecionados.length) {
+          try {
+            const cdMenu = this.cd_menu || sessionStorage.getItem("cd_menu");
+            let raw = null;
+
+            if (cdMenu) {
+              raw = sessionStorage.getItem(`registro_selecionado_${cdMenu}`);
+            }
+            if (!raw) {
+              raw = sessionStorage.getItem("registro_selecionado");
+            }
+
+            if (raw) {
+              const linha = JSON.parse(raw);
+              selecionados = [linha];
+            }
+          } catch (e) {
+            console.warn(
+              "[carregarDadosIniciais] erro ao ler registro_selecionado do sessionStorage:",
+              e
+            );
+          }
+        }
+
+        const metaGrid = JSON.parse(
+          sessionStorage.getItem("campos_grid_meta") || "[]"
+        );
+
+        const docsSelecionados = selecionados.map(row =>
+          montaDadosTecnicos(row, metaGrid)
+        );
+
+        const body = [
+          {
+            ic_json_parametro: "S",
+            cd_parametro: cdCargaParametro,
+            cd_usuario: this.cd_usuario,
+            cd_modal: this.cdModal,
+            dados_registro: docsSelecionados,
+          },
+        ];
+
+        const { data } = await api.post(`/exec/${nmProcDados}`, body, cfg);
+        const rows = Array.isArray(data) ? data : data ? [data] : [];
+        if (!rows.length) return;
+
+        const origem = rows[0] || {};
+
+        Object.keys(this.valores).forEach(atributoModal => {
+          if (Object.prototype.hasOwnProperty.call(origem, atributoModal)) {
+            const valorDados = origem[atributoModal];
+            const atual = this.valores[atributoModal];
+
+            if (
+              atual === null ||
+              atual === "" ||
+              typeof atual === "undefined"
+            ) {
+              this.$set(this.valores, atributoModal, valorDados);
+            }
+          }
+        });
+      } catch (e) {
+        console.warn("[carregarDadosIniciais] erro ao carregar dados:", e);
       }
     },
   },
