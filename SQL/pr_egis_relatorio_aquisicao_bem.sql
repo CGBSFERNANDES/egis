@@ -10,19 +10,19 @@ GO
   Stored Procedure : Microsoft SQL Server 2016
   Autor(es)        : Codex (assistente)
   Banco de Dados   : Egissql - Banco do Cliente
-  Objetivo         : Relat√≥rio HTML - Aquisi√ß√£o de Bens do Ativo (cd_relatorio = 442)
+  Objetivo         : RelatÛrio HTML - AquisiÁ„o de Bens do Ativo (cd_relatorio = 442)
 
   Requisitos:
-    - Somente 1 par√¢metro de entrada (@json)
+    - Somente 1 par‚metro de entrada (@json)
     - SET NOCOUNT ON / TRY...CATCH
     - Sem cursor
     - Performance para grandes volumes
-    - C√≥digo comentado
+    - CÛdigo comentado
 
-  Observa√ß√µes:
+  ObservaÁıes:
     - Entrada: @json = '[{"dt_inicial": "2026-01-01", "dt_final": "2026-01-31"}]'
-    - Dados extra√≠dos de Bem + tabelas relacionadas conforme especifica√ß√£o
-    - Retorna HTML no padr√£o RelatorioHTML
+    - Dados extraÌdos de Bem + tabelas relacionadas conforme especificaÁ„o
+    - Retorna HTML no padr„o RelatorioHTML
 -------------------------------------------------------------------------------------------------*/
 CREATE PROCEDURE dbo.pr_egis_relatorio_aquisicao_bem
     @json NVARCHAR(MAX) = NULL
@@ -38,7 +38,7 @@ BEGIN
         @dt_final_param       NVARCHAR(50)  = NULL,
         @dt_inicial           DATETIME      = NULL,
         @dt_final             DATETIME      = NULL,
-        @titulo               VARCHAR(200)  = 'Relat√≥rio de Aquisi√ß√£o de Bem do Ativo',
+        @titulo               VARCHAR(200)  = 'RelatÛrio de AquisiÁ„o de Bem do Ativo',
         @logo                 VARCHAR(400)  = 'logo_gbstec_sistema.jpg',
         @nm_cor_empresa       VARCHAR(20)   = '#1976D2',
         @nm_endereco_empresa  VARCHAR(200)  = '',
@@ -57,13 +57,13 @@ BEGIN
 
     BEGIN TRY
         /*-----------------------------------------------------------------------------------------
-          1) Valida√ß√£o e normaliza√ß√£o do JSON (aceita array [ { ... } ])
+          1) ValidaÁ„o e normalizaÁ„o do JSON (aceita array [ { ... } ])
         -----------------------------------------------------------------------------------------*/
         IF NULLIF(@json, N'') IS NULL OR ISJSON(@json) <> 1
-            THROW 50001, 'Payload JSON inv√°lido ou vazio em @json.', 1;
+            THROW 50001, 'Payload JSON inv·lido ou vazio em @json.', 1;
 
         /*-----------------------------------------------------------------------------------------
-          2) M√©todo obrigat√≥rio de extra√ß√£o do JSON
+          2) MÈtodo obrigatÛrio de extraÁ„o do JSON
         -----------------------------------------------------------------------------------------*/
         SELECT
             1                                                    AS id_registro,
@@ -81,10 +81,10 @@ BEGIN
         SET @dt_final   = TRY_CONVERT(DATETIME, @dt_final_param, 121);
 
         IF @dt_inicial IS NULL OR @dt_final IS NULL
-            THROW 50002, 'dt_inicial e/ou dt_final n√£o informado(s) ou inv√°lido(s).', 1;
+            THROW 50002, 'dt_inicial e/ou dt_final n„o informado(s) ou inv·lido(s).', 1;
 
         /*-----------------------------------------------------------------------------------------
-          3) Cabe√ßalho do relat√≥rio (relatorio + empresa)
+          3) CabeÁalho do relatÛrio (relatorio + empresa)
         -----------------------------------------------------------------------------------------*/
         SELECT
             @titulo              = ISNULL(r.nm_relatorio, @titulo),
@@ -116,7 +116,7 @@ BEGIN
         WHERE e.cd_empresa = @cd_empresa;
 
         /*-----------------------------------------------------------------------------------------
-          4) Dados do relat√≥rio
+          4) Dados do relatÛrio
         -----------------------------------------------------------------------------------------*/
         SELECT
             b.dt_aquisicao_bem,
@@ -203,7 +203,7 @@ N'<style>
 
         SET @html_body = (
             SELECT
-                N'<tr class="group"><td colspan="22">Data Aquisi√ß√£o: ' +
+                N'<tr class="group"><td colspan="22">Data AquisiÁ„o: ' +
                 CONVERT(VARCHAR(10), d.dt_aquisicao_bem_data, 103) + N'</td></tr>' +
                 (
                     SELECT
@@ -249,7 +249,7 @@ N'<style>
         ).value('.', 'nvarchar(max)');
 
         IF @qt_registros = 0
-            SET @html_body = N'<tr><td colspan="22">Nenhum registro encontrado para o per√≠odo informado.</td></tr>';
+            SET @html_body = N'<tr><td colspan="22">Nenhum registro encontrado para o perÌodo informado.</td></tr>';
 
         SET @html = @style +
             N'<div class="report">' +
@@ -257,7 +257,7 @@ N'<style>
                     N'<div class="header__logo"><img src="' + @logo + N'" alt="Logo" /></div>' +
                     N'<div class="header__title">' +
                         N'<h1>' + ISNULL(@nm_titulo_relatorio, @titulo) + N'</h1>' +
-                        N'<span>Emiss√£o: ' + @data_hora_atual + N'</span>' +
+                        N'<span>Emiss„o: ' + @data_hora_atual + N'</span>' +
                     N'</div>' +
                 N'</div>' +
                 N'<div class="company">' +
@@ -267,22 +267,22 @@ N'<style>
                     N'CNPJ: ' + ISNULL(@cd_cnpj_empresa, '') + N' | Fone: ' + ISNULL(@cd_telefone_empresa, '') + N' | Email: ' + ISNULL(@nm_email_internet, '') +
                 N'</div>' +
                 N'<div class="summary">' +
-                    N'Per√≠odo: ' + CONVERT(VARCHAR(10), @dt_inicial, 103) + N' at√© ' + CONVERT(VARCHAR(10), @dt_final, 103) +
+                    N'PerÌodo: ' + CONVERT(VARCHAR(10), @dt_inicial, 103) + N' atÈ ' + CONVERT(VARCHAR(10), @dt_final, 103) +
                     N' | Registros: ' + CAST(@qt_registros AS NVARCHAR(20)) +
                     N' | Total Geral: ' + CONVERT(NVARCHAR(30), CAST(@vl_total_geral AS MONEY), 1) +
                 N'</div>' +
                 N'<table class="table">' +
                     N'<thead>' +
                         N'<tr>' +
-                            N'<th>Dt. Aquisi√ß√£o</th>' +
-                            N'<th>C√≥d. Bem</th>' +
+                            N'<th>Dt. AquisiÁ„o</th>' +
+                            N'<th>CÛd. Bem</th>' +
                             N'<th>Bem</th>' +
-                            N'<th>Patrim√¥nio</th>' +
+                            N'<th>PatrimÙnio</th>' +
                             N'<th>Grupo</th>' +
                             N'<th>Centro Custo</th>' +
                             N'<th>Status</th>' +
                             N'<th>Nota Entrada</th>' +
-                            N'<th>S√©rie NF</th>' +
+                            N'<th>SÈrie NF</th>' +
                             N'<th>Item NF</th>' +
                             N'<th>Qt. Item</th>' +
                             N'<th>Fornecedor</th>' +
@@ -291,8 +291,8 @@ N'<style>
                             N'<th>Qt. Bem</th>' +
                             N'<th>Planta</th>' +
                             N'<th>Seguradora</th>' +
-                            N'<th>Opera√ß√£o</th>' +
-                            N'<th>Dt. In√≠cio Uso</th>' +
+                            N'<th>OperaÁ„o</th>' +
+                            N'<th>Dt. InÌcio Uso</th>' +
                             N'<th>Dt. Garantia</th>' +
                             N'<th>Valor Original</th>' +
                         N'</tr>' +
@@ -307,7 +307,7 @@ N'<style>
             N'</div>';
 
         /*-----------------------------------------------------------------------------------------
-          6) Retorno padr√£o
+          6) Retorno padr„o
         -----------------------------------------------------------------------------------------*/
         SELECT ISNULL(@html, N'') AS RelatorioHTML;
     END TRY
@@ -318,3 +318,4 @@ N'<style>
     END CATCH
 END
 GO
+--exec pr_egis_relatorio_aquisicao_bem '[{"dt_inicial": "01/01/2024","dt_final": "06/30/2024"}]'

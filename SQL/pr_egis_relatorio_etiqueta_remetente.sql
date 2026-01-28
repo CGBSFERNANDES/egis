@@ -34,8 +34,8 @@ GO
     - nota_saida (data e identificação)
     - egisadmin.dbo.empresa / Cidade / Estado (fallback de remetente)
 -------------------------------------------------------------------------------------------------*/
-CREATE PROCEDURE dbo.pr_egis_relatorio_etiqueta_remetente
-    @json NVARCHAR(MAX) -- Parâmetro único vindo do front-end
+CREATE or alter PROCEDURE pr_egis_relatorio_etiqueta_remetente
+    @json NVARCHAR(MAX) = ''-- Parâmetro único vindo do front-end
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -54,22 +54,48 @@ BEGIN
             @qt_copia_padrao     INT           = 1,
             @qt_copia_limite     INT           = 10,
             @img_modelo_destino  NVARCHAR(500) = N'https://github.com/user-attachments/assets/6c30548e-8258-443a-9ae4-bb672dda493a',
-            @img_modelo_sedex    NVARCHAR(500) = N'https://github.com/user-attachments/assets/5675961f-8af4-453b-96d8-369289d7d22b';
-
+            @img_modelo_sedex    NVARCHAR(500) = N'https://github.com/user-attachments/assets/5675961f-8af4-453b-96d8-369289d7d22b',
+			@cd_empresa          int = 0,
+			@cd_nota_saida       int = 0
         /*-----------------------------------------------------------------------------------------
           2) Normaliza JSON (aceita objeto ou array)
         -----------------------------------------------------------------------------------------*/
-        SET @jsonNormalized = LTRIM(RTRIM(ISNULL(@json, N'')));
-
-        IF @jsonNormalized = N''
-            SET @jsonNormalized = N'[{}]';
-
-        IF ISJSON(@jsonNormalized) = 0
-            THROW 50000, 'JSON de entrada inválido ou mal formatado.', 1;
-
-        IF JSON_VALUE(@jsonNormalized, '$[0]') IS NULL
-            SET @jsonNormalized = CONCAT('[', @jsonNormalized, ']');
-
+     
+        /*-----------------------------------------------------------------------------------------    
+          1.a) Validação mínima do JSON    
+        -----------------------------------------------------------------------------------------*/    
+        IF NULLIF(LTRIM(RTRIM(@json)), N'') IS NOT NULL AND ISJSON(@json) = 0    
+            THROW 50001, 'Payload JSON inválido em @json.', 1;    
+    
+        /*-----------------------------------------------------------------------------------------    
+          2) Normaliza JSON e parse de datas com múltiplos formatos    
+        -----------------------------------------------------------------------------------------*/    
+        IF NULLIF(LTRIM(RTRIM(@json)), N'') IS NOT NULL AND ISJSON(@json) = 1    
+        BEGIN    
+            -- Se vier como array, pegar primeiro elemento    
+            IF LEFT(LTRIM(@json), 1) = '['    
+                SET @json = JSON_QUERY(@json, '$[0]');    
+    
+   
+			
+            SET @cd_empresa = TRY_CAST(JSON_VALUE(@json, '$.cd_empresa') AS INT);
+			SET @cd_nota_saida = TRY_CAST(
+        NULLIF(JSON_VALUE(@json, '$.cd_identificacao_nota_saida'), '')
+        AS INT
+    );
+            -- ==================================================================    
+            -- PARSE DATA INICIAL - Suporta múltiplos formatos    
+            -- ==================================================================    
+           
+    end
+	--set @cd_nota_saida = 13752
+        /*-----------------------------------------------------------------------------------------    
+          3) Datas padrão: tenta Parametro_Relatorio e cai no mês corrente    
+        -----------------------------------------------------------------------------------------*/    
+     
+   -- select  @json
+        SET @cd_empresa = ISNULL(NULLIF(@cd_empresa, 0), dbo.fn_empresa()); 
+		
         /*-----------------------------------------------------------------------------------------
           3) Carrega solicitações (sem cursor) e aplica defaults/limites
         -----------------------------------------------------------------------------------------*/
@@ -87,15 +113,14 @@ BEGIN
             TRY_CAST(j.qt_copia AS INT)           AS qt_copia,
             TRY_CAST(j.largura_cm AS DECIMAL(10,2)) AS largura_cm,
             TRY_CAST(j.altura_cm AS DECIMAL(10,2))  AS altura_cm
-        FROM OPENJSON(@jsonNormalized)
+        FROM OPENJSON(@json)
         WITH (
-            cd_nota_saida INT           '$.cd_nota_saida',
+            cd_nota_saida INT           '$.cd_identificacao_nota_saida',
             qt_copia      INT           '$.qt_copia',
             largura_cm    DECIMAL(10,2) '$.largura_cm',
             altura_cm     DECIMAL(10,2) '$.altura_cm'
         ) AS j;
-
-        IF NOT EXISTS (SELECT 1 FROM @Solicitacoes)
+		     IF NOT EXISTS (SELECT 1 FROM @Solicitacoes)
             INSERT INTO @Solicitacoes (cd_nota_saida, qt_copia, largura_cm, altura_cm)
             VALUES (NULL, NULL, NULL, NULL);
 
@@ -115,7 +140,7 @@ BEGIN
                             ELSE s.altura_cm
                          END
         FROM @Solicitacoes AS s;
-
+		
         /*-----------------------------------------------------------------------------------------
           4) Conjunto base com cópias (evita cursor) + dados de remetente/destinatário
         -----------------------------------------------------------------------------------------*/
@@ -293,6 +318,8 @@ BEGIN
                 REPLACE(REPLACE(REPLACE(ISNULL(n.fone_destinatario, ''), '&', '&amp;'), '<', '&lt;'), '>', '&gt;') AS fone_destinatario_html
             FROM Normalizado AS n
         ),
+		
+
         HtmlPorEtiqueta AS (
             SELECT
                 e.id_solicitacao,
@@ -340,11 +367,16 @@ BEGIN
                 '  <div class="label-card label-sedex" style="width:' + CONVERT(VARCHAR(20), CAST(e.largura_cm AS DECIMAL(10,2))) + 'cm;height:' + CONVERT(VARCHAR(20), CAST(e.altura_cm AS DECIMAL(10,2))) + 'cm;">' +
                 '    <img src="' + @img_modelo_sedex + '" alt="Etiqueta Sedex" />' +
                 '  </div>' +
-                '</div>'
+                '</div></body>' +    
+            '</html>'
                 AS html_parte
             FROM Escapado AS e
         )
         SELECT @html = '
+		 <html>   
+         <head>   
+         <meta charset="UTF-8">   
+         <title>Etiqueta Remetente</title> 
 <style>
   :root {
     --label-font: "Arial", sans-serif;
@@ -365,7 +397,10 @@ BEGIN
   .linha.forte { font-size: 14px; font-weight: bold; }
   .linha.pequeno { font-size: 11px; color: #444; }
   @media print { .label-pair { page-break-inside: avoid; } }
-</style>' +
+</style>
+</head>    
+            <body>' 
++
         (
             SELECT hp.html_parte
             FROM HtmlPorEtiqueta AS hp
@@ -387,3 +422,5 @@ BEGIN
     END CATCH
 END
 GO
+--exec pr_egis_relatorio_etiqueta_remetente '[{"cd_nota_saida":13752}]'
+

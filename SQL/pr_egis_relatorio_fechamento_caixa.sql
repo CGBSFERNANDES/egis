@@ -419,11 +419,17 @@ set @dt_hoje          = convert(datetime,left(convert(varchar,getdate(),121),10)
 	    fc.vl_real_fechamento_caixa as vl_real_fechamento_caixa,
 	    oc.nm_operador_caixa        as nm_operador_caixa,
 	    fc.nm_obs_fechamento_caixa  as nm_obs_fechamento_caixa,
+		mc.vl_voucher               as vl_voucher,
+		mc.vl_pix                   as vl_pix,
+		mc.vl_cartao_credito        as vl_cartao_credito,
+		mc.vl_cartao_debito         as vl_cartao_debito,
+		isnull(mc.vl_dinheiro,0) - isnull(mc.vl_desconto,0)   as vl_dinheiro,
 	    isnull(fc.vl_real_fechamento_caixa,0) - isnull(fc.vl_fechamento_caixa,0) as vl_diferenca 
-	   into
-		#fechamento_caixa_rel
+	  into 
+	  #fechamento_caixa_rel
       from
-        fechamento_caixa  fc with (nolock)                                                   
+        fechamento_caixa  fc with (nolock)        
+		left outer join movimento_caixa mc with(nolock) on mc.cd_fechamento_caixa = fc.cd_fechamento_caixa
         left outer join operador_caixa oc with (nolock) on oc.cd_operador_caixa    = fc.cd_operador_caixa
       where
 	  fc.dt_fechamento_caixa between @dt_inicial and @dt_final 
@@ -432,12 +438,24 @@ set @dt_hoje          = convert(datetime,left(convert(varchar,getdate(),121),10)
 
 declare
 	@vl_fechamento_caixa   float = 0, 
-	@vl_real_fechamento_caixa float = 0
+	@vl_real_fechamento_caixa float = 0,
+	@vl_voucher			float = 0, 
+	@vl_diferenca		float = 0, 
+	@vl_pix				float = 0, 
+	@vl_cartao_credito	float = 0, 
+	@vl_cartao_debito	float = 0 
+
+
 
 select 
 
 @vl_fechamento_caixa       = sum(vl_fechamento_caixa),
-@vl_real_fechamento_caixa  = sum(vl_real_fechamento_caixa)
+@vl_real_fechamento_caixa  = sum(vl_real_fechamento_caixa),
+@vl_voucher				   = sum(vl_voucher),
+@vl_pix					   = sum(vl_pix),
+@vl_cartao_credito		   = sum(vl_cartao_credito),
+@vl_cartao_debito		   = sum(vl_cartao_debito),
+@vl_diferenca			   = sum(vl_diferenca)
 
 from #fechamento_caixa_rel
 
@@ -450,7 +468,10 @@ set @html_geral = ' <div class="section-title">
 	<tr style="text-align:center;">
 		<th>Data</th>
 		<th>Valor</th>
-		<th>Valor Real</th>
+		<th>Pix</th>
+		<th>Cartão Crédito</th>
+		<th>Cartão Débito</th>
+		<th>Voucher</th>
 		<th>Diferença</th>
 		<th>Operador</th>
 		<th>Observação</th>
@@ -465,8 +486,11 @@ begin
 		@id                          = cd_controle,
 	    @html_geral  = @html_geral + '<tr class="tamanho">
 									<td>'+isnull(dbo.fn_data_string(dt_fechamento_caixa),'')+'</td>
-									<td>'+cast(isnull(dbo.fn_formata_valor(vl_fechamento_caixa),0)as nvarchar(20))+'</td>									
-									<td>'+cast(isnull(dbo.fn_formata_valor(vl_real_fechamento_caixa),0)as nvarchar(20))+'</td>
+									<td>'+cast(isnull(dbo.fn_formata_valor(vl_fechamento_caixa),0)as nvarchar(20))+'</td>	
+									<td>'+cast(isnull(dbo.fn_formata_valor(vl_pix),0)as nvarchar(20))+'</td>	
+									<td>'+cast(isnull(dbo.fn_formata_valor(vl_cartao_credito),0)as nvarchar(20))+'</td>	
+									<td>'+cast(isnull(dbo.fn_formata_valor(vl_cartao_debito),0)as nvarchar(20))+'</td>	
+									<td>'+cast(isnull(dbo.fn_formata_valor(vl_voucher),0)as nvarchar(20))+'</td>	
 									<td>'+cast(isnull(dbo.fn_formata_valor(vl_diferenca),0)as nvarchar(20))+'</td> 
 									<td>'+isnull(nm_operador_caixa,'')+'</td> 
 									<td>'+isnull(nm_obs_fechamento_caixa,'')+'</td>										
@@ -482,8 +506,11 @@ set @html_rodape =
     '<tr class="tamanhoTotal">
 		<td>Total</td>
 		<td>'+cast(isnull(dbo.fn_formata_valor(@vl_fechamento_caixa),0)as nvarchar(20))+'</td>
-		<td>'+cast(isnull(dbo.fn_formata_valor(@vl_real_fechamento_caixa),0)as nvarchar(20))+'</td>
-		<td></td>																		
+		<td>'+cast(isnull(dbo.fn_formata_valor(@vl_pix),0)as nvarchar(20))+'</td>
+		<td>'+cast(isnull(dbo.fn_formata_valor(@vl_cartao_credito),0)as nvarchar(20))+'</td>
+		<td>'+cast(isnull(dbo.fn_formata_valor(@vl_cartao_debito),0)as nvarchar(20))+'</td>
+		<td>'+cast(isnull(dbo.fn_formata_valor(@vl_voucher),0)as nvarchar(20))+'</td>
+		<td>'+cast(isnull(dbo.fn_formata_valor(@vl_diferenca),0)as nvarchar(20))+'</td>																		
 		<td></td>
 		<td></td>		
      </tr>

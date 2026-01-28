@@ -77,17 +77,34 @@ BEGIN
         /*-----------------------------------------------------------------------------------------
           3) Normaliza JSON (aceita array [ { ... } ])
         -----------------------------------------------------------------------------------------*/
-        IF NULLIF(@json, N'') IS NOT NULL AND ISJSON(@json) = 1
-        BEGIN
-            IF JSON_VALUE(@json, '$[0]') IS NOT NULL
-                SET @json = JSON_QUERY(@json, '$[0]');
+       
+if @json<>''
+begin
+  select                     
+    1                                                    as id_registro,
+    IDENTITY(int,1,1)                                    as id,
+    valores.[key]  COLLATE SQL_Latin1_General_CP1_CI_AI  as campo,                     
+    valores.[value]              as valor                    
+                    
+    into #json                    
+    from                
+      openjson(@json)root                    
+      cross apply openjson(root.value) as valores      
 
-            SELECT
-                @dt_inicial = COALESCE(@dt_inicial, TRY_CAST(JSON_VALUE(@json, '$.dt_inicial') AS DATE)),
-                @dt_final   = COALESCE(@dt_final,   TRY_CAST(JSON_VALUE(@json, '$.dt_final')   AS DATE)),
-                @cd_usuario = COALESCE(@cd_usuario, TRY_CAST(JSON_VALUE(@json, '$.cd_usuario') AS INT)),
-                @cd_empresa = COALESCE(@cd_empresa, TRY_CAST(JSON_VALUE(@json, '$.cd_empresa') AS INT));
-        END
+-------------------------------------------------------------------------------------------------
+
+--select * from #json
+
+-------------------------------------------------------------------------------------------------
+
+  select @cd_empresa             = valor from #json where campo = 'cd_empresa'             
+  select @cd_usuario             = valor from #json where campo = 'cd_usuario'             
+  select @dt_inicial             = valor from #json where campo = 'dt_inicial'
+  select @dt_final               = valor from #json where campo = 'dt_final'
+
+
+end
+
 
         /*-----------------------------------------------------------------------------------------
           4) Datas padrão: tenta Parametro_Relatorio e cai no mês corrente
@@ -206,8 +223,6 @@ begin
 
 end   
 
-set @dt_inicial       = dbo.fn_data_inicial(@cd_mes,@cd_ano)
-set @dt_final         = dbo.fn_data_final(@cd_mes,@cd_ano)
 set @dt_hoje          = convert(datetime,left(convert(varchar,getdate(),121),10)+' 00:00:00',121)
 set @dt_perc_smo      = '01/01/2018'
 set @cd_tipo_vendedor = 0
@@ -310,24 +325,37 @@ order by
             'body{font-family:Arial, sans-serif;font-size:12px;color:#333;margin:0;padding:20px;}' +
             'table{width:100%;border-collapse:collapse;margin-top:10px;}' +
             'th,td{border:1px solid #ccc;padding:6px 8px;text-align:left;font-size:11px;}' +
-            'th{background:' + @nm_cor_empresa + ';color:#fff;}' +
-            '.section-title{font-size:16px;font-weight:bold;margin-top:10px;}' +
+            'th{font-size:13px;texte-align:center}' +
+           
             '.totals{margin-top:10px;font-weight:bold;}' +
             '.report-date-time{text-align:right;font-size:11px;margin-top:10px;}' +
-            '</style></head><body>';
+			
+        '.section-title {
+            background-color: #1976D2;
+            color: white;
+            padding: 5px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            font-size: 120%;
+        }'+
 
+            '</style></head><body>';
+		
         SET @html_cabecalho =
             '  <div style="display:flex;justify-content:space-between;align-items:center;">' +
             '    <div style="width:30%;padding-right:20px;"><img src="' + @logo + '" alt="Logo" style="max-width:220px;"></div>' +
             '    <div style="width:70%;padding-left:10px;">' +
-            '      <div class="section-title">' + ISNULL(@nm_titulo_relatorio, @titulo) + '</div>' +
             '      <p><strong>' + ISNULL(@nm_fantasia_empresa, '') + '</strong></p>' +
             '      <p>' + @nm_endereco_empresa + ', ' + @cd_numero_endereco + ' - ' + @cd_cep_empresa + ' - ' + @nm_cidade + ' - ' + @sg_estado + ' - ' + @nm_pais + '</p>' +
             '      <p><strong>Fone: </strong>' + @cd_telefone_empresa + ' | <strong>Email: </strong>' + @nm_email_internet + '</p>' +
             '      <p><strong>Período: </strong>' + CONVERT(CHAR(10), @dt_inicial, 103) + ' a ' + CONVERT(CHAR(10), @dt_final, 103) + '</p>' +
             '    </div>' +
             '  </div>' +
-            '  <div style="margin-top:10px;">' + ISNULL(@ds_relatorio, '') + '</div>';
+            '  
+	 <div class="section-title">  
+        <p style="display: inline;">Periodo: '+isnull(dbo.fn_data_string(@dt_inicial),'')+' á '+isnull(dbo.fn_data_string(@dt_final),'')+'</p>   
+        <p style="display: inline; text-align: center; padding: 20%;">'+case when isnull(@titulo,'') <> '' then ''+isnull(@titulo,'')+'' else 'Contabilização Documento a Receber' end +'</p>  
+    </div>  '
 
         SET @html_detalhe =
             '<table>' +
@@ -376,10 +404,12 @@ order by
             '</tbody></table>';
 
         SET @html_totais =
-            '<div class="totals">' +
-            'Total de Registros: ' + CAST(@qt_registros AS VARCHAR(20)) +
-            ' | Soma Base de Cálculo: ' + CONVERT(VARCHAR(30), CAST(@vl_base_comissao AS MONEY), 1) +
-            ' | Soma Comissão: ' + CONVERT(VARCHAR(30), CAST(@vl_comissao AS MONEY), 1) +
+            '<div class="totals">'+
+			'<table>'+
+            '<th>Total de Registros: ' + CAST(@qt_registros AS VARCHAR(20)) +'</th>'+
+            '<th>Soma Base de Cálculo: ' + CONVERT(VARCHAR(30), CAST(@vl_base_comissao AS MONEY), 1) +'</th>'+
+            '<th>Soma Comissão: '+ CONVERT(VARCHAR(30), CAST(@vl_comissao AS MONEY), 1) +'</th>'+
+			'</table>'+
             '</div>';
 
         SET @html_footer =
@@ -407,4 +437,22 @@ GO
 
 
 
---exec pr_egis_relatorio_resumo_comissao_vendedor '[{"dt_inicial":"01/01/2025", "dt_final": "12/31/2025", "cd_usuario": 113}]'
+--exec pr_egis_relatorio_resumo_comissao_vendedor '[{
+--    "cd_menu": "0",
+--    "cd_form": 91,
+--    "cd_documento_form": 4,
+--    "cd_parametro_form": "2",
+--    "cd_usuario": "4896",
+--    "cd_cliente_form": "0",
+--    "cd_contato_form": "4896",
+--    "cd_filtro_tabela": null,
+--    "dt_usuario": "2026-01-15",
+--    "lookup_formEspecial": {},
+--    "cd_parametro_relatorio": "4",
+--    "cd_relatorio": "427",
+--    "dt_inicial": "2026-01-15",
+--    "dt_final": "2026-01-15",
+--    "detalhe": [],
+--    "lote": [],
+--    "cd_modulo": "247"
+--}]'

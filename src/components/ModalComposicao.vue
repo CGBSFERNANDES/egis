@@ -72,9 +72,11 @@
                     paddingTop: '8px',
                     paddingBottom: '8px',
                     lineHeight: '20px',
-                    backgroundColor: isSomenteLeitura(campo) ? '#e3f2fd' : undefined,
+                    backgroundColor: isSomenteLeitura(campo)
+                      ? '#e3f2fd'
+                      : undefined,
                     color: isSomenteLeitura(campo) ? '#000000' : undefined,
-                    fontWeight: isSomenteLeitura(campo) ? 'bold' : undefined
+                    fontWeight: isSomenteLeitura(campo) ? 'bold' : undefined,
                   }"
                   :style="estiloCampo(campo)"
                   :bg-color="bgColorCampo(campo)"
@@ -906,9 +908,11 @@ export default {
         }
 
         console.log(
-          "parametro de consulta do atributo-->",
+          this.nm_procedimento,
+          " parametro de consulta do atributo-->",
           this.cd_parametro_procedimento
         );
+
         // inicializa valores com vl_default (quando tiver)
         this.valores = {};
         //

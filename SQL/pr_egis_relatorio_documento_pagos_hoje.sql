@@ -437,7 +437,7 @@ end
     --d.cd_modulo,      
     d.cd_numero_banco_documento,
 	d.nm_numero_bancario,
-	d.cd_conta,
+	f.cd_conta_banco as cd_conta,
     d.nm_observacao_documento,
     'S'                         as ic_emissao_documento,
     d.ic_envio_documento,
@@ -482,6 +482,7 @@ end
   --  tl.nm_tipo_liquidacao,
 --    v.nm_fantasia_vendedor,
     pf.nm_conta_plano_financeiro,
+	f.nm_banco_fornecedor as nm_banco_fornecedor,
 --    tc.nm_tipo_cobranca,
 
    --d.nm_fantasia_fornecedor,
@@ -508,8 +509,9 @@ end
 	  f.cd_pix,
 	  f.cd_ddd,
 	  f.cd_telefone,
-	  cab.cd_agencia_banco
-
+	  f.cd_agencia_banco,
+	  b.nm_banco
+	  
     --Razão Social do Destinatário *************************************************************************************
     --DDD do Destinatário  **********************************************************************************************
     --Telefone do Destinatário  ****************************************************************************************
@@ -522,8 +524,9 @@ end
   Documento_Pagar d                            with (nolock) 
     left outer join Portador p                   with (nolock) on  d.cd_portador            = p.cd_portador 
     left outer join Plano_Financeiro pf          with (nolock)                     on pf.cd_plano_financeiro    = d.cd_plano_financeiro 
-    left outer join Fornecedor f                 with (nolock)                     on f.nm_fantasia_fornecedor  = d.nm_fantasia_fornecedor
+    left outer join Fornecedor f                 with (nolock)                     on f.cd_fornecedor           = d.cd_fornecedor
 	left outer join Conta_Agencia_Banco cab      with (nolock)                     on cab.cd_conta              = d.cd_conta
+	left outer join banco b                      with (nolock)					   on b.cd_banco				= f.cd_banco
 --    left outer join Tipo_Cobranca tc    with (nolock)                     on tc.cd_tipo_cobranca = d.cd_tipo_cobranca
 
  where
@@ -555,7 +558,7 @@ DECLARE @nm_fantasia_fornecedor    nvarchar(100)
 DECLARE @nm_razao_social_forncedor nvarchar(100)
 DECLARE @cd_ddd                    INT
 DECLARE @cd_telefone               nvarchar(20)
-DECLARE @cd_numero_banco           nvarchar(20)
+DECLARE @cd_numero_banco           nvarchar(40)
 DECLARE @cd_agencia                nvarchar(50)
 DECLARE @cd_conta                  nvarchar(50)
 DECLARE @cd_pix                    nvarchar(50)
@@ -576,6 +579,7 @@ DECLARE @dt_retorno_banco          DATETIME
 DECLARE @nm_observacao_documento   nvarchar(75)
 DECLARE @nm_complemento_documento  nvarchar(75)
 declare @cd_tipo_pagamento         nvarchar(20)
+declare @nm_banco                  nvarchar(60)
  
 DECLARE @dt_pag      DATE
 DECLARE @dt_valor    DATE
@@ -599,7 +603,7 @@ select
 	@nm_fantasia_fornecedor    = nm_fantasia_fornecedor,
 	@cd_ddd                    = cd_ddd,
 	@cd_telefone               = cd_telefone,
-	@cd_numero_banco           = cd_conta_banco_pagamento,
+	@cd_numero_banco           = nm_banco_fornecedor,
 	@cd_agencia                 = cd_agencia_banco,
 	@cd_conta                  = cd_conta,
 	@cd_pix                    = cd_pix,
@@ -620,7 +624,7 @@ select
 	@dt_retorno_banco          = dt_retorno_banco_doc,
 	@nm_observacao_documento   = nm_observacao_documento,
 	@nm_complemento_documento  = nm_complemento_documento,
-
+	@nm_banco				   = nm_banco,	
 	@dt_pag                    = dt_pagamento_documento
 	--@dt_valor
 	--@dt_juros
@@ -650,7 +654,7 @@ set @html_geral = ' <h1 style="text-align: center;">Documentos a Pagar</h1>
                             
                         </div>
                         <div style="text-align: left;">
-                            <p><strong>Banco: </strong>'+cast(isnull(@cd_numero_banco,0) as nvarchar(20))+'</p>
+                            <p><strong>Banco: </strong> '+ case when isnull(@cd_numero_banco,'') <> '' then isnull(@cd_numero_banco,'') else isnull(@nm_banco,'') end+'</p>
 							<p><strong>Agência: </strong>'+cast(isnull(@cd_agencia,0) as nvarchar(20))+'<p>
                             <p><strong>Nº da Conta: </strong>'+cast(isnull(@cd_conta,0) as nvarchar(20))+'</p>
                             <p><strong>Pix: </strong>'+cast(isnull(@cd_pix,0) as nvarchar(20))+'</p>

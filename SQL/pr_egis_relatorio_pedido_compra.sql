@@ -22,7 +22,7 @@ GO
 --Objetivo         : Relatório Padrão Egis HTML - EgisMob, EgisNet, Egis  
 --Data             : 08.10.2024  
 --Alteração        :   
---  
+--  USE EGISSQL_368
 --  
 ------------------------------------------------------------------------------  
 create procedure pr_egis_relatorio_pedido_compra  
@@ -184,7 +184,7 @@ begin
 end  
   
   
---select @cd_documento
+--SET @cd_documento = 24
 
 
 -------------------------------------------------------------------------------------------------  
@@ -1175,8 +1175,7 @@ set @html_totais = '<div class="section-title"><strong>'+@titulo_total+'</strong
                           <strong class="tamanhoFonte">'+isnull(dbo.fn_formata_valor(@vl_desconto_pedido_compra),'')+' </strong> <br>  
                           <strong class="tamanhoFonte">'+isnull(dbo.fn_formata_valor(@VL_TOT),0)+' </strong> <br>  
                           </td>  
-                     </table>  
-     '  
+                     </table>  '  
   
      --&nbsp  
   
@@ -1201,7 +1200,7 @@ set @html_rodape =
              
          </tr>  
          <td style="font-size:15px; text-align:center;width: 20px">'+isnull(@nm_tipo_entrega_produto,'')+'</td>  
-         <td style="font-size:15px; text-align:center;width: 20px">'+isnull(dbo.fn_data_string(@dt_conf_pedido_compra),'')+'</td>  
+         <td style="font-size:15px; text-align:center;width: 20px">'+isnull(@dt_conf_pedido_compra,'')+'</td>  
          <td style="font-size:15px; text-align:center;width: 20px">'+isnull(@nm_comprador,'')+'</td>  
          <td style="font-size:15px; text-align:center;width: 20px">'+isnull(@ds_ativacao_pedido_compra,'')+'</td>  
          </tr>  
