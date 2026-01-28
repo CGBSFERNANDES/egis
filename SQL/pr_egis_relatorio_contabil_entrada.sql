@@ -26,7 +26,7 @@
 	
 -------------------------------------------------------------------------------------------------*/
 CREATE OR ALTER PROCEDURE dbo.pr_egis_relatorio_contabil_entrada
-    @json NVARCHAR(MAX) = ''
+    @json NVARCHAR(MAX) = NULL
 AS
 BEGIN
     SET NOCOUNT ON;

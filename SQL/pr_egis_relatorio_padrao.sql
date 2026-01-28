@@ -12,7 +12,7 @@ GO
 -------------------------------------------------------------------------------
 --pr_egis_relatorio_padrao
 -------------------------------------------------------------------------------
---GBS Global Business Solution Ltda                                        20243426
+--GBS Global Business Solution Ltda                                        20243
 -------------------------------------------------------------------------------
 --Stored Procedure : Microsoft SQL Server 2000/2008/2012/2014/2016/2020
 --
@@ -20,9 +20,9 @@ GO
 --
 --Banco de Dados   : Egissql - Banco do Cliente 
 --
---Objetivo         : RelatÛrio Padr„o Egis HTML - EgisMob, EgisNet, Egis
+--Objetivo         : Relat√≥rio Padr√£o Egis HTML - EgisMob, EgisNet, Egis
 --Data             : 24.08.2024
---AlteraÁ„o        : 
+--Altera√ß√£o        : 
 -- use egissql_376
 ------------------------------------------------------------------------------
 create procedure pr_egis_relatorio_padrao
@@ -56,7 +56,7 @@ declare @cd_relatorio           int = 0
 declare @cd_relatorio_form      int = 0
 declare @jsonParam              nvarchar(max) = '' 
 
---Dados do RelatÛrio---------------------------------------------------------------------------------
+--Dados do Relat√≥rio---------------------------------------------------------------------------------
 
      declare
             @titulo                     varchar(200),
@@ -124,7 +124,7 @@ select
 
  1                                                    as id_registro,
  IDENTITY(int,1,1)                                    as id,
- valores.[key]  COLLATE SQL_Latin1_General_CP1_CI_AI† as campo,                     
+ valores.[key]  COLLATE SQL_Latin1_General_CP1_CI_AI¬† as campo,                     
  valores.[value]                                      as valor                    
                     
  into #json                    
@@ -160,138 +160,21 @@ begin
 
 end
 
-
 if isnull(@cd_relatorio_form,0)>0
    set @cd_relatorio = @cd_relatorio_form
 
---Invent·rio do Bem do Ativo----------------------------------------------------------------------------------
-if @cd_relatorio = 445
+--Remessa de Documentos------------------------------------------------------------------------------------------------
+if @cd_relatorio = 423
 begin
-	exec pr_egis_relatorio_inventario_ativo_periodo @json = @json
+    --select @json
+	exec pr_egis_relatorio_remessa_documentos @json
 	return
 end
 
-
---Depreciacao do Periodo de Apuracao----------------------------------------------------------------------------------
-if @cd_relatorio = 444
+--Contrato de Servi√ßos------------------------------------------------------------------------------------------------
+if @cd_relatorio = 422
 begin
-	exec pr_egis_relatorio_depreciacao_periodo @json = @json
-	return
-end
-
-
---Baixa do Bem----------------------------------------------------------------------------------
-if @cd_relatorio = 443
-begin
-	exec pr_egis_relatorio_baixa_bem @json = @json
-	return
-end
-
---AquisiÁ„o de Bem do Ativo----------------------------------------------------------------------------------
-if @cd_relatorio = 442
-begin
-	exec pr_egis_relatorio_aquisicao_bem @json = @json
-	return
-end
-
---ContabilizaÁ„o do Estoque--------------------------------------------------------------------------
-
-if @cd_relatorio = 441
-begin
-	exec pr_egis_contabilizacao_custo_mercadoria_caixa @json = @json
-	return
-end
-   
---ContabilizaÁ„o das Entradas--------------------------------------------------------------------------
-
-if @cd_relatorio = 440
-begin
-	exec pr_egis_contabilizacao_entrada_recebimento @json = @json
-	return
-end
-
---ContabilizaÁ„o das Receitas--------------------------------------------------------------------------
-
-if @cd_relatorio = 439
-begin
-	exec pr_egis_contabilizacao_receitas_faturamento_caixa @json = @json
-	return
-end
-
---SolicitaÁ„o de Adiantamento--------------------------------------------------------------------------
-
-if @cd_relatorio = 438
-begin
-	exec pr_egis_relatorio_solicitacao_adiantamento @json = @json
-	return
-end
-
---PrestaÁ„o de Conta--------------------------------------------------------------------------
-
-if @cd_relatorio = 437
-begin
-	exec pr_egis_relatorio_prestacao_conta @json = @json
-	return
-end
-
---Ordem de Servico por Pedido--------------------------------------------------------------------------
-
-if @cd_relatorio = 436
-begin
-	exec pr_egis_ordem_servico_pedido_venda @json = @json
-	return
-end
-
---Nota DÈbito----------------------------------------------------------------------------------
-
-if @cd_relatorio = 435
-begin
-	exec pr_egis_relatorio_nota_debito @json = @json
-	return
-end
-
-
-
-
---Ordem de Servico Consultoria----------------------------------------------------------------------------------
-
-if @cd_relatorio = 434
-begin
-   set @jsonParam = '[{"cd_ordem_servico": '+cast(@cd_documento as varchar(80))+
-                    ', "cd_usuario": '+cast(@cd_usuario as varchar(80))+'}]'
-
-	exec pr_egis_relatorio_ordem_servico_consultoria @jsonParam 
-	return
-end
-
---Ordem de ServiÁo Gr·fica-------------------------------------------------------------------------------------------------------------------------------   
-
-if @cd_relatorio = 433
-begin
-   set @jsonParam = '[{"cd_ordem_servico": '+cast(@cd_documento as varchar(80))+
-                    ', "cd_usuario": '+cast(@cd_usuario as varchar(80))+'}]'
-  exec pr_egis_relatorio_ordem_servico_grafica @json
-  return
-end
-
---Parcelas do Contrato a Pagar no Periodo-------------------------------------------------------------------------------------------------------------------------------   
-if @cd_relatorio = 432
-begin
-  exec pr_egis_relatorio_parcelas_contrato_pagar @json
-  return
-end
-
---Contratos Vigentes em Aberto-----------------------------------------------------------------------------------------------------------------------   
-if @cd_relatorio = 431
-begin
-  exec pr_egis_relatorio_contrato_vigente @json
-  return
-end
-
---Canhoto de Entrega--------------------------------------------------------------------------------------
-if @cd_relatorio = 430
-begin
-	exec pr_egis_relatorio_desconto_documentos @json
+	exec pr_egis_relatorio_contrato_servico @json = @json
 	return
 end
 
@@ -302,52 +185,14 @@ begin
 	return
 end
 
---Resumo de Comiss„o por Vendedor----------------------------------------------------------------------------
-if @cd_relatorio = 427
-begin
-	exec pr_egis_relatorio_resumo_comissao_vendedor @json = @json
-	return
-end
-
---Etiqueta de Volume---
-
-if @cd_relatorio = 425
-begin
-	exec pr_egis_etiqueta_volume_nota @json = @json
-	return
-end
-
---Ordem de SeparaÁ„o por Categoria--------------------------------------------------------------------------------------
-if @cd_relatorio = 424
-begin
-	exec pr_egis_relatorio_ordem_separacao_categoria @json = @json
-	return
-end
-
-
---Remessa de Documentos------------------------------------------------------------------------------------------------
-if @cd_relatorio = 423
-begin
-    --select @json
-	exec pr_egis_relatorio_remessa_documentos @json
-	return
-end
-
---Contrato de ServiÁos------------------------------------------------------------------------------------------------
-if @cd_relatorio = 422
-begin
-	exec pr_egis_relatorio_contrato_servico @json = @json
-	return
-end
-
- --Nota Fiscal de ServiÁo------------------------------------------------------------------------------------------  
+ --Nota Fiscal de Servi√ßo------------------------------------------------------------------------------------------  
 if @cd_relatorio = 421  
 begin   
- exec pr_egis_relatorio_nota_servico @json  
+ exec pr_egis_relatorio_nota_servico @cd_relatorio,@cd_parametro,@json  
  return  
 end  
 
---Balancete de verificaÁ„o------------------------------------------------------------------------------------------  
+--Balancete de verifica√ß√£o------------------------------------------------------------------------------------------  
 if @cd_relatorio = 419  
 begin   
  exec pr_egis_relatorio_consulta_movimento_produto @cd_relatorio,@cd_parametro,@json  
@@ -372,27 +217,27 @@ begin
     exec pr_egis_relatorio_etiqueta_destinatario @json
     return
 end
---ContabilizaÁ„o de Estoques------------------------------------------------------------------------------------------- **
+--Contabiliza√ß√£o de Estoques------------------------------------------------------------------------------------------- **
 if @cd_relatorio = 415
 begin
 	exec pr_egis_relatorio_contabil_estoque @json
 	return
 end
 
---ContabilizaÁ„o de Entradas------------------------------------------------------------------------------------------ **
+--Contabiliza√ß√£o de Entradas------------------------------------------------------------------------------------------ **
 if @cd_relatorio = 414
 begin
 	exec pr_egis_relatorio_contabil_entrada @json
 	return
 end
---ContabilizaÁ„o do Faturamento------------------------------------------------------------------------------------------ **
+--Contabiliza√ß√£o do Faturamento------------------------------------------------------------------------------------------ **
 if @cd_relatorio = 413
 begin
 	exec pr_egis_relatorio_contabil_faturamento @json
 	return
 end
  
---BalanÁo Patrimonial------------------------------------------------------------------------------------------
+--Balan√ßo Patrimonial------------------------------------------------------------------------------------------
 if @cd_relatorio = 412
 begin
 	exec pr_egis_relatorio_balanco_patrimonial @json
@@ -405,13 +250,13 @@ begin
  exec pr_egis_relatorio_demonstrativo_resultado @cd_relatorio,@cd_parametro,@json  
  return  
 end  
---Balancete de verificaÁ„o------------------------------------------------------------------------------------------  **
+--Balancete de verifica√ß√£o------------------------------------------------------------------------------------------  **
 if @cd_relatorio = 410  
 begin   
  exec pr_egis_relatorio_balancete_verificacao @cd_relatorio,@cd_parametro,@json  
  return  
 end  
---DRE - Demonstrativo de Resultado Cont·bil------------------------------------------------------------------------------------------  
+--DRE - Demonstrativo de Resultado Cont√°bil------------------------------------------------------------------------------------------  
 if @cd_relatorio = 409 
 begin   
  exec pr_egis_relatorio_dre_contabil @cd_relatorio,@cd_parametro,@json  
@@ -423,20 +268,20 @@ begin
  exec pr_egis_relatorio_diario_contabil @cd_relatorio,@cd_parametro,@json  
  return  
 end  
---CrÌtica de LanÁamento Cont·bil------------------------------------------------------------------------------------------ **
+--Cr√≠tica de Lan√ßamento Cont√°bil------------------------------------------------------------------------------------------ **
 if @cd_relatorio = 407  
 begin   
  exec pr_egis_relatorio_critica_lancamento @json  
  return  
 end  
---DeclaraÁ„o de Conte˙do------------------------------------------------------------------------------------------  
+--Declara√ß√£o de Conte√∫do------------------------------------------------------------------------------------------  
 if @cd_relatorio = 406  
 begin   
  exec pr_egis_declaracao_conteudo @cd_relatorio,@json  
  return  
 end  
 
---ContabilizaÁ„o Contas a Pagar---------------------------------------------------------------------------------------
+--Contabiliza√ß√£o Contas a Pagar---------------------------------------------------------------------------------------
 
 if @cd_relatorio = 405
 begin 
@@ -444,7 +289,7 @@ begin
 	return
 end
 
---SolicitaÁ„o Beneficimaneto------------------------------------------------------------------------------------------
+--Solicita√ß√£o Beneficimaneto------------------------------------------------------------------------------------------
 
 if @cd_relatorio = 401
 begin 
@@ -452,7 +297,7 @@ begin
 	return
 end
 
---SolicitaÁ„o Beneficimaneto------------------------------------------------------------------------------------------
+--Solicita√ß√£o Beneficimaneto------------------------------------------------------------------------------------------
 
 if @cd_relatorio = 400
 begin 
@@ -470,7 +315,7 @@ begin
 end
 
 
---ComposiÁ„o Movimento Caixa------------------------------------------------------------------------------------------
+--Composi√ß√£o Movimento Caixa------------------------------------------------------------------------------------------
 
 if @cd_relatorio = 398
 begin 
@@ -523,7 +368,7 @@ begin
 	return
 end
 
---Comiss„o do Motorista------------------------------------------------------------------------------------------
+--Comiss√£o do Motorista------------------------------------------------------------------------------------------
 
 if @cd_relatorio = 392
 begin 
@@ -577,7 +422,7 @@ begin
 end 
 
 
---Documentos Aguardando aprovaÁ„o-----------------------------------------------------------------------------------------------------------------------------   
+--Documentos Aguardando aprova√ß√£o-----------------------------------------------------------------------------------------------------------------------------   
 if @cd_relatorio = 385
 begin
   exec pr_egis_relatorio_pedidos_aguardando_aprovacao @cd_relatorio,@cd_parametro,@json
@@ -612,7 +457,7 @@ begin
   exec pr_egis_relatorio_negociacao_proposta @cd_relatorio,@json
   return
 end
---Ordem ProduÁ„o-----------------------------------------------------------------------------------------------------------------------------   
+--Ordem Produ√ß√£o-----------------------------------------------------------------------------------------------------------------------------   
 if @cd_relatorio = 379
 begin
   exec pr_egis_relatorio_ordem_producao @cd_relatorio,@cd_parametro,@json
@@ -651,14 +496,14 @@ begin
   exec pr_egis_relatorio_posicao_financeira @cd_relatorio,@cd_parametro,@json
   return
 end
---Entregas n„o efetuadas------------------------------------------------------------------------------------------------------------------------------   
+--Entregas n√£o efetuadas------------------------------------------------------------------------------------------------------------------------------   
 if @cd_relatorio = 373
 begin
   exec pr_egis_relatorio_departamento_documento @cd_relatorio,@cd_parametro,@json
   return
 end
 
---Entregas n„o efetuadas------------------------------------------------------------------------------------------------------------------------------   
+--Entregas n√£o efetuadas------------------------------------------------------------------------------------------------------------------------------   
 if @cd_relatorio = 372
 begin
   exec pr_egis_relatorio_entregas_nao_efetuadas_faturamento @cd_relatorio,@json
@@ -686,28 +531,28 @@ begin
   return
 end
 
---Dados por VeÌculo-------------------------------------------------------------------------------------------------------------------------------   
+--Dados por Ve√≠culo-------------------------------------------------------------------------------------------------------------------------------   
 if @cd_relatorio = 367
 begin
   exec pr_egis_relatorio_servico_veiculo @cd_relatorio,@json
   return
 end
 
---Dados por VeÌculo-------------------------------------------------------------------------------------------------------------------------------   
+--Dados por Ve√≠culo-------------------------------------------------------------------------------------------------------------------------------   
 if @cd_relatorio = 366
 begin
   exec pr_egis_relatorio_dados_por_veiculo @cd_relatorio,@json
   return
 end
 
---VeÌculo-------------------------------------------------------------------------------------------------------------------------------   
+--Ve√≠culo-------------------------------------------------------------------------------------------------------------------------------   
 if @cd_relatorio = 365
 begin
   exec pr_egis_relatorio_dados_veiculo @cd_relatorio,@json
   return
 end
 
---Analise de habilitaÁ„o de motorista-------------------------------------------------------------------------------------------------------------------------------   
+--Analise de habilita√ß√£o de motorista-------------------------------------------------------------------------------------------------------------------------------   
 if @cd_relatorio = 364
 begin
   exec pr_egis_relatorio_analise_habilitacao_motorista @cd_relatorio,@json
@@ -719,13 +564,13 @@ begin
   exec pr_egis_relatorio_agenda_entrega @json
   return
 end
--- Faturamento Mensal ServiÁo Produto-----------------------------------------------------------------------------------------------------------------------------------------------
+-- Faturamento Mensal Servi√ßo Produto-----------------------------------------------------------------------------------------------------------------------------------------------
 if @cd_relatorio = 356
 begin
   exec pr_egis_relatorio_entrega_ph_cloro @cd_relatorio,@cd_parametro,@json
   return
 end
--- Faturamento Mensal ServiÁo Produto-----------------------------------------------------------------------------------------------------------------------------------------------
+-- Faturamento Mensal Servi√ßo Produto-----------------------------------------------------------------------------------------------------------------------------------------------
 if @cd_relatorio = 355
 begin
   exec pr_egis_relatorio_faturamento_base_retirada @cd_relatorio,@cd_parametro,@json
@@ -737,7 +582,7 @@ begin
   exec pr_egis_relatorio_diario_entrega @cd_relatorio,@cd_parametro,@json
   return
 end
--- Faturamento Mensal ServiÁo Produto-----------------------------------------------------------------------------------------------------------------------------------------------
+-- Faturamento Mensal Servi√ßo Produto-----------------------------------------------------------------------------------------------------------------------------------------------
 if @cd_relatorio = 353
 begin
   exec pr_egis_relatorio_faturamento_servico_produto @cd_relatorio,@cd_parametro,@json
@@ -763,7 +608,7 @@ begin
   return
 end
    
--- Ranking de Entregas por Produtos e ServiÁos-----------------------------------------------------------------------------------------------------------------------------------------------
+-- Ranking de Entregas por Produtos e Servi√ßos-----------------------------------------------------------------------------------------------------------------------------------------------
 if @cd_relatorio = 347
 begin
   exec pr_egis_relatorio_ranking_entrega_servico_produto @cd_relatorio,@cd_parametro,@json
@@ -799,7 +644,7 @@ begin
   return
 end
    
---Deslocamento em Km por VeÌculo no PerÌodo-----------------------------------------------------------------------------------------------------------------------------   
+--Deslocamento em Km por Ve√≠culo no Per√≠odo-----------------------------------------------------------------------------------------------------------------------------   
 if @cd_relatorio = 342
 begin
   exec pr_egis_relatorio_deslocamento_periodo_veiculo @cd_relatorio,@cd_usuario,@cd_parametro,@json
@@ -819,10 +664,24 @@ begin
   exec pr_egis_relatorio_pedido_compra_modelo_01 @cd_relatorio, @json
   return
 end
+
+--Parcelas do Contrato a Pagar no Periodo-------------------------------------------------------------------------------------------------------------------------------   
+if @cd_relatorio = 432
+begin
+  exec pr_egis_relatorio_parcelas_contrato_pagar @json
+  return
+end
 --Contrato a Pagar-------------------------------------------------------------------------------------------------------------------------------   
 if @cd_relatorio = 338
 begin
   exec pr_egis_relatorio_contrato_pagar @cd_relatorio, @json
+  return
+end
+
+--Contratos Vigentes em Aberto-----------------------------------------------------------------------------------------------------------------------   
+if @cd_relatorio = 431
+begin
+  exec pr_egis_relatorio_contrato_vigente @json
   return
 end
 
@@ -841,7 +700,7 @@ begin
   return											   
 end													 
 ---------------------------------------------------------------------------------------------------------------------------------
---ValidaÁ„o de Proposta Comercial - frmSACFechamento
+--Valida√ß√£o de Proposta Comercial - frmSACFechamento
 ---------------------------------------------------------------------------------------------------------------------------------
 
 if @cd_relatorio = 335
@@ -862,7 +721,7 @@ begin
   return
 end
 
---Comiss„o dos Vendedores--------------------------------------------------------------------
+--Comiss√£o dos Vendedores--------------------------------------------------------------------
 
 if @cd_relatorio = 237
 begin
@@ -870,7 +729,7 @@ begin
    return
 
 end
---Comiss„o por metodos de calculo--------------------------------------------------------------------
+--Comiss√£o por metodos de calculo--------------------------------------------------------------------
 
 if @cd_relatorio = 239
 begin
@@ -878,7 +737,7 @@ begin
    return
 
 end
---Comiss„o Calculo Vendedor--------------------------------------------------------------------
+--Comiss√£o Calculo Vendedor--------------------------------------------------------------------
 
 if @cd_relatorio = 240
 begin
@@ -904,7 +763,7 @@ begin
 end
 
 
---Ordem de ServiÁo Saida--------------------------------------------------------------------
+--Ordem de Servi√ßo Saida--------------------------------------------------------------------
 
 if @cd_relatorio = 145
 begin 
@@ -931,7 +790,7 @@ from
 end
 
 
---Ordem de ServiÁo Saida--------------------------------------------------------------------
+--Ordem de Servi√ßo Saida--------------------------------------------------------------------
 
 if @cd_relatorio = 245
 begin
@@ -940,7 +799,7 @@ begin
 
 end
 
---Ordem de ServiÁo Saida--------------------------------------------------------------------
+--Ordem de Servi√ßo Saida--------------------------------------------------------------------
 
 if @cd_relatorio = 246
 begin
@@ -1057,7 +916,7 @@ begin
    return
 
 end
---Listas CFOP SaÌdas--------------------------------------------------------------------
+--Listas CFOP Sa√≠das--------------------------------------------------------------------
 
 if @cd_relatorio = 261
 begin
@@ -1065,7 +924,7 @@ begin
    return
 
 end
---Listas CFOP SaÌdas--------------------------------------------------------------------
+--Listas CFOP Sa√≠das--------------------------------------------------------------------
 
 if @cd_relatorio = 262
 begin
@@ -1081,18 +940,11 @@ begin
    return
 
 end
---Ordem de ServiÁo--------------------------------------------------------------------
+--Ordem de Servi√ßo--------------------------------------------------------------------
 
 if @cd_relatorio = 264
 begin
-   if @cd_empresa = 357
-   begin
-     exec pr_egis_relatorio_ordem_separacao_categoria @json = @json
-   end
-   else
-   begin
-     exec pr_egis_relatorio_ordem_separacao @cd_relatorio,@cd_parametro,@json
-   end
+   exec pr_egis_relatorio_ordem_separacao @cd_relatorio,@cd_parametro,@json
    return
 
 end
@@ -1147,7 +999,7 @@ begin
    return
 
 end
---Mapa Compra OrÁamento -------------------------------------------------------------------- 
+--Mapa Compra Or√ßamento -------------------------------------------------------------------- 
 
 if @cd_relatorio = 271
 begin
@@ -1180,7 +1032,7 @@ begin
 
 end
 
---Mapa Compra Pedidos AplicaÁ„o --------------------------------------------------------------------  
+--Mapa Compra Pedidos Aplica√ß√£o --------------------------------------------------------------------  
 
 if @cd_relatorio = 276
 begin
@@ -1214,7 +1066,7 @@ begin
 end
 
 
---An·lise de Vendas de Produto por PerÌodo --------------------------------------------------------------------  
+--An√°lise de Vendas de Produto por Per√≠odo --------------------------------------------------------------------  
 
 if @cd_relatorio = 280
 begin
@@ -1222,7 +1074,7 @@ begin
    return
 
 end
---Di·rio de Venda--------------------------------------------------------------------  
+--Di√°rio de Venda--------------------------------------------------------------------  
 
 if @cd_relatorio = 281
 begin
@@ -1238,7 +1090,7 @@ begin
    return
 
 end
---Di·rio de Comodato--------------------------------------------------------------------  
+--Di√°rio de Comodato--------------------------------------------------------------------  
 
 if @cd_relatorio = 283
 begin
@@ -1246,7 +1098,7 @@ begin
    return
 
 end
---Di·rio de BonificaÁ„o--------------------------------------------------------------------  
+--Di√°rio de Bonifica√ß√£o--------------------------------------------------------------------  
 
 if @cd_relatorio = 284
 begin
@@ -1254,7 +1106,7 @@ begin
    return
 
 end
---Di·rio de BonificaÁ„o--------------------------------------------------------------------  
+--Di√°rio de Bonifica√ß√£o--------------------------------------------------------------------  
 
 if @cd_relatorio = 285
 begin
@@ -1262,7 +1114,7 @@ begin
    return
 
 end
---Di·rio de BonificaÁ„o--------------------------------------------------------------------  
+--Di√°rio de Bonifica√ß√£o--------------------------------------------------------------------  
 
 if @cd_relatorio = 286
 begin
@@ -1278,7 +1130,7 @@ begin
    return
 
 end
---PositivaÁ„o de Produtos por Clientes--------------------------------------------------------------------  
+--Positiva√ß√£o de Produtos por Clientes--------------------------------------------------------------------  
 
 if @cd_relatorio = 288
 begin
@@ -1319,7 +1171,7 @@ begin
    return
 
 end
---Pedidos de ImportaÁ„o--------------------------------------------------------------------  
+--Pedidos de Importa√ß√£o--------------------------------------------------------------------  
 
 if @cd_relatorio = 293
 begin
@@ -1343,7 +1195,7 @@ begin
    return
 
 end
---Ordem de servico liberaÁ„o Tecnica--------------------------------------------------------------------   
+--Ordem de servico libera√ß√£o Tecnica--------------------------------------------------------------------   
 
 if @cd_relatorio = 297
 begin
@@ -1351,7 +1203,7 @@ begin
    return
 
 end
---Tecnica(Ordem de ServiÁo)--------------------------------------------------------------------   
+--Tecnica(Ordem de Servi√ßo)--------------------------------------------------------------------   
 
 if @cd_relatorio = 298
 begin
@@ -1359,7 +1211,7 @@ begin
    return
 
 end
---Garantia (Ordem de ServiÁo)--------------------------------------------------------------------   
+--Garantia (Ordem de Servi√ßo)--------------------------------------------------------------------   
 
 if @cd_relatorio = 299
 begin
@@ -1431,7 +1283,7 @@ begin
    return
 
 end
---Entregas de Romaneio por PerÌodo---------------------------------------------------------------------   
+--Entregas de Romaneio por Per√≠odo---------------------------------------------------------------------   
 
 if @cd_relatorio = 310
 begin
@@ -1495,7 +1347,7 @@ begin
    return
 
 end
---Clientes sem PosivaÁ„o---------------------------------------------------------------------   
+--Clientes sem Posiva√ß√£o---------------------------------------------------------------------   
 
 if @cd_relatorio = 318
 begin
@@ -1503,7 +1355,7 @@ begin
    return
 
 end
---PosivaÁ„o por Periodo---------------------------------------------------------------------   
+--Posiva√ß√£o por Periodo---------------------------------------------------------------------   
 
 if @cd_relatorio = 319
 begin
@@ -1550,7 +1402,7 @@ begin
    return
 
 end
---Base de Pedidos para Comiss„o no PerÌodo ---------------------------------------------------------------------   
+--Base de Pedidos para Comiss√£o no Per√≠odo ---------------------------------------------------------------------   
 
 if @cd_relatorio = 327
 begin
@@ -1566,7 +1418,7 @@ begin
    return
 
 end
---Ordem de Embarque divis„o---------------------------------------------------------------------   
+--Ordem de Embarque divis√£o---------------------------------------------------------------------   
 
 if @cd_relatorio = 329
 begin
@@ -1574,7 +1426,7 @@ begin
    return
 
 end
---Romaneio de Embarque Divis„o---------------------------------------------------------------------   
+--Romaneio de Embarque Divis√£o---------------------------------------------------------------------   
 
 if @cd_relatorio = 330
 begin
@@ -1606,7 +1458,7 @@ begin
    return
 
 end
---PreparaÁ„o de Carga------------------------------------------------------------------------- 
+--Prepara√ß√£o de Carga------------------------------------------------------------------------- 
 
 if @cd_relatorio = 16
 begin
@@ -1623,8 +1475,7 @@ begin
    return
 
 end
-
---PreparaÁ„o de Carga--------------------------------------------------------------------
+--Prepara√ß√£o de Carga--------------------------------------------------------------------
 
 if @cd_relatorio = 235
 begin
@@ -1642,7 +1493,7 @@ begin
 
 end
 
---Tabela de PreÁo lookup-----------------------------------------------------------
+--Tabela de Pre√ßo lookup-----------------------------------------------------------
 
 if @cd_relatorio = 223
 begin
@@ -1660,7 +1511,7 @@ begin
 
 end
 
---Produtos com preÁo zerado-----------------------------------------------------------
+--Produtos com pre√ßo zerado-----------------------------------------------------------
 
 if @cd_relatorio = 221
 begin
@@ -1687,7 +1538,7 @@ begin
 
 end
 
---Produto configuraÁ„o-----------------------------------------------------------
+--Produto configura√ß√£o-----------------------------------------------------------
 
 if @cd_relatorio = 218
 begin
@@ -1715,7 +1566,7 @@ begin
 end
 
 
--- Consulta PositivaÁ„o de Clientes
+-- Consulta Positiva√ß√£o de Clientes
 
 if @cd_relatorio = 214
 begin
@@ -1731,7 +1582,7 @@ begin
   return
 end
 
--- Certificado de Qualidade (ProduÁ„o)
+-- Certificado de Qualidade (Produ√ß√£o)
 
 if @cd_relatorio = 209
 begin
@@ -1788,7 +1639,7 @@ begin
 end
 
 --------------------------------------------------------------------------------------------
---PosiÁ„o de Contas a Receber - Pedido de Venda
+--Posi√ß√£o de Contas a Receber - Pedido de Venda
 --------------------------------------------------------------------------------------------
 
 if @cd_relatorio = 189
@@ -1800,7 +1651,7 @@ begin
 end
 
 --------------------------------------------------------------------------------------------
---PosiÁ„o de Contas a Receber
+--Posi√ß√£o de Contas a Receber
 --------------------------------------------------------------------------------------------
 
 if @cd_modulo in (235) and @cd_relatorio = 188
@@ -1811,7 +1662,7 @@ end
 
 
 --------------------------------------------------------------------------------------------
---An·lise do Contas a Receber
+--An√°lise do Contas a Receber
 --------------------------------------------------------------------------------------------
 
 if @cd_modulo in (235) and @cd_relatorio = 187
@@ -1822,7 +1673,7 @@ end
 
 
 --------------------------------------------------------------------------------------------
---Boleto Banc·rio
+--Boleto Banc√°rio
 --------------------------------------------------------------------------------------------
 
 if @cd_relatorio = 186
@@ -1863,7 +1714,7 @@ begin
 end
 
 --------------------------------------------------------------------------------------------
---BonificaÁıes
+--Bonifica√ß√µes
 --------------------------------------------------------------------------------------------
 
 if @cd_relatorio = 183
@@ -1979,7 +1830,7 @@ begin
   return
 end
 
---An·lise de Expans„o da Base de Clientes--------------------------------------------
+--An√°lise de Expans√£o da Base de Clientes--------------------------------------------
 
 if @cd_relatorio = 176
 begin
@@ -2013,7 +1864,7 @@ begin
 end
 
 
---Di·rio de Pedidos--------------------------------------------
+--Di√°rio de Pedidos--------------------------------------------
 
 if @cd_modulo in (223) and @cd_relatorio = 165
 begin
@@ -2032,7 +1883,7 @@ end
 
 
 
---Tabela de PreÁos---
+--Tabela de Pre√ßos---
 
 if @cd_relatorio = 65
 begin
@@ -2067,7 +1918,7 @@ begin
   exec pr_egis_relatorio_faturamento_familia_produtos @cd_relatorio,@cd_usuario,@json
   return
 end
----ContabilizaÁ„o Contas a Receber----------------------------------------------------------------------------
+---Contabiliza√ß√£o Contas a Receber----------------------------------------------------------------------------
 
 
 if @cd_relatorio = 59
@@ -2077,7 +1928,7 @@ begin
 end
 
 
---An·lise de Ruptura
+--An√°lise de Ruptura
 
 if @cd_modulo in (241,244) and @cd_relatorio = 40
 begin
@@ -2086,7 +1937,7 @@ begin
 end
 
 
---Invent·rio por Categoria de Produtos-----
+--Invent√°rio por Categoria de Produtos-----
 
 if @cd_modulo = 244 and @cd_relatorio = 39
 begin
@@ -2126,7 +1977,7 @@ end
 
 --end
 
---Faturamento Di·rio---
+--Faturamento Di√°rio---
 
 if @cd_modulo = 241 and @cd_relatorio = 19
 begin
@@ -2135,7 +1986,7 @@ begin
 
 end
 
---Di·rio de Ordem de SeparaÁ„o-----------------------------------------------------------
+--Di√°rio de Ordem de Separa√ß√£o-----------------------------------------------------------
 
 if @cd_relatorio = 20
 begin
@@ -2153,7 +2004,7 @@ begin
 
 end
 
---Cliente x Tabela PreÁo-----------------------------------------------------------
+--Cliente x Tabela Pre√ßo-----------------------------------------------------------
 
 if @cd_modulo = 249 and @cd_relatorio = 227
 begin
@@ -2222,7 +2073,7 @@ end
 
 ----------------------------------
 --------------------------------------------------------------------------------------------
---PosiÁ„o de Contas a Receber - Prosposta
+--Posi√ß√£o de Contas a Receber - Prosposta
 --------------------------------------------------------------------------------------------
 
 if @cd_relatorio = 11
@@ -2253,7 +2104,7 @@ where
 --update egisadmin.dbo.relatorio set ic_processo_relatorio = 'N'
  
 
-if @ic_processo='S' and @cd_relatorio = 9999 and @cd_documento > 0--usuar o n˙mero do relatÛrio do cadastro
+if @ic_processo='S' and @cd_relatorio = 9999 and @cd_documento > 0--usuar o n√∫mero do relat√≥rio do cadastro
 begin
 
    exec pr_modulo_processo_egismob_post '[{"cd_consulta": 237, "cd_menu": 5428, "cd_parametro": 14, "cd_pedido_venda": 0, "cd_usuario": 4073}]'
@@ -2263,7 +2114,7 @@ end
 
 --18.01.2025-------------------------------------------------
 
---Busca o RelatÛrio do cadastro do menu
+--Busca o Relat√≥rio do cadastro do menu
 
 if @cd_menu>0
 begin
@@ -2338,15 +2189,15 @@ set @cd_empresa = dbo.fn_empresa()
 
 
 ---------------------------------------------------------------------------------------------------------------------------------------------
---Dados do RelatÛrio
+--Dados do Relat√≥rio
 ---------------------------------------------------------------------------------------------------------------------------------------------
 
 declare @html            nvarchar(max) = '' --Total
-declare @html_empresa    nvarchar(max) = '' --CabeÁalho da Empresa
-declare @html_titulo     nvarchar(max) = '' --TÌtulo
-declare @html_cab_det    nvarchar(max) = '' --CabeÁalho do Detalhe
+declare @html_empresa    nvarchar(max) = '' --Cabe√ßalho da Empresa
+declare @html_titulo     nvarchar(max) = '' --T√≠tulo
+declare @html_cab_det    nvarchar(max) = '' --Cabe√ßalho do Detalhe
 declare @html_detalhe    nvarchar(max) = '' --Detalhes
-declare @html_rod_det    nvarchar(max) = '' --RodapÈ do Detalhe
+declare @html_rod_det    nvarchar(max) = '' --Rodap√© do Detalhe
 declare @html_rodape     nvarchar(max) = '' --Rodape
 
 declare @data_hora_atual nvarchar(50)  = ''
@@ -2359,7 +2210,7 @@ set @html_detalhe = ''
 set @html_rod_det = ''
 set @html_rodape  = ''
 
--- ObtÈm a data e hora atual
+-- Obt√©m a data e hora atual
 set @data_hora_atual = convert(nvarchar, getdate(), 103) + ' ' + convert(nvarchar, getdate(), 108)
 -----------------------------------------------------------------------------------------------------
 declare @cd_grupo_usuario int = 0
@@ -2374,7 +2225,7 @@ select
 	ugu.cd_usuario = @cd_usuario
 
 --------------------------------------------------
-if @cd_parametro = 10 --Lookup de RelatÛrios
+if @cd_parametro = 10 --Lookup de Relat√≥rios
 begin
   --select * from egisadmin.dbo.Menu_Relatorio
   if isnull(@cd_menu,0) <> 0
@@ -2447,7 +2298,7 @@ end
 
 if @cd_relatorio=0
 begin
-  select  'Par‚metro de Cadastro de RelatÛrio n„o definido !!' as Msg, 0 as Cod
+  select  'Par√¢metro de Cadastro de Relat√≥rio n√£o definido !!' as Msg, 0 as Cod
   return
 end
 
@@ -2455,7 +2306,7 @@ end
 
 
 ---------------------------------------------------------------------------------------------------------------------------------------------
---TÌtulo do RelatÛrio
+--T√≠tulo do Relat√≥rio
 ---------------------------------------------------------------------------------------------------------------------------------------------
 --select * from egisadmin.dbo.relatorio
 
@@ -2464,7 +2315,7 @@ end
 --
 
 --------------------------------------------------------------------------------------------
---Dados do Form Especial para GeraÁ„o do RelatÛrio Padr„o----------------------------------------------------------------------------------
+--Dados do Form Especial para Gera√ß√£o do Relat√≥rio Padr√£o----------------------------------------------------------------------------------
 --------------------------------------------------------------------------------------------
 
 select 
@@ -2480,7 +2331,7 @@ where
 
 
 -----------------------
---CabeÁalho da Empresa----------------------------------------------------------------------------------------------------------------------
+--Cabe√ßalho da Empresa----------------------------------------------------------------------------------------------------------------------
 -----------------------
 
 SET @html_empresa = '
@@ -2581,7 +2432,7 @@ SET @html_empresa = '
 		
 
 --Detalhe--
---Procedure de Cada RelatÛrio-------------------------------------------------------------------------------------
+--Procedure de Cada Relat√≥rio-------------------------------------------------------------------------------------
 
 select a.*, g.nm_grupo_relatorio 
 into 
@@ -2887,7 +2738,7 @@ set @sqlComando = 'select '+@sqlcolunas + ' from '+ @nm_banco+'.dbo.' + @sqlTabe
 ------------------------------------------------------------------------------------------------------
 
 
---CabeÁalho do RelatÛrio Padr„o-----------------------------------------------------------------------------------------
+--Cabe√ßalho do Relat√≥rio Padr√£o-----------------------------------------------------------------------------------------
 set @nm_grupo_relatorio = case when isnull(@nm_grupo_relatorio,'')='' then 'Dados' else @nm_grupo_relatorio end
 
 set @html_cab_det = '<div class="section-title"><strong> '+@nm_grupo_relatorio + ' </strong></div> 
@@ -2947,13 +2798,13 @@ set @html_totais  = '<div class="section-title"><strong>'+@titulo_total+'</stron
 
 set @footerTitle = ''
 
---RodapÈ--
+--Rodap√©--
 
 set @html_rodape =
     '<div class="company-info">
 		<p><strong>'+@footerTitle+'</strong> ''</p>
 	</div>
-    <div class="section-title"><strong>ObservaÁıes</strong></div>
+    <div class="section-title"><strong>Observa√ß√µes</strong></div>
     <p>'+@ds_relatorio+'</p>
 	<div class="report-date-time">
        <p>Gerado em: '+@data_hora_atual+'</p>
@@ -3035,27 +2886,27 @@ go
 --]'
 
 --exec pr_egis_relatorio_padrao '[{
---    "cd_empresa": "357",
---    "cd_modulo": "247",
+--    "cd_empresa": "274",
+--    "cd_modulo": "234",
 --    "cd_menu": "0",
---    "cd_relatorio_form": "427",
+--    "cd_relatorio_form": 405,
 --    "cd_processo": "",
 --    "cd_form": 91,
---    "cd_documento_form": 4,
+--    "cd_documento_form": 37,
 --    "cd_parametro_form": "2",
---    "cd_usuario": "4896",
+--    "cd_usuario": "3777",
 --    "cd_cliente_form": "0",
---    "cd_contato_form": "4896",
+--    "cd_contato_form": "3777",
 --    "cd_filtro_tabela": null,
---    "dt_usuario": "2026-01-15",
+--    "dt_usuario": "2026-01-02",
 --    "lookup_formEspecial": {},
---    "cd_parametro_relatorio": "4",
---    "cd_relatorio": "427",
---    "dt_inicial": "2026-01-15",
---    "dt_final": "2026-01-15",
+--    "cd_parametro_relatorio": "37",
+--    "cd_relatorio": "405",
+--    "dt_inicial": "2025-12-01",
+--    "dt_final": "2025-12-31",
 --    "detalhe": [],
 --    "lote": [],
---    "cd_documento": "4"
+--    "cd_documento": "37"
 --}]'
 
 --use egissql_354

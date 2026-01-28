@@ -36,7 +36,7 @@ GO
     - egisadmin.dbo.empresa / Cidade / Estado (fallback de remetente quando não houver nota)
 -------------------------------------------------------------------------------------------------*/
 CREATE PROCEDURE dbo.pr_egis_relatorio_etiqueta_destinatario
-    @json NVARCHAR(MAX) = '' -- Parâmetro único vindo do front-end
+    @json NVARCHAR(MAX) -- Parâmetro único vindo do front-end
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -54,38 +54,22 @@ BEGIN
             @altura_padrao_cm   DECIMAL(10, 2) = 15.0,
             @qt_copia_padrao    INT            = 1,
             @qt_copia_limite    INT            = 10;
-				
-   declare @cd_empresa int  = 0
-	declare @cd_nota_saida int  = 0 
 
-        /*-----------------------------------------------------------------------------------------    
-          1.a) Validação mínima do JSON    
-        -----------------------------------------------------------------------------------------*/    
-        IF NULLIF(LTRIM(RTRIM(@json)), N'') IS NOT NULL AND ISJSON(@json) = 0    
-            THROW 50001, 'Payload JSON inválido em @json.', 1;    
-    
-        /*-----------------------------------------------------------------------------------------    
-          2) Normaliza JSON e parse de datas com múltiplos formatos    
-        -----------------------------------------------------------------------------------------*/    
-        IF NULLIF(LTRIM(RTRIM(@json)), N'') IS NOT NULL AND ISJSON(@json) = 1    
-        BEGIN    
-            -- Se vier como array, pegar primeiro elemento    
-            IF LEFT(LTRIM(@json), 1) = '['    
-                SET @json = JSON_QUERY(@json, '$[0]');    
-    
-   
-			
-            SET @cd_empresa = TRY_CAST(JSON_VALUE(@json, '$.cd_empresa') AS INT);
-			SET @cd_nota_saida = TRY_CAST(
-        NULLIF(JSON_VALUE(@json, '$.cd_identificacao_nota_saida'), '')
-        AS INT
-    );
-            -- ==================================================================    
-            -- PARSE DATA INICIAL - Suporta múltiplos formatos    
-            -- ==================================================================    
-           
-    end
-	      
+        /*-----------------------------------------------------------------------------------------
+          2) Normaliza e valida JSON de entrada (aceita objeto ou array)
+        -----------------------------------------------------------------------------------------*/
+        SET @jsonNormalized = LTRIM(RTRIM(ISNULL(@json, N'')));
+
+        IF @jsonNormalized = N''
+            SET @jsonNormalized = N'[{}]';
+
+        IF ISJSON(@jsonNormalized) = 0
+            THROW 50001, 'JSON de entrada inválido ou mal formatado.', 1;
+
+        -- Aceita objeto isolado e converte para array
+        IF JSON_VALUE(@jsonNormalized, '$[0]') IS NULL
+            SET @jsonNormalized = CONCAT('[', @jsonNormalized, ']');
+
         /*-----------------------------------------------------------------------------------------
           3) Carrega parâmetros em tabela (sem cursor) e aplica defaults/limites
         -----------------------------------------------------------------------------------------*/
@@ -103,9 +87,9 @@ BEGIN
             TRY_CAST(j.qt_copia AS INT)            AS qt_copia,
             TRY_CAST(j.largura_cm AS DECIMAL(10,2)) AS largura_cm,
             TRY_CAST(j.altura_cm AS DECIMAL(10,2))  AS altura_cm
-        FROM OPENJSON(@json)
+        FROM OPENJSON(@jsonNormalized)
         WITH (
-            cd_nota_saida INT            '$.cd_identificacao_nota_saida',
+            cd_nota_saida INT            '$.cd_nota_saida',
             qt_copia      INT            '$.qt_copia',
             largura_cm    DECIMAL(10,2)  '$.largura_cm',
             altura_cm     DECIMAL(10,2)  '$.altura_cm'
@@ -125,7 +109,6 @@ BEGIN
             largura_cm = CASE WHEN p.largura_cm IS NULL OR p.largura_cm <= 0 THEN @largura_padrao_cm ELSE p.largura_cm END,
             altura_cm  = CASE WHEN p.altura_cm IS NULL OR p.altura_cm <= 0 THEN @altura_padrao_cm ELSE p.altura_cm END
         FROM @Parametros AS p;
-		
 
         /*-----------------------------------------------------------------------------------------
           4) Monta base com cópias e dados (sem cursor)
@@ -245,7 +228,7 @@ BEGIN
                 FROM egisadmin.dbo.empresa AS e WITH (NOLOCK)
                 LEFT JOIN Cidade AS cid WITH (NOLOCK) ON cid.cd_cidade = e.cd_cidade
                 LEFT JOIN Estado AS est WITH (NOLOCK) ON est.cd_estado = cid.cd_estado
-                WHERE e.cd_empresa = @cd_empresa
+                WHERE e.cd_empresa = dbo.fn_empresa()
             ) AS emp
         ),
         Normalizado AS (
@@ -308,60 +291,55 @@ BEGIN
                 REPLACE(REPLACE(REPLACE(ISNULL(n.fone_remetente, ''), '&', '&amp;'), '<', '&lt;'), '>', '&gt;') AS fone_remetente_html
             FROM Normalizado AS n
         ),
-
-		
-        HtmlPorEtiqueta AS (
+        HtmlEtiquetas AS (
             SELECT
                 e.id_solicitacao,
                 e.copia_id,
                 e.cd_nota_saida,
                 -- Monta HTML de cada etiqueta usando FOR XML (compatível com SQL 2016)
-                '<div class="label" style="width:' + CONVERT(VARCHAR(20), CAST(e.largura_cm AS DECIMAL(10,2))) + 'cm;height:' +
-                CONVERT(VARCHAR(20), CAST(e.altura_cm AS DECIMAL(10,2))) + 'cm;">' +
-                '  <div class="header">' +
-                '    <div class="title">Destinatário</div>' +
-                '    <div class="meta">Relatório ' + CAST(@cd_relatorio AS VARCHAR(10)) +
+                '<div class=\"label\" style=\"width:' + CONVERT(VARCHAR(20), CAST(e.largura_cm AS DECIMAL(10,2))) + 'cm;height:' +
+                CONVERT(VARCHAR(20), CAST(e.altura_cm AS DECIMAL(10,2))) + 'cm;\">' +
+                '  <div class=\"header\">' +
+                '    <div class=\"title\">Destinatário</div>' +
+                '    <div class=\"meta\">Relatório ' + CAST(@cd_relatorio AS VARCHAR(10)) +
                 CASE WHEN e.cd_nota_saida IS NULL THEN '' ELSE ' · Nota ' + CAST(e.cd_nota_saida AS VARCHAR(20)) END +
                 ' · Cópia ' + CAST(e.copia_id AS VARCHAR(10)) + '</div>' +
                 '  </div>' +
-                '  <div class="destinatario">' +
-                '    <div class="linha destaque">' + ISNULL(NULLIF(e.nm_destinatario_html, ''), '') + '</div>' +
-                '    <div class="linha">' + CASE WHEN NULLIF(e.doc_destinatario_html, '') IS NULL THEN '' ELSE 'Doc.: ' + e.doc_destinatario_html END + '</div>' +
-                '    <div class="linha">' + ISNULL(NULLIF(LTRIM(RTRIM(CONCAT(e.logradouro_destinatario_html,' ', e.numero_destinatario_html,
+                '  <div class=\"destinatario\">' +
+                '    <div class=\"linha destaque\">' + ISNULL(NULLIF(e.nm_destinatario_html, ''), '') + '</div>' +
+                '    <div class=\"linha\">' + CASE WHEN NULLIF(e.doc_destinatario_html, '') IS NULL THEN '' ELSE 'Doc.: ' + e.doc_destinatario_html END + '</div>' +
+                '    <div class=\"linha\">' + ISNULL(NULLIF(LTRIM(RTRIM(CONCAT(e.logradouro_destinatario_html,' ', e.numero_destinatario_html,
                                                                         CASE WHEN NULLIF(e.complemento_destinatario_html, '') IS NULL THEN '' ELSE ' - ' + e.complemento_destinatario_html END))), ''), '') + '</div>' +
-                '    <div class="linha">' + ISNULL(NULLIF(LTRIM(RTRIM(CONCAT(e.bairro_destinatario_html,
+                '    <div class=\"linha\">' + ISNULL(NULLIF(LTRIM(RTRIM(CONCAT(e.bairro_destinatario_html,
                                                                         CASE WHEN NULLIF(e.bairro_destinatario_html, '') IS NULL THEN '' ELSE ' - ' END,
                                                                         e.cidade_destinatario_html,
                                                                         CASE WHEN NULLIF(e.uf_destinatario_html, '') IS NULL THEN '' ELSE '/' + e.uf_destinatario_html END))), ''), '') + '</div>' +
-                '    <div class="linha">' + CASE WHEN NULLIF(e.cep_destinatario_html, '') IS NULL THEN '' ELSE 'CEP: ' + e.cep_destinatario_html END + '</div>' +
-                '    <div class="linha">' + CASE WHEN NULLIF(e.fone_destinatario_html, '') IS NULL THEN '' ELSE 'Fone: ' + e.fone_destinatario_html END + '</div>' +
+                '    <div class=\"linha\">' + CASE WHEN NULLIF(e.cep_destinatario_html, '') IS NULL THEN '' ELSE 'CEP: ' + e.cep_destinatario_html END + '</div>' +
+                '    <div class=\"linha\">' + CASE WHEN NULLIF(e.fone_destinatario_html, '') IS NULL THEN '' ELSE 'Fone: ' + e.fone_destinatario_html END + '</div>' +
                 '  </div>' +
-                '  <div class="remetente">' +
-                '    <div class="label-remetente">Remetente</div>' +
-                '    <div class="linha">' + ISNULL(NULLIF(e.nm_remetente_html, ''), '') + '</div>' +
-                '    <div class="linha">' + CASE WHEN NULLIF(e.doc_remetente_html, '') IS NULL THEN '' ELSE 'CNPJ: ' + e.doc_remetente_html END + '</div>' +
-                '    <div class="linha">' + CASE WHEN NULLIF(e.ie_remetente_html, '') IS NULL THEN '' ELSE 'IE: ' + e.ie_remetente_html END + '</div>' +
-                '    <div class="linha">' + ISNULL(NULLIF(LTRIM(RTRIM(CONCAT(e.logradouro_remetente_html,' ', e.numero_remetente_html,
-                                                                      CASE WHEN NULLIF(e.complemento_remetente_html, '') IS NULL THEN '' ELSE ' - ' + e.complemento_remetente_html END))), ''), '') + '</div>' +
-                '    <div class="linha">' + ISNULL(NULLIF(LTRIM(RTRIM(CONCAT(e.bairro_remetente_html,
-                                                                       CASE WHEN NULLIF(e.bairro_remetente_html, '') IS NULL THEN '' ELSE ' - ' END,
+                '  <div class=\"remetente\">' +
+                '    <div class=\"label-remetente\">Remetente</div>' +
+                '    <div class=\"linha\">' + ISNULL(NULLIF(e.nm_remetente_html, ''), '') + '</div>' +
+                '    <div class=\"linha\">' + CASE WHEN NULLIF(e.doc_remetente_html, '') IS NULL THEN '' ELSE 'CNPJ: ' + e.doc_remetente_html END + '</div>' +
+                '    <div class=\"linha\">' + CASE WHEN NULLIF(e.ie_remetente_html, '') IS NULL THEN '' ELSE 'IE: ' + e.ie_remetente_html END + '</div>' +
+                '    <div class=\"linha\">' + ISNULL(NULLIF(LTRIM(RTRIM(CONCAT(e.logradouro_remetente_html,' ', e.numero_remetente_html,
+                                                                        CASE WHEN NULLIF(e.complemento_remetente_html, '') IS NULL THEN '' ELSE ' - ' + e.complemento_remetente_html END))), ''), '') + '</div>' +
+                '    <div class=\"linha\">' + ISNULL(NULLIF(LTRIM(RTRIM(CONCAT(e.bairro_remetente_html,
+                                                                        CASE WHEN NULLIF(e.bairro_remetente_html, '') IS NULL THEN '' ELSE ' - ' END,
                                                                         e.cidade_remetente_html,
                                                                         CASE WHEN NULLIF(e.uf_remetente_html, '') IS NULL THEN '' ELSE '/' + e.uf_remetente_html END))), ''), '') + '</div>' +
-                '    <div class="linha">' + CASE WHEN NULLIF(e.cep_remetente_html, '') IS NULL THEN '' ELSE 'CEP: ' + e.cep_remetente_html END + '</div>' +
-                '    <div class="linha">' + CASE WHEN NULLIF(e.fone_remetente_html, '') IS NULL THEN '' ELSE 'Fone: ' + e.fone_remetente_html END + '</div>' +
-                '    <div class="linha pequeno">' + ISNULL('Data da Nota: ' + CONVERT(VARCHAR(10), e.dt_nota_saida, 103), 'Sem data da nota') + '</div>' +
+                '    <div class=\"linha\">' + CASE WHEN NULLIF(e.cep_remetente_html, '') IS NULL THEN '' ELSE 'CEP: ' + e.cep_remetente_html END + '</div>' +
+                '    <div class=\"linha\">' + CASE WHEN NULLIF(e.fone_remetente_html, '') IS NULL THEN '' ELSE 'Fone: ' + e.fone_remetente_html END + '</div>' +
+                '    <div class=\"linha pequeno\">' + ISNULL('Data da Nota: ' + CONVERT(VARCHAR(10), e.dt_nota_saida, 103), 'Sem data da nota') + '</div>' +
                 '  </div>' +
-                '</div></body>' +    
-            '</html>'
-             AS html_parte
+                '</div>'
             FROM Escapado AS e
         )
-        SELECT @html = '
-<html>   
-         <head>   
-         <meta charset="UTF-8">   
-         <title>Etiqueta Remetente</title> 
-		 <style>
+        /*-----------------------------------------------------------------------------------------
+          5) Consolida HTML final
+        -----------------------------------------------------------------------------------------*/
+        DECLARE @style NVARCHAR(MAX) =
+N'<style>
     * { box-sizing: border-box; }
     body { margin: 0; padding: 0; font-family: ''Segoe UI'', Arial, sans-serif; color: #1f1f1f; }
     .labels { display: flex; flex-wrap: wrap; gap: 8px; }
@@ -376,14 +354,15 @@ BEGIN
     .linha { font-size: 12px; line-height: 1.25; }
     .linha.destaque { font-size: 14px; font-weight: 700; margin-bottom: 2px; }
     .pequeno { font-size: 11px; color: #555; }
-</style>
-</head>    
-         <body>' 
-+
+</style>';
+
+        SET @html = @style + N'<div class="labels">';
+
+        SET @html = @html +
         (
-            SELECT hp.html_parte
-            FROM HtmlPorEtiqueta AS hp
-            ORDER BY hp.id_solicitacao, hp.copia_id
+            SELECT h.*
+            FROM HtmlEtiquetas AS h
+            ORDER BY h.id_solicitacao, h.copia_id
             FOR XML PATH(''), TYPE
         ).value('.', 'NVARCHAR(MAX)');
 
@@ -397,5 +376,3 @@ BEGIN
         THROW 50010, @ErrorMessage, 1;
     END CATCH;
 END;
-go 
-exec pr_egis_relatorio_etiqueta_destinatario '[{"cd_identificacao_nota_saida": "13752"}]'

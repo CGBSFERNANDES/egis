@@ -426,12 +426,12 @@ if isnull(@cd_parametro,0) = 2
   select * from #RelAtributo  
   return  
 end  
---USE EGISSQL_360
+--USE EGISSQL_376
 ------------------------------------------------------------------------------------------------------------
     set @dt_hoje          = convert(datetime,left(convert(varchar,getdate(),121),10)+' 00:00:00',121)
 
 	--set @dt_inicial = '12-05-2025'
-	--set @dt_final  = '01-30-2026' 
+	--set @dt_final  = '12-05-2025' 
 ------------------------------------------------------------------------------------------------------------
 Create table #Contabilizacao_doc_pagar(
 	Documento                 varchar(100),
@@ -491,8 +491,8 @@ declare
 
 select 
 	@vl_documento_pagar	 = sum(vl_documento_pagar),
-	@Debito            	 = count(cd_reduzido_conta_debito),
-	@Credito             = count(cd_reduzido_conta_credito)
+	@Debito            	 = sum(Debito),
+	@Credito             = sum(Credito)
 from 
 	#Contabilizacao_doc_pagar
 
@@ -515,8 +515,8 @@ LinhasHTML AS (
             <td>'+ISNULL(Documento,'')+'</td>
             <td>'+ISNULL(Fornecedor,'')+'</td>
             <td>'+ISNULL(dbo.fn_data_string(Pagamento),'')+'</td>
-            <td style="text-align:right;">'+cast(isnull(cd_reduzido_conta_debito,0)as varchar(20))+'</td>
-            <td style="text-align:right;">'+cast(isnull(cd_reduzido_conta_credito,0) as varchar(20))+'</td>
+            <td style="text-align:right;">'+isnull(dbo.fn_formata_valor(Debito),0)+'</td>
+            <td style="text-align:right;">'+isnull(dbo.fn_formata_valor(Credito),0)+'</td>
             <td style="text-align:right;">'+isnull(dbo.fn_formata_valor(vl_documento_pagar),0)+'</td>
             <td>'+ISNULL(DescHistorico,'')+' ('+cast(isnull(Historico,0)as varchar(20))+')</td>
         </tr>
@@ -560,8 +560,9 @@ SELECT @html_geral =
             SELECT
                 '
                 <tr style="font-weight:bold; background:#e8e8e8;">
-                    <td colspan="5" style="text-align:right;">TOTAL</td>
-					
+                    <td colspan="3" style="text-align:right;">TOTAL</td>
+					 <td style="text-align:right;">'+ isnull(dbo.fn_formata_valor(G.Debito_geral),0) +'</td>
+					 <td style="text-align:right;">'+ isnull(dbo.fn_formata_valor(G.Credito_geral),0) +'</td>
                      <td style="text-align:right;">'+ isnull(dbo.fn_formata_valor(G.vl_documento_pagar_geral),0) +'</td>
                     <td></td>
                 </tr>
@@ -586,8 +587,8 @@ set @html_rodape ='
                <th style="text-align:center;">Valor Pagamento</th> 
           </tr>
            <tr style="font-weight:bold; background:#d0d0d0;">
-               <td style="text-align:center;">'+CAST(isnull(@Debito,0) as varchar(20))+'</td>
-               <td style="text-align:center;">'+CAST(isnull(@Credito,0) as varchar(20))+'</td>
+               <td style="text-align:center;">'+CAST(isnull(dbo.fn_formata_valor(@Debito),0) as varchar(20))+'</td>
+               <td style="text-align:center;">'+CAST(isnull(dbo.fn_formata_valor(@Credito),0) as varchar(20))+'</td>
                <td style="text-align:center;">'+CAST(isnull(dbo.fn_formata_valor(@vl_documento_pagar),0)as varchar(20))+'</td> 
           </tr>
        </table>    

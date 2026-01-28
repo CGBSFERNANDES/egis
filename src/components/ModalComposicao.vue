@@ -1106,6 +1106,8 @@ export default {
           },
         ];
 
+        console.log("Dados para consulta=>", body);
+
         const { data } = await api.post(`/exec/${nmProcDados}`, body, cfg);
         const rows = Array.isArray(data) ? data : data ? [data] : [];
         if (!rows.length) return;

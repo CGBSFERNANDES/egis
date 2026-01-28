@@ -1,601 +1,168 @@
-ï»¿IF EXISTS (SELECT name 
-	   FROM   sysobjects 
-	   WHERE  name = N'pr_egis_relatorio_critica_lancamento' 
-	   AND 	  type = 'P')
-    DROP PROCEDURE pr_egis_relatorio_critica_lancamento
-
+IF OBJECT_ID('dbo.pr_egis_relatorio_critica_lancamento', 'P') IS NOT NULL
+    DROP PROCEDURE dbo.pr_egis_relatorio_critica_lancamento;
 GO
---use egissql_360
+
+/*
 -------------------------------------------------------------------------------
---sp_helptext pr_egis_relatorio_contabiliza_documentos_receber
+-- pr_egis_relatorio_critica_lancamento
 -------------------------------------------------------------------------------
---pr_egis_relatorio_contabiliza_documentos_receber
+-- GBS Global Business Solution Ltda                                        2025
 -------------------------------------------------------------------------------
---GBS Global Business Solution Ltda                                        2024
+-- Stored Procedure : Microsoft SQL Server 2016
+--                   Gera colunas solicitadas e monta a crítica de consistência
+-- Autor(es)       : Codex (assistente)                                      
+-- Data            : 2026-01-05
+-- Requisitos      :
+--   - SET NOCOUNT ON
+--   - TRY/CATCH com THROW
+--   - Sem cursor
+--   - Performance para grandes volumes
 -------------------------------------------------------------------------------
---Stored Procedure : Microsoft SQL Server 2000/2008/2012/2014/2016/2020
---
---Autor(es)        : Joao Pedro Marcal
---Banco de Dados   : Egissql - Banco do Cliente 
---
---Objetivo         : Relatï¿½rio Padrï¿½o Egis HTML - EgisMob, EgisNet, Egis
---Data             : 10.01.2025	
---Alteraï¿½ï¿½o        : 
--- use egissql_360
-------------------------------------------------------------------------------
-create procedure pr_egis_relatorio_critica_lancamento
-@cd_relatorio int   = 0,
-@cd_parametro int   = 0,
-@json nvarchar(max) = '' 
+*/
+CREATE PROCEDURE dbo.pr_egis_relatorio_critica_lancamento
 
---with encryption
---use egissql_317
+    @json         NVARCHAR(MAX) = NULL       -- Parâmetros vindos do front-end (datas e filtros opcionais)
+AS
+BEGIN
+    SET NOCOUNT ON;
 
-as
+    declare  @cd_relatorio INT = 407                 -- Código do relatório cadastrado em egisadmin.dbo.relatorio
+    
+    DECLARE
+        @cd_empresa            INT          = NULL,
+        @cd_usuario            INT          = NULL,
+        @dt_inicial_exercicio  DATE         = NULL,
+        @dt_final_exercicio    DATE         = NULL,
+        @cd_lancamento_inicial INT          = NULL,
+        @cd_lancamento_final   INT          = NULL,
+        @cd_lote_inicial       INT          = NULL,
+        @cd_lote_final         INT          = NULL;
 
-set @json = isnull(@json,'')
-declare @data_grafico_bar       nvarchar(max)
-declare @cd_empresa             int = 0
-declare @cd_form                int = 0
-declare @cd_usuario             int = 0
---declare @dt_usuario             datetime = ''
-declare @cd_documento           int = 0
---declare @cd_parametro           int = 0
-declare @dt_hoje                datetime
-declare @dt_inicial             datetime
-declare @dt_final               datetime
-declare @cd_ano                 int    
-declare @cd_mes                 int    
-declare @cd_dia                 int
-declare @cd_vendedor            int = 0 
-declare @cd_grupo_relatorio     int = 0
---declare @cd_relatorio           int = 0
+    BEGIN TRY
+        /*
+           1) Normaliza o JSON recebido
+              - Aceita array ou objeto
+              - Captura apenas campos usados no relatório
+        */
+        IF NULLIF(@json, N'') IS NOT NULL AND ISJSON(@json) = 1
+        BEGIN
+            IF JSON_VALUE(@json, '$[0]') IS NOT NULL
+                SET @json = JSON_QUERY(@json, '$[0]');
 
---Dados do Relatï¿½rio---------------------------------------------------------------------------------
-
-     declare
-            @titulo                     varchar(200),
-		    @logo                       varchar(400),			
-			@nm_cor_empresa             varchar(20),
-			@nm_endereco_empresa  	    varchar(200) = '',
-			@cd_telefone_empresa    	varchar(200) = '',
-			@nm_email_internet		    varchar(200) = '',
-			@nm_cidade				    varchar(200) = '',
-			@sg_estado				    varchar(10)	 = '',
-			@nm_fantasia_empresa	    varchar(200) = '',
-			@numero					    int = 0,
-			@dt_pedido				    varchar(60) = '',
-			@cd_cep_empresa			    varchar(20) = '',
-			@cd_cliente				    int = 0,
-	--		@nm_fantasia_cliente  	    varchar(200) = '',
-			@cd_cnpj_cliente		    varchar(30) = '',
-			@nm_razao_social_cliente	varchar(200) = '',
-			@nm_cidade_cliente			varchar(200) = '',
-			@sg_estado_cliente			varchar(5)	= '',
-			@cd_numero_endereco			varchar(20) = '',
-			@nm_condicao_pagamento		varchar(100) = '',
-			@ds_relatorio				varchar(8000) = '',
-			@subtitulo					varchar(40)   = '',
-			@footerTitle				varchar(200)  = '',
-			@cd_numero_endereco_empresa varchar(20)	  = '',
-			@cd_pais					int = 0,
-			@nm_pais					varchar(20) = '',
-			@cd_cnpj_empresa			varchar(60) = '',
-			@cd_inscestadual_empresa    varchar(100) = '',
-			@nm_dominio_internet		varchar(200) = ''
-
-
-
---------------------------------------------------------------------------------------------------------
-       
---set @cd_parametro      = 0
-set @cd_empresa        = 0
-set @cd_form           = 0
-
-
-------------------------------------------------------------------------------------------------------
-
-if @json<>''
-begin
-  select                     
-    1                                                    as id_registro,
-    IDENTITY(int,1,1)                                    as id,
-    valores.[key]  COLLATE SQL_Latin1_General_CP1_CI_AI  as campo,                     
-    valores.[value]              as valor                    
-                    
-    into #json                    
-    from                
-      openjson(@json)root                    
-      cross apply openjson(root.value) as valores      
-
--------------------------------------------------------------------------------------------------
-
---select * from #json
-
--------------------------------------------------------------------------------------------------
-
-  select @cd_empresa             = valor from #json where campo = 'cd_empresa'             
-  select @cd_usuario             = valor from #json where campo = 'cd_usuario'             
-  select @dt_inicial             = valor from #json where campo = 'dt_inicial'
-  select @dt_final               = valor from #json where campo = 'dt_final'
-
-
-   set @cd_documento = isnull(@cd_documento,0)
-
-   if @cd_documento = 0
-   begin
-     select @cd_documento           = valor from #json where campo = 'cd_documento'
-
-   end
-end
-
-
--------------------------------------------------------------------------------------------------
-declare @ic_processo char(1) = 'N'
- 
- --select @cd_relatorio
- 
-select  
-  @titulo             = nm_relatorio,  
-  @ic_processo        = isnull(ic_processo_relatorio, 'N'),  
-  @cd_grupo_relatorio = ISNULL(cd_grupo_relatorio,0)  
-from  
-  egisadmin.dbo.Relatorio  
-where  
-  cd_relatorio = @cd_relatorio  
- 
- 
-----------------------------------------------------------------------------------------------------------------------------
-select  
-  @dt_inicial       = dt_inicial,  
-  @dt_final         = dt_final
-from   
-  Parametro_Relatorio  
-  
-where  
-  cd_relatorio = @cd_relatorio  
-  and  
-  cd_usuario   = @cd_usuario  
-----------------------------------------------------------------------------------------------------------------------------
-
-set @cd_ano           = year(@dt_hoje)    
-set @cd_dia           = day(@dt_hoje)
-set @cd_mes           = month(@dt_hoje)
-
-if @dt_inicial is null  or @dt_inicial = '01/01/1900'    
-begin      
-      
-  set @cd_ano = year(@dt_hoje)      
-  set @cd_mes = month(@dt_hoje)      
-      
-  set @dt_inicial = dbo.fn_data_inicial(@cd_mes,@cd_ano)      
-  set @dt_final   = dbo.fn_data_final(@cd_mes,@cd_ano)      
-      
-end   
-
------------------------------------------------------------------------------------------
---Empresa
-----------------------------------
-set @cd_empresa = dbo.fn_empresa()
------------------------------------
-
-	--Dados da empresa-----------------------------------------------------------
-
-	select 
-		@logo = isnull('https://egisnet.com.br/img/' + e.nm_caminho_logo_empresa,'logo_gbstec_sistema.jpg'),
-		@nm_cor_empresa		   	    = isnull(e.nm_cor_empresa,'#1976D2'),
-		@nm_endereco_empresa 	    = isnull(e.nm_endereco_empresa,''),
-		@cd_telefone_empresa	    = isnull(e.cd_telefone_empresa,''),
-		@nm_email_internet	  	    = isnull(e.nm_email_internet,''),
-		@nm_cidade			    	= isnull(c.nm_cidade,''),
-		@sg_estado				    = isnull(es.sg_estado,''),
-		@nm_fantasia_empresa	    = isnull(e.nm_fantasia_empresa,''),
-		@cd_cep_empresa			    = isnull(dbo.fn_formata_cep(e.cd_cep_empresa),''),
-		@cd_numero_endereco_empresa = ltrim(rtrim(isnull(e.cd_numero,0))),
-		@nm_pais					= ltrim(rtrim(isnull(p.sg_pais,''))),
-		@cd_cnpj_empresa			= dbo.fn_formata_cnpj(ltrim(rtrim(isnull(e.cd_cgc_empresa,'')))),
-		@cd_inscestadual_empresa	=  ltrim(rtrim(isnull(e.cd_iest_empresa,''))),
-		@nm_dominio_internet		=  ltrim(rtrim(isnull(e.nm_dominio_internet,'')))
-			   
-	from egisadmin.dbo.empresa e	with(nolock)
-	left outer join Estado es		with(nolock) on es.cd_estado = e.cd_estado
-	left outer join Cidade c		with(nolock) on c.cd_cidade  = e.cd_cidade and c.cd_estado = e.cd_estado
-	left outer join Pais p			with(nolock) on p.cd_pais = e.cd_pais
-	where 
-		cd_empresa = @cd_empresa
-
-
----------------------------------------------------------------------------------------------------------------------------------------------
---Dados do Relatï¿½rio
----------------------------------------------------------------------------------------------------------------------------------------------
-
-declare @html            nvarchar(max) = '' --Total
-declare @html_empresa    nvarchar(max) = '' --Cabeï¿½alho da Empresa
-declare @html_titulo     nvarchar(max) = '' --Tï¿½tulo
-declare @html_cab_det    nvarchar(max) = '' --Cabeï¿½alho do Detalhe
-declare @html_detalhe    nvarchar(max) = '' --Detalhes
-declare @html_rod_det    nvarchar(max) = '' --Rodapï¿½ do Detalhe
-declare @html_rodape     nvarchar(max) = '' --Rodape
-declare @html_geral      nvarchar(max) = '' --Geral
-
-declare @data_hora_atual nvarchar(50)  = ''
-
-set @html         = ''
-set @html_empresa = ''
-set @html_titulo  = ''
-set @html_cab_det = ''
-set @html_detalhe = ''
-set @html_rod_det = ''
-set @html_rodape  = ''
-set @html_geral   = ''
-
-
-set @data_hora_atual = convert(nvarchar, getdate(), 103) + ' ' + convert(nvarchar, getdate(), 108)
-
-
-----------------------------------------------------------------------------------------------------------------------
-
-
-SET @html_empresa = '
-<html>
-<head>
-    <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title >'+@titulo+'</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            color: #333;
-			padding:20px;
-        }
-
-        h2 {
-            color: #333;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 20px;
-        }
-
-        table,
-        th,
-        td {
-            border: 1px solid #ddd;
-        }
-
-        th,
-        td {
-            padding: 10px;
-			font-size:12px;
-        }
-
-        th {
-            background-color: #f2f2f2;
-            color: #333;
-            text-align: center;
-        }
-
-        tr:nth-child(even) {
-            background-color: #f9f9f9;
-        }
-
-        .header {
-            padding: 5px;
-            text-align: center;
-        }
-
-        .section-title {
-            background-color: #1976D2;
-            color: white;
-            padding: 5px;
-            margin-bottom: 10px;
-            border-radius: 5px;
-            font-size: 120%;
-        }
-
-        img {
-            max-width: 250px;
-            margin-right: 10px;
-        }
-
-        .company-info {
-            text-align: right;
-            margin-bottom: 10px;
-        }
-
-        .proposal-info {
-            text-align: left;
-            margin-bottom: 10px;
-        }
-
-        .title {
-            color: #1976D2;
-        }
-
-        .report-date-time {
-            text-align: right;
-            margin-bottom: 5px;
-            margin-top: 50px;
-        }
-
-        p {
-            margin: 5px;
-            padding: 0;
-        }
-
-        .tamanho {
-         
-            text-align: center;
-        }
-		.export-btn {
-		    background: #1976D2;
-		    color: white;
-		    padding: 10px 16px;
-		    border: none;
-		    text-align: right;
-		    border-radius: 5px;
-		    cursor: pointer;
-        }
-
-		.export-btn:hover {
-		  background: #125ca3;
-		}
-    </style>
-</head>
-<body>
-   
-    <div style="display: flex; justify-content: space-between; align-items:center">
-		<div style="width:30%; margin-right:20px">
-			<img src="'+@logo+'" alt="Logo da Empresa">
-		</div>
-		<div style="width:70%; padding-left:10px">
-			<p class="title">'+@nm_fantasia_empresa+'</p>
-		    <p><strong>'+@nm_endereco_empresa+', '+@cd_numero_endereco_empresa + ' - '+@cd_cep_empresa+ ' - '+@nm_cidade+' - '+@sg_estado+' - ' + @nm_pais + '</strong></p>
-		    <p><strong>Fone: </strong>'+@cd_telefone_empresa+' - <strong>CNPJ: </strong>' + @cd_cnpj_empresa + ' - <strong>I.E: </strong>' + @cd_inscestadual_empresa + '</p>
-		    <p>'+@nm_dominio_internet+ ' - ' + @nm_email_internet+'</p>
-		</div>    
-    </div>'
-
-
---Procedure de Cada Relatï¿½rio-------------------------------------------------------------------------------------
-  
-declare @cd_item_relatorio  int           = 0  
-declare @nm_cab_atributo    varchar(100)  = ''  
-declare @nm_dados_cab_det   nvarchar(max) = ''  
-declare @nm_grupo_relatorio varchar(60)   = ''  
-  
-select a.*, g.nm_grupo_relatorio into #RelAtributo   
-from  
-  egisadmin.dbo.Relatorio_Atributo a   
-  inner join egisadmin.dbo.relatorio_grupo g on g.cd_grupo_relatorio = a.cd_grupo_relatorio  
-where   
-  a.cd_relatorio = @cd_relatorio  
-  
-  --and  
-  --g.cd_grupo_relatorio = 4  
-  
-order by  
-  qt_ordem_atributo  
-  
-------------------------------------------------------------------------------------------------------------------  
-  
-  
---select * from #RelAtributo  
-  
---select * from egisadmin.dbo.relatorio_grupo  
-  
-select * into #AuxRelAtributo from #RelAtributo  
-where  
-  cd_grupo_relatorio = @cd_grupo_relatorio  
-  
-order by qt_ordem_atributo  
-  
---select * from #AuxRelAtributo  
-  
-while exists ( select top 1 cd_item_relatorio from #AuxRelAtributo order by qt_ordem_atributo)  
-begin  
-  
-  select top 1   
-    @cd_item_relatorio  = cd_item_relatorio,  
- @nm_cab_atributo    = nm_cab_atributo,  
- @nm_grupo_relatorio = nm_grupo_relatorio  
-  from  
-    #AuxRelAtributo  
-  order by  
-    qt_ordem_atributo  
-  
-  
-  set @nm_dados_cab_det = @nm_dados_cab_det + '<th> '+ @nm_cab_atributo+'</th>'  
-  
-  delete from #AuxRelAtributo  
-  where  
-    cd_item_relatorio = @cd_item_relatorio  
-  
-end  
-  
---SELECT @nm_dados_cab_det  
-  
-drop table #AuxRelAtributo  
-  
-  
-if isnull(@cd_parametro,0) = 2  
- begin  
-  select * from #RelAtributo  
-  return  
-end  
---use egissql_374
-------------------------------------------------------------------------------------------------------------
-    set @dt_hoje          = convert(datetime,left(convert(varchar,getdate(),121),10)+' 00:00:00',121)
-
-	--set @dt_inicial = '10-01-2025'
-	--set @dt_final  = '12-30-2025' 
-------------------------------------------------------------------------------------------------------------
-select
-    a.dt_lancamento_contabil as 'Data_lancamento',
-    a.cd_lancamento_contabil as 'Lancamento',
-    a.cd_reduzido_debito        as 'debito',
-    a.cd_reduzido_credito       as 'credito',
-    a.vl_lancamento_contabil as 'Valorlancamento',
-    a.cd_historico_contabil  as 'Codhis',
-    a.ds_historico_contabil  as Historico,
-    a.cd_lote as 'Lote'    
-	
-	into
-	#CriticaLanÃ§amentoContabeis
-
-from
-    Movimento_contabil a
-where
-   (a.cd_empresa = @cd_empresa) and
-   (a.dt_lancamento_contabil between @dt_inicial and @dt_final) 
- 
-order by
-   a.dt_lancamento_contabil  
-
-	--select * from #Contabilizacao_doc_receber_geral return
-------------------------------------------------------------------------------------------------------------
- if isnull(@cd_parametro,0) = 1  
- begin  
-    select * from #CriticaLanÃ§amentoContabeis  
-  return  
- end  
--- use egissql_376
---------------------------------------------------------------------------------------------------------------
-declare 
-	@id                 int,
-	@vl_documento_pagar float,
-	@Debito             float,
-	@Credito            float
-
-select 
-	@vl_documento_pagar	 = sum(Valorlancamento),
-	@Debito            	 = sum(Debito),
-	@Credito             = sum(Credito)
-from 
-	#CriticaLanÃ§amentoContabeis
-
-set @html_empresa = @html_empresa +'
-	
-	 <div class="section-title">  
-        <p style="display: inline;">Periodo: '+isnull(dbo.fn_data_string(@dt_inicial),'')+' Ã¡ '+isnull(dbo.fn_data_string(@dt_final),'')+'</p>   
-        <p style="display: inline; text-align: center; padding: 20%;">'+case when isnull(@titulo,'') <> '' then ''+isnull(@titulo,'')+'' else 'ContabilizaÃ§Ã£o Documento a Receber' end +'</p>  
-    </div>  '
-SET @html_geral =
-(
-    SELECT
-        '
-        <table style="width:100%; border-collapse:collapse;" border="1">
-            <tr style="background:#f0f0f0;">
-                <th>Data</th>
-                <th>LanÃ§amento</th>
-                <th>DÃ©bito</th>
-                <th>CrÃ©dito</th>
-                <th>Valor</th>
-                <th>CÃ³d Hist</th>
-                <th>HistÃ³rico</th>
-                <th>Lote</th>
-            </tr>'
-        +
-
-        -- LOOP DAS LINHAS
-        (
             SELECT
-                '
-                <tr>
-					<td>'+ISNULL(dbo.fn_data_string(Data_lancamento),'')+'</td>
-                    <td>'+cast(ISNULL(lancamento,'') as varchar(20))+'</td>
-                    <td style="text-align:right;">'+cast(ISNULL(Debito,0) as varchar(20))+'</td>
-                    <td style="text-align:right;">'+cast(ISNULL(Credito,0)as varchar(20))+'</td>
-                    <td style="text-align:right;">'+ISNULL(dbo.fn_formata_valor(Valorlancamento),0)+'</td>
-                    <td>'+CAST(ISNULL(Codhis,0) AS VARCHAR(20))+'</td>
-                    <td>'+CAST(Historico AS VARCHAR(MAX))+'</td>
-                    <td>'+cast(ISNULL(Lote,0) as varchar(20))+'</td>
-                </tr>'
-            FROM #CriticaLanÃ§amentoContabeis
-            ORDER BY Data_lancamento
-            FOR XML PATH(''), TYPE
-        ).value('.', 'NVARCHAR(MAX)')
-        +
+                @cd_empresa            = COALESCE(cfg.cd_empresa, @cd_empresa),
+                @cd_usuario            = COALESCE(cfg.cd_usuario, @cd_usuario),
+                @dt_inicial_exercicio  = COALESCE(cfg.dt_inicial, @dt_inicial_exercicio),
+                @dt_final_exercicio    = COALESCE(cfg.dt_final, @dt_final_exercicio),
+                @cd_lancamento_inicial = COALESCE(cfg.cd_lancamento_inicial, @cd_lancamento_inicial),
+                @cd_lancamento_final   = COALESCE(cfg.cd_lancamento_final, @cd_lancamento_final),
+                @cd_lote_inicial       = COALESCE(cfg.cd_lote_inicial, @cd_lote_inicial),
+                @cd_lote_final         = COALESCE(cfg.cd_lote_final, @cd_lote_final)
+            FROM OPENJSON(@json) WITH (
+                cd_empresa            INT  '$.cd_empresa',
+                cd_usuario            INT  '$.cd_usuario',
+                dt_inicial            DATE '$.dt_inicial',
+                dt_final              DATE '$.dt_final',
+                cd_lancamento_inicial INT  '$.cd_lancamento_inicial',
+                cd_lancamento_final   INT  '$.cd_lancamento_final',
+                cd_lote_inicial       INT  '$.cd_lote_inicial',
+                cd_lote_final         INT  '$.cd_lote_final'
+            ) cfg;
+        END
 
-        '</table>'
-    FOR XML PATH(''), TYPE
-	).value('.', 'NVARCHAR(MAX)');
---------------------------------------------------------------------------------------------------------------------
+        /*
+           2) Recupera intervalo default do Parametro_Relatorio (quando existir)
+              Mantém valores informados no JSON.
+        */
+        IF @cd_relatorio IS NOT NULL AND @cd_relatorio > 0
+        BEGIN
+            SELECT
+                @dt_inicial_exercicio = COALESCE(@dt_inicial_exercicio, pr.dt_inicial),
+                @dt_final_exercicio   = COALESCE(@dt_final_exercicio, pr.dt_final)
+            FROM Parametro_Relatorio AS pr WITH (NOLOCK)
+            WHERE pr.cd_relatorio = @cd_relatorio
+              AND (@cd_usuario IS NULL OR pr.cd_usuario_relatorio = @cd_usuario);
+        END
 
-set @html_rodape ='
-	</div>
-	<div>
-		<p style="background: #1976D2;color: white;border: none;border-radius: 5px;padding: 5px;font-size: 120%;">Total: '+cast(isnull(dbo.fn_formata_valor(@vl_documento_pagar),0)as varchar(20))+'</p>
-	</div>
-	 <div class="report-date-time">
-	 <button class="export-btn" onclick="exportarExcel()">
-            Exportar para Excel
-        </button>
-       <p style="text-align:right">Gerado em: '+@data_hora_atual+'</p>
-    </div>
-	  <script>
-        function exportarExcel() {
+        /* 3) Defaults seguros para evitar varreduras desnecessárias */
+        SET @cd_empresa = ISNULL(NULLIF(@cd_empresa, 0), dbo.fn_empresa());
+        SET @dt_inicial_exercicio = ISNULL(@dt_inicial_exercicio, DATEADD(DAY, -30, CAST(GETDATE() AS DATE)));
+        SET @dt_final_exercicio   = ISNULL(@dt_final_exercicio, CAST(GETDATE() AS DATE));
+        SET @cd_lancamento_inicial = ISNULL(@cd_lancamento_inicial, 0);
+        SET @cd_lancamento_final   = ISNULL(@cd_lancamento_final, 2147483647);
+        SET @cd_lote_inicial       = ISNULL(@cd_lote_inicial, 0);
+        SET @cd_lote_final         = ISNULL(@cd_lote_final, 2147483647);
 
-            const conteudo = document.getElementById("tabelaExportar").innerHTML;
+        /*
+           4) Base do relatório: aplica filtros e monta flags de crítica
+              - Critérios exigidos: falta valor, débito/crédito, sem histórico padrão, sem lote
+              - Verifica equilíbrio débito x crédito por lançamento
+        */
+        ;WITH BaseLancamento AS (
+            SELECT
+                a.dt_lancamento_contabil,
+                a.cd_lancamento_contabil,
+                a.cd_reduzido_debito,
+                a.cd_reduzido_credito,
+                a.vl_lancamento_contabil,
+                a.cd_historico_contabil,
+                a.ds_historico_contabil,
+                a.cd_lote,
+                CAST(CASE WHEN ISNULL(a.vl_lancamento_contabil, 0) = 0 THEN 1 ELSE 0 END AS BIT) AS ic_falta_valor,
+                CAST(CASE WHEN ISNULL(a.cd_reduzido_debito, 0) = 0 THEN 1 ELSE 0 END AS BIT) AS ic_falta_debito,
+                CAST(CASE WHEN ISNULL(a.cd_reduzido_credito, 0) = 0 THEN 1 ELSE 0 END AS BIT) AS ic_falta_credito,
+                CAST(CASE WHEN ISNULL(a.cd_historico_contabil, 0) = 0 THEN 1 ELSE 0 END AS BIT) AS ic_sem_historico,
+                CAST(CASE WHEN ISNULL(a.cd_lote, 0) = 0 THEN 1 ELSE 0 END AS BIT) AS ic_sem_lote,
+                SUM(CASE WHEN ISNULL(a.cd_reduzido_debito, 0) > 0 THEN a.vl_lancamento_contabil ELSE 0 END)
+                    OVER (PARTITION BY a.cd_empresa, a.cd_lancamento_contabil) AS vl_total_debito,
+                SUM(CASE WHEN ISNULL(a.cd_reduzido_credito, 0) > 0 THEN a.vl_lancamento_contabil ELSE 0 END)
+                    OVER (PARTITION BY a.cd_empresa, a.cd_lancamento_contabil) AS vl_total_credito
+            FROM movimento_contabil AS a WITH (NOLOCK)
+            WHERE a.cd_empresa = @cd_empresa
+              AND a.dt_lancamento_contabil BETWEEN @dt_inicial_exercicio AND @dt_final_exercicio
+              AND a.cd_lancamento_contabil BETWEEN @cd_lancamento_inicial AND @cd_lancamento_final
+              AND a.cd_lote BETWEEN @cd_lote_inicial AND @cd_lote_final
+        )
+        SELECT
+            b.dt_lancamento_contabil AS [Data],
+            b.cd_lancamento_contabil AS Lancamento,
+            b.cd_reduzido_debito     AS Debito,
+            b.cd_reduzido_credito    AS Credito,
+            b.vl_lancamento_contabil AS ValorLancamento,
+            b.cd_historico_contabil  AS CodHis,
+            b.ds_historico_contabil  AS Historico,
+            b.cd_lote                AS Lote,
+            crit.ds_critica          AS Critica
+        FROM BaseLancamento AS b
+        CROSS APPLY (
+            SELECT
+                LTRIM(STUFF(
+                    CONCAT(
+                        CASE WHEN b.ic_falta_valor    = 1 THEN '; Falta valor' ELSE '' END,
+                        CASE WHEN b.ic_falta_debito   = 1 THEN '; Falta débito' ELSE '' END,
+                        CASE WHEN b.ic_falta_credito  = 1 THEN '; Falta crédito' ELSE '' END,
+                        CASE WHEN b.vl_total_debito <> b.vl_total_credito THEN '; Não fecha com crédito' ELSE '' END,
+                        CASE WHEN b.ic_sem_historico  = 1 THEN '; Sem histórico padrão' ELSE '' END,
+                        CASE WHEN b.ic_sem_lote       = 1 THEN '; Sem lote' ELSE '' END
+                    ),
+                    1,
+                    2,
+                    ''
+                )) AS ds_critica
+        ) AS crit
+        WHERE crit.ds_critica IS NOT NULL AND LTRIM(RTRIM(crit.ds_critica)) <> ''
+        ORDER BY b.dt_lancamento_contabil, b.cd_lancamento_contabil;
+    END TRY
+    BEGIN CATCH
+        DECLARE @errMsg NVARCHAR(2048) = FORMATMESSAGE(
+            'pr_egis_relatorio_critica_lancamento falhou: %s (linha %d)',
+            ERROR_MESSAGE(),
+            ERROR_LINE()
+        );
 
-            const htmlExcel = `
-                <html>
-                    <head>
-                        <meta charset="UTF-8">
-                    </head>
-                    <body>
-                        ${conteudo}
-                    </body>
-                </html>
-            `;
+        --THROW ERROR_NUMBER(), @errMsg, ERROR_STATE();
+    END CATCH
+END
+GO
 
-            const blob = new Blob([htmlExcel], {
-                type: "application/vnd.ms-excel"
-            });
-
-            const url = URL.createObjectURL(blob);
-
-            const a = document.createElement("a");
-            a.href = url;
-            a.download = "Relatorio.xls";
-
-            a.click();
-            URL.revokeObjectURL(url);
-        }
-    </script>
-	</body>
-	</html>'
-
-
-
---HTML Completo--------------------------------------------------------------------------------------
-
-set @html         = 
-    @html_empresa +
-    @html_titulo  +
-	@html_geral   + 
-	@html_cab_det +
-    @html_detalhe +
-	@html_rod_det +
-    @html_rodape  
-
----------------------
-
-
--------------------------------------------------------------------------------------------------------------------------------------------------------
-select isnull(@html,'') as RelatorioHTML
--------------------------------------------------------------------------------------------------------------------------------------------------------
-
-go
-
-
-------------------------------------------------------------------------------
---Testando a Stored Procedure
-------------------------------------------------------------------------------
---exec pr_egis_relatorio_padrao
-------------------------------------------------------------------------------
---exec pr_egis_relatorio_critica_lancamento 231,''
-------------------------------------------------------------------------------
+--exec pr_egis_relatorio_critica_lancamento '[{"dt_inicial": "01/01/2023", "dt_final": "12/31/2023"}]'

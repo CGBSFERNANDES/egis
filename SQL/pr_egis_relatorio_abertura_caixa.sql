@@ -466,11 +466,12 @@ set @html_geral = ' <div class="section-title">
     </div>
 	<table>
 	<tr style="text-align:center;">
-		<th>Data Abertura</th>
-		<th>Último Fechamento</th>
-		<th>Valor Abertura</th>				
-		<th>Operador</th>
+		<th>Data</th>
+		<th>Valor</th>
 		<th>Observação</th>
+		<th>Operador</th>
+		<th>Último Fechamento</th>
+		<th>Valor</th>
 	</tr>'
 		   
 --------------------------------------------------------------------------------------------------------------
@@ -482,25 +483,27 @@ begin
 		@id                          = cd_controle,
 	    @html_geral  = @html_geral + '<tr class="tamanho">
 									<td>'+isnull(dbo.fn_data_string(dt_abertura_caixa),'')+'</td>
-									<td>'+cast(isnull(dbo.fn_formata_valor(vl_ultimo_fechamento),0)as nvarchar(20))+'</td>
-									<td>'+cast(isnull(dbo.fn_formata_valor(vl_abertura_caixa),0)as nvarchar(20))+'</td>																																				
-									<td>'+isnull(nm_operador_caixa,'')+'</td> 
+									<td>'+cast(isnull(dbo.fn_formata_valor(vl_abertura_caixa),0)as nvarchar(20))+'</td>									
 									<td>'+isnull(nm_obs_abertura_caixa,'')+'</td>
+									<td>'+isnull(nm_operador_caixa,'')+'</td> 
+									<td>'+isnull(dbo.fn_data_string(dt_ultimo_fechamento),'')+'</td>	
+									<td>'+cast(isnull(dbo.fn_formata_valor(vl_ultimo_fechamento),0)as nvarchar(20))+'</td>
 								  </tr>'
 
      from #abertura_caixa_rel
 	 delete from #abertura_caixa_rel where cd_controle = @id
  end
-			 
+					   
 --------------------------------------------------------------------------------------------------------------
 
 set @html_rodape =
     '<tr class="tamanhoTotal">
 		<td>Total</td>
-		<td>'+cast(isnull(dbo.fn_formata_valor(@vl_ultimo_fechamento),0)as nvarchar(20))+'</td>
-		<td>'+cast(isnull(dbo.fn_formata_valor(@vl_abertura_caixa),0)as nvarchar(20))+'</td>		
+		<td>'+cast(isnull(dbo.fn_formata_valor(@vl_abertura_caixa),0)as nvarchar(20))+'</td>
 		<td></td>																		
 		<td></td>
+		<td></td>
+		<td>'+cast(isnull(dbo.fn_formata_valor(@vl_ultimo_fechamento),0)as nvarchar(20))+'</td>
      </tr>
 	</table>
 	<div class="report-date-time">

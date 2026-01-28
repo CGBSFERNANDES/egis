@@ -516,8 +516,6 @@ declare @qt_total          int = 0
 declare @vl_total_vendedor decimal(25,2) = 0.00
 declare @qt_total_vendedor int = 0
 
-declare @qt_peso_pedido float = 0.00
-
 --declare @cd_usuario     int = 0
 --declare @cd_cliente     int = 0
 --declare @cd_vendedor    int = 0
@@ -579,38 +577,6 @@ from
 
 	 --select * from #PedidoVendedor
 	 --return
-select 
-   pvi.cd_pedido_venda,
-   case when isnull(rgi.qt_peso_item,0) > 0 then 
-     isnull(rgi.qt_peso_item,0) 
-   else 
-     dbo.fn_conversao_produto_unidade_medida(rgi.cd_produto,p.cd_unidade_medida, rgi.qt_item_registro_venda,0)
-   end as qt_item_conversao
- into
-   #PesoTotal
- from
-   Pedido_Venda_Item pvi
-   inner join Pedido_Venda pv              on pv.cd_pedido_venda       = pvi.cd_pedido_venda
-   left outer join Registro_Venda_Item rgi on rgi.cd_pedido_venda      = pvi.cd_pedido_venda and
-                                              rgi.cd_item_pedido_venda = pvi.cd_item_pedido_venda
-   left outer join Produto p               on p.cd_produto             = rgi.cd_produto
- where
-   pv.cd_tipo_pedido = case when ISNULL(@cd_tipo_pedido,0) = 0 then pv.cd_tipo_pedido else ISNULL(@cd_tipo_pedido,0) end
-   and
-   pv.cd_cliente     = case when ISNULL(@cd_cliente,0) = 0     then pv.cd_cliente else ISNULL(@cd_cliente,0) end
-   and
-   pv.cd_vendedor    = case when ISNULL(@cd_vendedor,0) =0      then pv.cd_vendedor else ISNULL(@cd_vendedor,0) end
-
-   and
-   pv.dt_pedido_venda between @dt_inicial and @dt_final
-
-   and
-   pv.cd_pedido_venda in ( select i.cd_pedido_venda from pedido_venda_item i where i.cd_pedido_venda = pv.cd_pedido_venda and i.dt_cancelamento_item is null )
-   and
-   pv.cd_status_pedido <> 7
-
-
-
 select
   @vl_total = sum(vl_total_pedido_ipi),
   @qt_total = count(cd_pedido_venda)
@@ -618,21 +584,6 @@ select
 from
   #PedidoVendedor
 
-
-select 
-  @qt_peso_pedido = sum(qt_item_conversao)
-from
-  #PesoTotal
-
-select 
-  cd_pedido_venda,
-  sum(qt_item_conversao) as qt_item_conversao
-into
-  #Peso_Itens
-from
-  #PesoTotal
-group by
-  cd_pedido_venda
 
 select 
   identity(int,1,1) as cd_controle,
@@ -760,27 +711,25 @@ begin
 	--@nm_pedido    = @nm_pedido  + ' ' + cast(cd_pedido_venda as varchar(15)),
       @html_detalhe = @html_detalhe + '
             <tr> 					           			
-			<td style="font-size:12px; text-align:center;width: 20px">'+dbo.fn_data_string(dt_pedido_venda)       + '</td>
-			<td style="font-size:12px; text-align:center;width: 20px">'+cast(pv.cd_pedido_venda as varchar(20))   + '</td>			
-            <td style="font-size:12px; text-align:center;width: 20px">'+sg_status_pedido                          + '</td>			
-			<td style="font-size:12px; text-align:center;width: 20px">'+cast(cd_cliente as varchar(20))           + '</td>			
-            <td style="font-size:12px; text-align:left;width:   20px">'+nm_fantasia_cliente                       + '</td>			
-			<td style="font-size:12px; text-align:left;width:   20px">'+nm_razao_social_cliente                   + '</td>			
-			<td style="font-size:12px; text-align:center;width: 20px">'+dbo.fn_formata_valor(vl_total_pedido_ipi) + '</td>			
-            <td style="font-size:12px; text-align:center;width: 20px">'+dbo.fn_formata_valor(qt_item_conversao)   + '</td>			
-			<td style="font-size:12px; text-align:center;width: 20px">'+dbo.fn_formata_valor(pc_faturamento)      + '</td>	
-			<td style="font-size:12px; text-align:center;width: 20px">'+sg_estado                                 + '</td>			
-			<td style="font-size:12px; text-align:left;width:   20px">'+nm_cidade                                 + '</td>			
-			<td style="font-size:12px; text-align:left;width:   20px">'+sg_condicao_pagamento                     + '</td>			
-			<td style="font-size:12px; text-align:left;width:   20px">'+nm_cliente_grupo                          + '</td>			
-            <td style="font-size:12px; text-align:left;width:   20px">'+nm_fantasia_vendedor                      + '</td>			
+			<td style="font-size:12px; text-align:center;width: 20px">'+dbo.fn_data_string(dt_pedido_venda)+'</td>
+			<td style="font-size:12px; text-align:center;width: 20px">'+cast(cd_pedido_venda as varchar(20))+'</td>			
+            <td style="font-size:12px; text-align:center;width: 20px">'+sg_status_pedido+'</td>			
+			<td style="font-size:12px; text-align:center;width: 20px">'+cast(cd_cliente as varchar(20))+'</td>			
+            <td style="font-size:12px; text-align:left;width: 20px">'+nm_fantasia_cliente+'</td>			
+			<td style="font-size:12px; text-align:left;width: 20px">'+nm_razao_social_cliente+'</td>			
+			<td style="font-size:12px; text-align:center;width: 20px">'+dbo.fn_formata_valor(vl_total_pedido_ipi)+'</td>			
+			<td style="font-size:12px; text-align:center;width: 20px">'+dbo.fn_formata_valor(pc_faturamento)+'</td>	
+			<td style="font-size:12px; text-align:center;width: 20px">'+sg_estado+'</td>			
+			<td style="font-size:12px; text-align:left;width: 20px">'+nm_cidade+'</td>			
+			<td style="font-size:12px; text-align:left;width: 20px">'+sg_condicao_pagamento+'</td>			
+			<td style="font-size:12px; text-align:left;width: 20px">'+nm_cliente_grupo+'</td>			
+            <td style="font-size:12px; text-align:left;width: 20px">'+nm_fantasia_vendedor+'</td>			
             </tr>'
 	
 		--use egissql_317
 
      from
-       #FinalPedidoVendedor pv
-       left outer join #Peso_Itens peso on peso.cd_pedido_venda = pv.cd_pedido_venda
+       #FinalPedidoVendedor
 
      where
        cd_tipo_pedido = @cd_tipo_pedidoV
@@ -808,9 +757,8 @@ set @titulo_total = 'SUB-TOTAL'
 set @html_totais = '<div class="section-title">'+@titulo_total+'
 					<table style="border: none;">
                     <tr>										
-			          <p style="border: none;color: white;font-size:18px; text-align:left;"><b>' + 'Qtd Pedidos: ' + cast(@qt_total_vendedor as varchar(10))  + '</p>
-			          <p style="border: none;color: white;font-size:18px; text-align:left;"><b>' + 'R$: '          + dbo.fn_formata_valor(@vl_total_vendedor) + '</p>	
-                      <p style="border: none;color: white;font-size:18px; text-align:left;"><b>' + 'Peso (KG): '   + dbo.fn_formata_valor(@qt_peso_pedido)    + '</p>
+			          <p style="border: none;color: white;font-size:18px; text-align:left;"><b>'+cast(@qt_total_vendedor as varchar(10))+'</p>
+			          <p style="border: none;color: white;font-size:18px; text-align:left;"><b>'+'R$ '+dbo.fn_formata_valor(@vl_total_vendedor)+'</p>	
 					</tr>
 					</table>					
 					</div>'

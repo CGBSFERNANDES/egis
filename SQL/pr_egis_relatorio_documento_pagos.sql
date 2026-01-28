@@ -22,7 +22,7 @@ GO
 --Data             : 10.01.2025	
 --Altera��o        : 
 --
---use egissql_370
+--
 ------------------------------------------------------------------------------
 create procedure pr_egis_relatorio_documento_pagos
 @cd_relatorio int   = 0,
@@ -438,6 +438,7 @@ end
            when (isnull(d.cd_funcionario, 0) <> 0)     then cast((select top 1 k.nm_funcionario from funcionario k where k.cd_funcionario = d.cd_funcionario) as varchar(50))  
            when (isnull(d.nm_fantasia_fornecedor, '') <> '') then cast((select top 1 o.nm_razao_social from fornecedor o where o.nm_fantasia_fornecedor = d.nm_fantasia_fornecedor) as varchar(50))    
       end                             as nm_favorecido,     
+
       cast(case when isnull(d.cd_favorecido_empresa,0)=0
       then 
          ''
@@ -823,10 +824,10 @@ BEGIN
        @html_geral = @html_geral +
           '<tr>
 		    <td class="tamanho">'+isnull(dbo.fn_data_string(dt_pagamento_documento),'')+'</td>
-		    <td style="text-align: left;">'+ISNULL(nm_favorecido,'')+'</td>
-            <td class="tamanho">'+iSNULL(sg_tipo_conta_pagar,'')+ '</td>
-			<td class="tamanho">'+ISNULL(cd_identificacao_document,'')+ '</td>
-			<td class="tamanho">'+cast(ISNULL(sg_tipo_pagamento,'')as nvarchar(20)) + '</td>
+		    <td style="text-align: left;">'+ISNULL(nm_favorecido,0)+'</td>
+            <td class="tamanho">'+iSNULL(sg_tipo_conta_pagar, 0)+ '</td>
+			<td class="tamanho">'+ISNULL(cd_identificacao_document, 0)+ '</td>
+			<td class="tamanho">'+cast(ISNULL(sg_tipo_pagamento,0)as nvarchar(20)) + '</td>
 			<td class="tamanho">'+isnull(dbo.fn_data_string(dt_emissao_documento_paga),'')+'</td>
 			<td class="tamanho">'+isnull(dbo.fn_data_string(dt_recebimento),'')+'</td>
 			<td class="tamanho">'+isnull(dbo.fn_data_string(dt_vencimento_documento),'')+'</td>

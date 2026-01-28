@@ -353,8 +353,7 @@ select top 1
 from  
   documento_receber d with(nolock) --select * from documento_receber where cd_identificacao = '23022 - 3' 156  
   inner join cliente c                           with(nolock) on c.cd_cliente = @cd_cliente   
-  left outer join vw_Conta_Agencia_Banco cab     with(nolock) on cab.cd_conta_banco = case when isnull(d.cd_conta_banco_remessa,0) = 0 then isnull(@cd_conta_banco_join,0) else d.cd_conta_banco_remessa end
-  --select * from vw_Conta_Agencia_Banco   
+  left outer join vw_Conta_Agencia_Banco cab     with(nolock) on cab.cd_conta_banco = isnull(d.cd_conta_banco_remessa,@cd_conta_banco_join) --select * from vw_Conta_Agencia_Banco  
   left outer join Documento_Receber_Boleto b     with(nolock) on b.cd_documento_receber = d.cd_documento_receber --select * from Documento_Receber_Boleto  
   left outer join Banco bco                      with(nolock) on bco.cd_banco = cab.cd_banco --select * from Banco  
   left outer join egisadmin.dbo.Tabela_Bancos tb with(nolock) on tb.cd_banco  = bco.cd_banco --select * from egisadmin.dbo.tabela_bancos  
@@ -399,15 +398,15 @@ where
  where   
   e.cd_cliente = @cd_cliente  
   
-if @cd_beneficiario_conta>0   --and isnull(@nm_empresa,'') = ''  
+if @cd_beneficiario_conta>0   and isnull(@nm_empresa,'') = ''  
 begin    
   select top 1    
-    @nm_empresa_beneficiario = e.nm_beneficiario_conta,    
-    @cd_cnpj_beneficiario    = dbo.fn_formata_cnpj(ltrim(rtrim(isnull(e.cd_cnpj_beneficiario_conta ,''))))     
+    @nm_empresa_beneficiario = e.nm_empresa,    
+ @cd_cnpj_beneficiario    = e.cd_cgc_empresa    
   from    
-    Beneficiario_Conta e    
+    egisadmin.dbo.empresa e    
   where    
-    e.cd_beneficiario_conta = @cd_beneficiario_conta    
+    e.cd_empresa = @cd_beneficiario_conta    
     
     
   set @nm_empresa      = @nm_empresa_beneficiario    
@@ -776,8 +775,8 @@ set @html_detalhe_pt2 = '
           </tr>  
             
           <tr>
-			<td colspan=8 class="BoletoValorSacado">Beneficiário Final: '+isnull(@nm_empresa_beneficiario,@nm_razao_social_cliente)+'</td>
-			<td colspan=2 class="BoletoValorSacado ALeft">CNPJ: '+isnull(@cd_cnpj_beneficiario,@cd_cnpj_cliente)+'</td>
+			<td colspan=8 class="BoletoValorSacado">Beneficiário Final: '+isnull(@nm_razao_social_cliente,'')+'</td>
+			<td colspan=2 class="BoletoValorSacado ALeft">CNPJ: '+isnull(@cd_cnpj_cliente,'')+'</td>
 			<td colspan=5 class="BoletoValorSacado ALeft">Autenticação Mecânica</td>
           </tr>
             
@@ -896,7 +895,7 @@ end
   
 ----------------------------------------------------------------------------------------------------------------------------------------------  
 go 
-exec pr_egis_relatorio_boleto_bancario 186,1,0,'','N',5803
+--exec pr_egis_relatorio_boleto_bancario 186,1,0,'','N',92
 
 --@cd_relatorio int   = 0,  
 --@cd_usuario   int   = 0,  

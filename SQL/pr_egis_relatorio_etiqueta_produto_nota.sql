@@ -1,5 +1,8 @@
-IF OBJECT_ID('dbo.pr_egis_relatorio_etiqueta_produto_nota', 'P') IS NOT NULL
-    DROP PROCEDURE dbo.pr_egis_relatorio_etiqueta_produto_nota;
+IF EXISTS (SELECT name 
+           FROM   sysobjects 
+           WHERE  name = N'pr_egis_relatorio_etiqueta_produto_nota' 
+           AND    type = 'P')
+    DROP PROCEDURE pr_egis_relatorio_etiqueta_produto_nota
 GO
 
 -------------------------------------------------------------------------------
@@ -36,38 +39,16 @@ BEGIN
 
     BEGIN TRY
 
-	declare @cd_empresa int  = 0
-	declare @cd_nota_saida int  = 0 
+        ------------------------------------------------------------------------------
+        -- 1. Validação e normalização do JSON de entrada
+        ------------------------------------------------------------------------------
+        IF NULLIF(@json, N'') IS NULL OR ISJSON(@json) <> 1
+            THROW 50001, 'Payload JSON inválido ou vazio em @json.', 1;
 
-        /*-----------------------------------------------------------------------------------------    
-          1.a) Validação mínima do JSON    
-        -----------------------------------------------------------------------------------------*/    
-        IF NULLIF(LTRIM(RTRIM(@json)), N'') IS NOT NULL AND ISJSON(@json) = 0    
-            THROW 50001, 'Payload JSON inválido em @json.', 1;    
-    
-        /*-----------------------------------------------------------------------------------------    
-          2) Normaliza JSON e parse de datas com múltiplos formatos    
-        -----------------------------------------------------------------------------------------*/    
-        IF NULLIF(LTRIM(RTRIM(@json)), N'') IS NOT NULL AND ISJSON(@json) = 1    
-        BEGIN    
-            -- Se vier como array, pegar primeiro elemento    
-            IF LEFT(LTRIM(@json), 1) = '['    
-                SET @json = JSON_QUERY(@json, '$[0]');    
-    
-   
-			
-            SET @cd_empresa = TRY_CAST(JSON_VALUE(@json, '$.cd_empresa') AS INT);
-			SET @cd_nota_saida = TRY_CAST(
-        NULLIF(JSON_VALUE(@json, '$.cd_identificacao_nota_saida'), '')
-        AS INT
-    );
-            -- ==================================================================    
-            -- PARSE DATA INICIAL - Suporta múltiplos formatos    
-            -- ==================================================================    
-           
-    end
-	       
-       
+        -- Permite receber objeto único e normaliza para array
+        IF JSON_VALUE(@json, '$[0]') IS NULL AND JSON_VALUE(@json, '$.cd_nota_saida') IS NOT NULL
+            SET @json = N'[' + @json + N']';
+
         ------------------------------------------------------------------------------
         -- 2. Extração dos parâmetros para tabela temporária
         ------------------------------------------------------------------------------
@@ -88,7 +69,7 @@ BEGIN
         FROM OPENJSON(@json)
         WITH
         (
-            cd_nota_saida INT          '$.cd_identificacao_nota_saida',
+            cd_nota_saida INT          '$.cd_nota_saida',
             qt_copia      INT          '$.qt_copia',
             largura_cm    DECIMAL(10,2) '$.largura_cm',
             altura_cm     DECIMAL(10,2) '$.altura_cm'
@@ -102,7 +83,10 @@ BEGIN
            SET qt_copia = CASE WHEN ISNULL(qt_copia, 0) <= 0 THEN 1 ELSE qt_copia END
         FROM @Parametros p;
 
-		        DECLARE @largura_cm DECIMAL(10,2) = 10.00;
+        ------------------------------------------------------------------------------
+        -- 3. Configuração de tamanho de etiqueta (padrão 10cm x 15cm)
+        ------------------------------------------------------------------------------
+        DECLARE @largura_cm DECIMAL(10,2) = 10.00;
         DECLARE @altura_cm  DECIMAL(10,2) = 15.00;
 
         SELECT 
@@ -110,16 +94,57 @@ BEGIN
             @altura_cm  = ISNULL(MAX(NULLIF(altura_cm, 0)),  @altura_cm)
         FROM @Parametros;
 
--- 6. Montagem do HTML (PADRÃO OFICIAL)
-------------------------------------------------------------------------------
-DECLARE @html NVARCHAR(MAX);
+        ------------------------------------------------------------------------------
+        -- 4. Geração de números para replicar cópias (sem cursor)
+        ------------------------------------------------------------------------------
+        ;WITH Tally AS
+        (
+            SELECT ROW_NUMBER() OVER (ORDER BY (SELECT NULL)) AS n
+            FROM sys.all_objects -- suficiente para volumes elevados
+        ),
+        Copias AS
+        (
+            SELECT 
+                p.cd_nota_saida,
+                p.qt_copia,
+                t.n AS cd_copia
+            FROM @Parametros p
+            JOIN Tally t 
+              ON t.n <= p.qt_copia
+        ),
+        Base AS
+        (
+            SELECT 
+                c.cd_nota_saida,
+                c.cd_copia,
+                v.cd_item_nota_saida,
+                ISNULL(v.nItem, 0)                         AS nItem,
+                ISNULL(v.cProd, '')                        AS cProd,
+                ISNULL(v.xprod, '')                        AS xProd,
+                ISNULL(v.cEan, '')                         AS cEan,
+                ISNULL(v.cEanTrib, '')                     AS cEanTrib,
+                ISNULL(v.qCom, '0.000')                    AS qCom,
+                ISNULL(v.uCom, '')                         AS uCom,
+                ISNULL(v.vUnCom, '0.000000')               AS vUnCom,
+                ISNULL(v.vProd, '0.00')                    AS vProd,
+                ISNULL(CONVERT(VARCHAR(10), v.dt_nota_saida, 103), '') AS dt_nota_saida,
+                ROW_NUMBER() OVER (ORDER BY c.cd_nota_saida, v.nItem, c.cd_copia) AS rn
+            FROM Copias c
+            INNER JOIN vw_nfe_produto_servico_nota_fiscal_api v WITH (NOLOCK)
+                    ON v.cd_nota_saida = c.cd_nota_saida
+        )
+        ------------------------------------------------------------------------------
+        -- 5. Validação de existência de dados
+        ------------------------------------------------------------------------------
+        IF NOT EXISTS (SELECT 1 FROM Base)
+            THROW 50003, 'Nenhum item de produto encontrado para as notas informadas.', 1;
 
-SET @html = N'
-<html>
-<head>
-<meta charset="UTF-8">
-<title>Etiqueta Produto</title>
-<style>
+        ------------------------------------------------------------------------------
+        -- 6. Montagem do HTML em padrão RelatorioHTML
+        ------------------------------------------------------------------------------
+        DECLARE @html  NVARCHAR(MAX) = N'';
+        DECLARE @style NVARCHAR(MAX) = 
+N'<style>
     body { font-family: ''Segoe UI'', Arial, sans-serif; color: #222; margin: 0; padding: 0; }
     .labels { display: flex; flex-wrap: wrap; gap: 8px; }
     .label { width: ' + CONVERT(VARCHAR(20), @largura_cm) + N'cm; height: ' + CONVERT(VARCHAR(20), @altura_cm) + N'cm; border: 1px solid #444; padding: 10px; box-sizing: border-box; position: relative; }
@@ -131,51 +156,15 @@ SET @html = N'
     .label__footer { position: absolute; bottom: 6px; left: 10px; right: 10px; font-size: 11px; color: #444; display: flex; justify-content: space-between; }
     .barcode-text { font-size: 14px; letter-spacing: 2px; font-weight: 600; margin-top: 2px; }
     .page-break { page-break-after: always; }
-</style>
-</head>
-<body>
-<div class="labels">
-';
+</style>';
 
-;WITH Tally AS
-(
-    SELECT ROW_NUMBER() OVER (ORDER BY (SELECT NULL)) AS n
-    FROM sys.all_objects
-),
-Copias AS
-(
-    SELECT 
-        p.cd_nota_saida,
-        p.qt_copia,
-        t.n AS cd_copia
-    FROM @Parametros p
-    JOIN Tally t ON t.n <= p.qt_copia
-),
-Base AS
-(
-    SELECT 
-        c.cd_nota_saida,
-        c.cd_copia,
-        v.nItem,
-        v.cProd,
-        v.xProd,
-        v.cEan,
-        v.cEanTrib,
-        v.qCom,
-        v.uCom,
-        v.vUnCom,
-        v.vProd,
-        CONVERT(VARCHAR(10), v.dt_nota_saida, 103) AS dt_nota_saida,
-        ROW_NUMBER() OVER (ORDER BY c.cd_nota_saida, v.nItem, c.cd_copia) AS rn
-    FROM Copias c
-    JOIN vw_nfe_produto_servico_nota_fiscal_api v WITH (NOLOCK)
-         ON v.cd_nota_saida = c.cd_nota_saida
-)
+        SET @html = @style + N'<div class="labels">';
 
-SELECT @html = @html +
-(
-    SELECT
-        '<div class="label">' +
+        -- Concatenação via FOR XML para compatibilidade com SQL Server 2016
+        SET @html = @html +
+        (
+            SELECT
+                '<div class="label">' +
                     '<div class="label__header">' +
                         '<span>Nota: '  + CONVERT(VARCHAR(20), b.cd_nota_saida) + '</span>' +
                         '<span>Cópia: ' + CONVERT(VARCHAR(10), b.cd_copia) + '</span>' +
@@ -194,20 +183,14 @@ SELECT @html = @html +
                         '<span>Data: ' + b.dt_nota_saida + '</span>' +
                     '</div>' +
                 '</div>'
-    FROM Base b
-    ORDER BY b.rn
-    FOR XML PATH(''), TYPE
-).value('.', 'NVARCHAR(MAX)');
+            FROM Base b
+            ORDER BY b.rn
+            FOR XML PATH(''), TYPE
+        ).value('.', 'NVARCHAR(MAX)');
 
-SET @html += N'</div></body></html>';
+        SET @html = @html + N'</div>';
 
-IF NULLIF(@html, '') IS NULL
-    SET @html = N'<div>Nenhum dado encontrado.</div>';
-
-
-SET @html = @html + N'</div>';
-
-SELECT @html AS RelatorioHTML;
+        SELECT ISNULL(@html, N'') AS RelatorioHTML;
 
     END TRY
     BEGIN CATCH
@@ -217,4 +200,3 @@ SELECT @html AS RelatorioHTML;
 END;
 GO
 
---exec pr_egis_relatorio_etiqueta_produto_nota '[{ "cd_identificacao_nota_saida": "13752"}]'

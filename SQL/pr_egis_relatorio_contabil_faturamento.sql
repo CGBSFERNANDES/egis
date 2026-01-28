@@ -28,8 +28,8 @@ GO
     }
 	
 -------------------------------------------------------------------------------------------------*/
-CREATE or alter PROCEDURE dbo.pr_egis_relatorio_contabil_faturamento
-    @json NVARCHAR(MAX) = '' -- Parâmetros vindos do front-end (datas e flags opcionais)
+CREATE PROCEDURE dbo.pr_egis_relatorio_contabil_faturamento
+    @json NVARCHAR(MAX) = NULL -- Parâmetros vindos do front-end (datas e flags opcionais)
 AS
 BEGIN
     SET NOCOUNT ON;
