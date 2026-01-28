@@ -815,7 +815,16 @@ export default {
 
   methods: {
     atualizaModulo() {
-      this.modulo = localStorage.nm_modulo || localStorage.nm_modulo_selecao || ''
+      const moduloAtual = localStorage.nm_modulo
+      const moduloSelecao = localStorage.nm_modulo_selecao
+      const moduloValido =
+        moduloAtual && moduloAtual !== 'undefined' && moduloAtual !== 'null' ? moduloAtual : ''
+      const moduloSelecaoValida =
+        moduloSelecao && moduloSelecao !== 'undefined' && moduloSelecao !== 'null'
+          ? moduloSelecao
+          : ''
+
+      this.modulo = moduloValido || moduloSelecaoValida || ''
     },
 
     abrirSiteGBS () {
