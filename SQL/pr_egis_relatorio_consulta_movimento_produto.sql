@@ -421,7 +421,9 @@ select
 	p.nm_produto                as nm_produto,
 	mci.qt_item_movimento_caixa as qt_item_movimento_caixa,
 	mci.vl_produto              as vl_produto,
-	mci.vl_total_item		    as vl_total_item
+	mci.vl_total_item		    as vl_total_item,
+	tpc.nm_tipo_pagamento       as nm_tipo_pagamento,
+	mc.vl_desconto              as vl_desconto
 	
 	INTO 
 	#MovimentoProduto
@@ -430,6 +432,7 @@ from
 	Movimento_Caixa_Item mci
 left outer join Movimento_Caixa mc on mc.cd_movimento_caixa = mci.cd_movimento_caixa
 left outer join Produto p          on p.cd_produto = mci.cd_produto
+left outer join tipo_pagamento_caixa tpc on tpc.cd_tipo_pagamento = mc.cd_tipo_pagamento
 
 where 
 	mc.dt_movimento_caixa between @dt_inicial and @dt_final
@@ -469,11 +472,12 @@ select @html_geral = ' <div class="section-title">
     <th>Data Movimento</th>
     <th>Documento</th>
     <th>Código Produto</th>
-    <th>Máscara Produto</th>
     <th>Produto</th>
     <th>Quantidade</th>
-    <th>Custo Unitário</th>
-    <th>Custo Total</th>
+    <th>Valor Unitário</th>
+	<th>Desconto</th>
+    <th>Valor Total</th>
+	<th>Pagamento</th>
 </tr>
 '
 +
@@ -484,11 +488,12 @@ select @html_geral = ' <div class="section-title">
             <td>'+ISNULL(dt_movimento_caixa,'')+'</td>
             <td>'+CAST(cd_movimento_caixa AS VARCHAR(20))+'</td>
             <td>'+CAST(cd_produto AS VARCHAR(20))+'</td>
-            <td>'+ISNULL(cd_mascara_produto,'')+'</td>
             <td>'+ISNULL(nm_produto,'')+'</td>
             <td>'+CAST(qt_item_movimento_caixa AS VARCHAR(20))+'</td>
-            <td>'+ISNULL(dbo.fn_formata_valor(vl_produto),0)+'</td>
-            <td>'+ISNULL(dbo.fn_formata_valor(vl_total_item),0)+'</td>
+            <td>'+ISNULL(dbo.fn_formata_valor(vl_produto),0)+'</td>           
+			<td>'+ISNULL(dbo.fn_formata_valor(vl_desconto),0)+'</td>
+			<td>'+ISNULL(dbo.fn_formata_valor(vl_total_item),0)+'</td>
+			<td>'+ISNULL(nm_tipo_pagamento,'')+'</td>
         </tr>
         '
     FROM #MovimentoProduto
@@ -497,12 +502,12 @@ select @html_geral = ' <div class="section-title">
 ).value('.', 'NVARCHAR(MAX)')
 +
 ''
-					   
+					
 --------------------------------------------------------------------------------------------------------------
 
 set @html_rodape =
     ' <tr class="tamanhoTotal">
-            <td colspan="4">Total</td>
+            <td colspan="3">Total</td>
             <td>'+CAST(@cd_produto_geral AS VARCHAR(20))+'</td>
             <td>'+CAST(@qt_item_movimento_caixa AS VARCHAR(20))+'</td>
 			<td></td>

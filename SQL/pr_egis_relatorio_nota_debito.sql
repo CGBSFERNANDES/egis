@@ -10,18 +10,18 @@ GO
   Stored Procedure : Microsoft SQL Server 2016
   Autor(es)        : Codex (assistente)
   Banco de Dados   : Egissql - Banco do Cliente
-  Objetivo         : RelatÃ³rio HTML - Nota DÃ©bito (cd_relatorio = 435)
+  Objetivo         : Relatório HTML - Nota Débito (cd_relatorio = 435)
 
   Requisitos:
-    - Somente 1 parÃ¢metro de entrada (@json)
+    - Somente 1 parâmetro de entrada (@json)
     - SET NOCOUNT ON / TRY...CATCH
     - Sem cursor
     - Performance para grandes volumes
-    - CÃ³digo comentado
+    - Código comentado
 
-  ObservaÃ§Ãµes:
+  Observações:
     - Entrada: @json = '[{"cd_nota_debito": <int>}]'
-    - Retorna HTML no padrÃ£o RelatorioHTML
+    - Retorna HTML no padrão RelatorioHTML
 -------------------------------------------------------------------------------------------------*/
 CREATE PROCEDURE dbo.pr_egis_relatorio_nota_debito
     @json NVARCHAR(MAX) = NULL
@@ -39,7 +39,7 @@ BEGIN
         @nm_caminho_nota_debito VARCHAR(400) = '';
 
     DECLARE
-        @titulo                VARCHAR(200) = 'Nota DÃ©bito',
+        @titulo                VARCHAR(200) = 'Nota Débito',
         @logo                  VARCHAR(400) = 'logo_gbstec_sistema.jpg',
         @nm_cor_empresa        VARCHAR(20)  = '#1976D2',
         @nm_endereco_empresa   VARCHAR(200) = '',
@@ -90,7 +90,7 @@ BEGIN
           1) Normaliza JSON (aceita array [ { ... } ])
         -----------------------------------------------------------------------------------------*/
         IF NULLIF(@json, N'') IS NULL OR ISJSON(@json) <> 1
-            THROW 50001, 'Payload JSON invÃ¡lido ou vazio em @json.', 1;
+            THROW 50001, 'Payload JSON inválido ou vazio em @json.', 1;
 
         SELECT
             1                                                   AS id_registro,
@@ -110,7 +110,7 @@ BEGIN
         WHERE campo = 'cd_usuario';
 
         IF ISNULL(@cd_nota_debito, 0) = 0
-            THROW 50002, 'cd_nota_debito nÃ£o informado.', 1;
+            THROW 50002, 'cd_nota_debito não informado.', 1;
 
         /*-----------------------------------------------------------------------------------------
           2) Dados da empresa (egisadmin)
@@ -139,7 +139,7 @@ BEGIN
         WHERE e.cd_empresa = @cd_empresa;
 
         /*-----------------------------------------------------------------------------------------
-          3) Dados da nota de dÃ©bito
+          3) Dados da nota de débito
         -----------------------------------------------------------------------------------------*/
         SELECT
             n.cd_nota_debito_despesa,
@@ -199,7 +199,7 @@ BEGIN
         ORDER BY n.cd_nota_debito_despesa;
 
         IF NOT EXISTS (SELECT 1 FROM #imp_nota_debito)
-            THROW 50003, 'Nota DÃ©bito nÃ£o encontrada.', 1;
+            THROW 50003, 'Nota Débito não encontrada.', 1;
 
         SELECT TOP (1)
             @cd_nota_debito_despesa       = cd_nota_debito_despesa,
@@ -229,7 +229,7 @@ BEGIN
         FROM #imp_nota_debito;
 
         /*-----------------------------------------------------------------------------------------
-          4) Itens (despesas) da nota de dÃ©bito
+          4) Itens (despesas) da nota de débito
         -----------------------------------------------------------------------------------------*/
         SELECT
             @html_itens = (
@@ -271,20 +271,20 @@ BEGIN
               N'<div style="display:flex; flex-wrap:wrap; gap:24px;">' +
                 N'<div style="flex:1; min-width:240px;">' +
                   N'<h3 style="margin-bottom:6px;">Dados da Nota</h3>' +
-                  N'<div><strong>NÃºmero:</strong> ' + CAST(@cd_nota_debito_despesa AS VARCHAR(20)) + N'</div>' +
-                  N'<div><strong>EmissÃ£o:</strong> ' + ISNULL(CONVERT(VARCHAR(10), @dt_nota_debito_despesa, 103), '') + N'</div>' +
+                  N'<div><strong>Número:</strong> ' + CAST(@cd_nota_debito_despesa AS VARCHAR(20)) + N'</div>' +
+                  N'<div><strong>Emissão:</strong> ' + ISNULL(CONVERT(VARCHAR(10), @dt_nota_debito_despesa, 103), '') + N'</div>' +
                   N'<div><strong>Vencimento:</strong> ' + ISNULL(CONVERT(VARCHAR(10), @dt_vencimento_nota_debito, 103), '') + N'</div>' +
-                  N'<div><strong>PerÃ­odo:</strong> ' + ISNULL(CONVERT(VARCHAR(10), @dt_inicio_ref_nota_debito, 103), '') + N' a ' + ISNULL(CONVERT(VARCHAR(10), @dt_final_ref_nota_debito, 103), '') + N'</div>' +
-                  N'<div><strong>ReferÃªncia:</strong> ' + ISNULL(@nm_ref_nota_debito, '') + N'</div>' +
+                  N'<div><strong>Período:</strong> ' + ISNULL(CONVERT(VARCHAR(10), @dt_inicio_ref_nota_debito, 103), '') + N' a ' + ISNULL(CONVERT(VARCHAR(10), @dt_final_ref_nota_debito, 103), '') + N'</div>' +
+                  N'<div><strong>Referência:</strong> ' + ISNULL(@nm_ref_nota_debito, '') + N'</div>' +
                   N'<div><strong>Valor:</strong> ' + ISNULL(dbo.fn_formata_valor(@vl_nota_debito), '') + N'</div>' +
                 N'</div>' +
                 N'<div style="flex:1; min-width:240px;">' +
                   N'<h3 style="margin-bottom:6px;">Cliente</h3>' +
                   N'<div><strong>Fantasia:</strong> ' + ISNULL(@nm_fantasia_cliente, '') + N'</div>' +
-                  N'<div><strong>RazÃ£o Social:</strong> ' + ISNULL(@nm_razao_social_cliente, '') + N'</div>' +
+                  N'<div><strong>Razão Social:</strong> ' + ISNULL(@nm_razao_social_cliente, '') + N'</div>' +
                   N'<div><strong>Telefone:</strong> ' + ISNULL(@telefone_cliente, '') + N'</div>' +
                   N'<div><strong>Contato:</strong> ' + ISNULL(@nm_fantasia_contato, '') + N'</div>' +
-                  N'<div><strong>IdentificaÃ§Ã£o Cliente:</strong> ' + ISNULL(@cd_identificacao_cliente, '') + N'</div>' +
+                  N'<div><strong>Identificação Cliente:</strong> ' + ISNULL(@cd_identificacao_cliente, '') + N'</div>' +
                 N'</div>' +
               N'</div>' +
 
@@ -292,7 +292,7 @@ BEGIN
                 N'<div style="flex:1; min-width:240px;">' +
                   N'<h3 style="margin-bottom:6px;">Banco / Portador</h3>' +
                   N'<div><strong>Banco:</strong> ' + ISNULL(@nm_fantasia_banco, '') + N' (' + ISNULL(@cd_numero_banco, '') + N')</div>' +
-                  N'<div><strong>AgÃªncia:</strong> ' + ISNULL(@cd_numero_agencia_banco, '') + N' - ' + ISNULL(@nm_agencia_banco, '') + N'</div>' +
+                  N'<div><strong>Agência:</strong> ' + ISNULL(@cd_numero_agencia_banco, '') + N' - ' + ISNULL(@nm_agencia_banco, '') + N'</div>' +
                   N'<div><strong>Conta:</strong> ' + ISNULL(@nm_conta_banco, '') + N'</div>' +
                   N'<div><strong>Portador:</strong> ' + ISNULL(@nm_portador, '') + N'</div>' +
                 N'</div>' +
@@ -305,7 +305,7 @@ BEGIN
               N'</div>' +
 
               N'<div style="margin-top:16px;">' +
-                N'<h3 style="margin-bottom:6px;">DescriÃ§Ã£o</h3>' +
+                N'<h3 style="margin-bottom:6px;">Descrição</h3>' +
                 N'<p style="margin:0;">' + ISNULL(@ds_nota_debito, '') + N'</p>' +
               N'</div>' +
 
@@ -318,7 +318,7 @@ BEGIN
                       N'<th style="border:1px solid #ddd; padding:6px; text-align:right;">Quantidade</th>' +
                       N'<th style="border:1px solid #ddd; padding:6px; text-align:right;">Valor Unit.</th>' +
                       N'<th style="border:1px solid #ddd; padding:6px; text-align:right;">Total</th>' +
-                      N'<th style="border:1px solid #ddd; padding:6px; text-align:left;">ObservaÃ§Ã£o</th>' +
+                      N'<th style="border:1px solid #ddd; padding:6px; text-align:left;">Observação</th>' +
                       N'<th style="border:1px solid #ddd; padding:6px; text-align:left;">Data</th>' +
                       N'<th style="border:1px solid #ddd; padding:6px; text-align:left;">Documento</th>' +
                     N'</tr>' +
@@ -330,7 +330,7 @@ BEGIN
               N'</div>' +
 
               N'<div style="margin-top:16px; text-align:right; font-weight:bold;">' +
-                N'Total Nota DÃ©bito: ' + ISNULL(dbo.fn_formata_valor(@vl_nota_debito), '') +
+                N'Total Nota Débito: ' + ISNULL(dbo.fn_formata_valor(@vl_nota_debito), '') +
               N'</div>' +
 
               N'<div style="margin-top:12px; font-size:12px; color:#666;">Emitido em ' + @data_hora_atual + N'</div>' +

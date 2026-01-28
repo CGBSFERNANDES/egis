@@ -5,7 +5,7 @@
     DROP PROCEDURE pr_egis_relatorio_documentos_atraso
 
 GO
-  
+ -- use egissql_376
 -------------------------------------------------------------------------------  
 --sp_helptext pr_egis_relatorio_documentos_atraso  
 -------------------------------------------------------------------------------  
@@ -1067,24 +1067,24 @@ WHILE EXISTS (SELECT TOP 1 cd_controle FROM #RelDocumentoAberto)
 BEGIN  
     SELECT TOP 1  
         @id                          = cd_controle,  
-         
+        
    
        @html_geral = @html_geral +  
           '<tr>  
       <td class="tamanho">'+isnull(dbo.fn_data_string(dt_vencimento_documento),'')+'</td>  
-      <td class="tamanho">'+ISNULL(nm_tipo_conta_pagar,0)+'</td>  
-            <td style="text-align: left;">'+iSNULL(nm_razao_social, 0)+ '</td>  
-   <td class="tamanho">'+ISNULL(cd_identificacao_document, 0)+ '</td>  
-   <td class="tamanho">'+ISNULL(nm_tipo_documento, 0)+ '</td>  
+      <td class="tamanho">'+ISNULL(nm_tipo_conta_pagar,'')+'</td>  
+      <td style="text-align: left;">'+iSNULL(nm_razao_social,'')+ '</td>  
+   <td class="tamanho">'+ISNULL(cd_identificacao_document,'')+ '</td>  
+   <td class="tamanho">'+ISNULL(nm_tipo_documento,'')+ '</td>  
    <td class="tamanho">'+cast(ISNULL(dbo.fn_formata_valor(vl_saldo_documento_pagar),0)as nvarchar(20))+'</td>  
-   <td class="tamanho">'+cast(ISNULL(sg_centro_custo,0)as nvarchar(20))+'</td>  
-   <td class="tamanho">'+iSNULL(nm_observacao_documento, 0)+ '</td>  
+   <td class="tamanho">'+cast(ISNULL(sg_centro_custo,'')as nvarchar(20))+'</td>  
+   <td class="tamanho">'+iSNULL(nm_observacao_documento,'')+ '</td>  
    <td class="tamanho">'+isnull(dbo.fn_data_string(dt_emissao_documento_paga),'')+'</td>  
-   <td class="tamanho"></td>  
-   <td class="tamanho">'+cast(ISNULL(cd_mascara_plano_financeiro,0)as nvarchar(20)) + '</td>  
-   <td class="tamanho">'+iSNULL(nm_conta_plano_financeiro, 0)+ '</td>  
-   <td class="tamanho">'+iSNULL(nm_fantasia_empresa, 0)+ '</td>  
-   <td class="tamanho">'+iSNULL(nm_portador, 0)+ '</td>  
+   <td class="tamanho">'+iSNULL(cd_nota_fiscal_entrada,'')+ '</td>  
+   <td class="tamanho">'+cast(ISNULL(cd_mascara_plano_financeiro,'')as nvarchar(20)) + '</td>  
+   <td class="tamanho">'+iSNULL(nm_conta_plano_financeiro,'')+ '</td>  
+   <td class="tamanho">'+iSNULL(nm_fantasia_empresa,'')+ '</td>  
+   <td class="tamanho">'+iSNULL(nm_portador,'')+ '</td>  
         </tr>'  
   from #RelDocumentoAberto  
     DELETE FROM #RelDocumentoAberto WHERE cd_controle = @id  

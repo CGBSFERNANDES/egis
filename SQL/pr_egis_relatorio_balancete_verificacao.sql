@@ -43,8 +43,8 @@ BEGIN
         @dt_inicial                   DATE          = NULL,
         @dt_final                     DATE          = NULL,
         @cd_exercicio                 INT           = NULL,
-        @ic_parametro                 INT           = 2,      -- 1=Completo, 2=Analítico, 3/4=Filtros
-        @ic_imprime_sem_movimento     CHAR(1)       = 'N',    -- 'S' imprime zeradas
+        @ic_parametro                 INT           = 1,      -- 1=Completo, 2=Analítico, 3/4=Filtros
+        @ic_imprime_sem_movimento     CHAR(1)       = 'S',    -- 'S' imprime zeradas
         @cd_mascara_conta_pesq        VARCHAR(100)  = '',
         @ic_preview                   BIT           = 0;      -- 1 = retorna dataset ao invés de HTML
 
@@ -178,7 +178,6 @@ begin
           7) Tabela temporária para capturar a saída do legado
         -----------------------------------------------------------------------------------------*/
 
-		
         CREATE TABLE #Balancete (
             cd_conta               INT,
             cd_conta_reduzido      INT,
@@ -210,6 +209,8 @@ begin
             @cd_mascara_conta_pesq    = @cd_mascara_conta_pesq,
             @cd_usuario               = @cd_usuario,
             @cd_controle              = 0
+			
+			--select @ic_parametro,@ic_imprime_sem_movimento,@cd_empresa,@cd_exercicio,@dt_inicial,@dt_final,@cd_mascara_conta_pesq,@cd_usuario return
 
         /*-----------------------------------------------------------------------------------------
           8) Projeção final (colunas de saída)

@@ -10,18 +10,18 @@ GO
   Stored Procedure : Microsoft SQL Server 2016
   Autor(es)        : Codex (assistente)
   Banco de Dados   : Egissql - Banco do Cliente
-  Objetivo         : RelatÃ³rio HTML - PrestaÃ§Ã£o de Contas (cd_relatorio = 437)
+  Objetivo         : Relatório HTML - Prestação de Contas (cd_relatorio = 437)
 
   Requisitos:
-    - Somente 1 parÃ¢metro de entrada (@json)
+    - Somente 1 parâmetro de entrada (@json)
     - SET NOCOUNT ON / TRY...CATCH
     - Sem cursor
     - Performance para grandes volumes
-    - CÃ³digo comentado
+    - Código comentado
 
-  ObservaÃ§Ãµes:
+  Observações:
     - Entrada: @json = '[{"cd_prestacao": <int>}]'
-    - Retorna HTML no padrÃ£o RelatorioHTML
+    - Retorna HTML no padrão RelatorioHTML
 -------------------------------------------------------------------------------------------------*/
 CREATE PROCEDURE dbo.pr_egis_relatorio_prestacao_conta
     @json NVARCHAR(MAX) = NULL
@@ -49,7 +49,7 @@ BEGIN
         @ic_tipo_deposito_prestacao CHAR(1)     = '';
 
     DECLARE
-        @titulo                VARCHAR(200) = 'PrestaÃ§Ã£o de Contas',
+        @titulo                VARCHAR(200) = 'Prestação de Contas',
         @logo                  VARCHAR(400) = 'logo_gbstec_sistema.jpg',
         @nm_cor_empresa        VARCHAR(20)  = '#1976D2',
         @nm_endereco_empresa   VARCHAR(200) = '',
@@ -104,7 +104,7 @@ BEGIN
           1) Normaliza JSON (aceita array [ { ... } ])
         -----------------------------------------------------------------------------------------*/
         IF NULLIF(@json, N'') IS NULL OR ISJSON(@json) <> 1
-            THROW 50001, 'Payload JSON invÃ¡lido ou vazio em @json.', 1;
+            THROW 50001, 'Payload JSON inválido ou vazio em @json.', 1;
 
         SELECT
             1                                                   AS id_registro,
@@ -124,7 +124,7 @@ BEGIN
         WHERE campo = 'cd_usuario';
 
         IF ISNULL(@cd_prestacao, 0) = 0
-            THROW 50002, 'cd_prestacao nÃ£o informado.', 1;
+            THROW 50002, 'cd_prestacao não informado.', 1;
 
         /*-----------------------------------------------------------------------------------------
           2) Dados da empresa (egisadmin)
@@ -153,7 +153,7 @@ BEGIN
         WHERE e.cd_empresa = @cd_empresa;
 
         /*-----------------------------------------------------------------------------------------
-          3) Dados da prestaÃ§Ã£o
+          3) Dados da prestação
         -----------------------------------------------------------------------------------------*/
         SELECT
             pc.cd_prestacao,
@@ -217,7 +217,7 @@ BEGIN
         WHERE pc.cd_prestacao = @cd_prestacao;
 
         IF NOT EXISTS (SELECT 1 FROM #prestacao)
-            THROW 50003, 'PrestaÃ§Ã£o de contas nÃ£o encontrada.', 1;
+            THROW 50003, 'Prestação de contas não encontrada.', 1;
 
         SELECT TOP (1)
             @dt_prestacao               = dt_prestacao,
@@ -247,7 +247,7 @@ BEGIN
         FROM #prestacao;
 
         /*-----------------------------------------------------------------------------------------
-          4) ParametrizaÃ§Ãµes e totais
+          4) Parametrizações e totais
         -----------------------------------------------------------------------------------------*/
         SELECT
             @ic_imposto = ISNULL(ic_imposto, 'N'),
@@ -255,11 +255,11 @@ BEGIN
         FROM parametro_prestacao_conta
         WHERE cd_empresa = @cd_empresa;
 
-        SELECT
-            @ic_nao_reembolsavel = ISNULL(pc.ic_nao_reembolsavel, 'N'),
-            @ic_cartao_credito = ISNULL(pc.ic_cartao_credito, 'N')
-        FROM Prestacao_Conta AS pc WITH (NOLOCK)
-        WHERE pc.cd_prestacao = @cd_prestacao;
+        --SELECT
+        --    @ic_nao_reembolsavel = ISNULL(pc.ic_nao_reembolsavel, 'N'),
+        --    @ic_cartao_credito = ISNULL(pc.ic_cartao_credito, 'N')
+        --FROM Prestacao_Conta AS pc WITH (NOLOCK)
+        --WHERE pc.cd_prestacao = @cd_prestacao;
 
         SELECT
             @vl_devolucao_moeda = ISNULL(SUM(ISNULL(vl_total_prestacao_moeda, 0)), 0)
@@ -322,7 +322,7 @@ BEGIN
         END
 
         /*-----------------------------------------------------------------------------------------
-          5) Itens da composiÃ§Ã£o da prestaÃ§Ã£o
+          5) Itens da composição da prestação
         -----------------------------------------------------------------------------------------*/
         SELECT
             td.nm_tipo_despesa,
@@ -395,17 +395,17 @@ BEGIN
             N'</table>' +
             N'</td></tr>' +
             N'<tr><td class="title">' + ISNULL(@nm_titulo_relatorio, @titulo) + N'</td></tr>' +
-            N'<tr><td class="subtitle">O PRESENTE RELATÃ“RIO VISA O ACERTO E A LIQUIDAÃ‡ÃƒO DAS DESPESAS ABAIXO APRESENTADAS</td></tr>' +
+            N'<tr><td class="subtitle">O PRESENTE RELATÓRIO VISA O ACERTO E A LIQUIDAÇÃO DAS DESPESAS ABAIXO APRESENTADAS</td></tr>' +
 
             N'<tr><td>' +
             N'<table class="info" cellpadding="0" cellspacing="0">' +
             N'<tr>' +
-            N'<td class="label">Data da PrestaÃ§Ã£o:</td><td>' + ISNULL(CONVERT(VARCHAR, @dt_prestacao, 103), '') + N'</td>' +
-            N'<td class="label" style="text-align:right;">PrestaÃ§Ã£o NÂº:</td><td style="text-align:right;">' + CAST(@cd_prestacao AS VARCHAR(20)) + N'</td>' +
+            N'<td class="label">Data da Prestação:</td><td>' + ISNULL(CONVERT(VARCHAR, @dt_prestacao, 103), '') + N'</td>' +
+            N'<td class="label" style="text-align:right;">Prestação Nº:</td><td style="text-align:right;">' + CAST(@cd_prestacao AS VARCHAR(20)) + N'</td>' +
             N'</tr>' +
             N'<tr>' +
-            N'<td class="label">FuncionÃ¡rio:</td><td>' + ISNULL(@nm_funcionario, '') + N'</td>' +
-            N'<td class="label" style="text-align:right;">MatrÃ­cula:</td><td style="text-align:right;">' + ISNULL(@cd_chapa_funcionario, '') + N'</td>' +
+            N'<td class="label">Funcionário:</td><td>' + ISNULL(@nm_funcionario, '') + N'</td>' +
+            N'<td class="label" style="text-align:right;">Matrícula:</td><td style="text-align:right;">' + ISNULL(@cd_chapa_funcionario, '') + N'</td>' +
             N'</tr>' +
             N'<tr>' +
             N'<td class="label">Departamento:</td><td>' + ISNULL(@nm_departamento, '') + N'</td>' +
@@ -413,20 +413,20 @@ BEGIN
             N'</tr>' +
             N'<tr>' +
             N'<td class="label">Banco:</td><td>' + ISNULL(@nm_banco, '') + N'</td>' +
-            N'<td class="label" style="text-align:right;">AgÃªncia:</td><td style="text-align:right;">' + ISNULL(@cd_agencia_funcionario, '') + N'</td>' +
+            N'<td class="label" style="text-align:right;">Agência:</td><td style="text-align:right;">' + ISNULL(@cd_agencia_funcionario, '') + N'</td>' +
             N'</tr>' +
             N'<tr>' +
             N'<td class="label">Conta:</td><td>' + ISNULL(@cd_conta_funcionario, '') + N'</td>' +
             N'<td class="label" style="text-align:right;">Centro de Custo:</td><td style="text-align:right;">' + ISNULL(@nm_centro_custo, '') + N'</td>' +
             N'</tr>' +
             N'<tr>' +
-            N'<td class="label">PerÃ­odo:</td><td>' + ISNULL(CONVERT(VARCHAR, @dt_inicio_viagem, 103), '') + N' a ' +
+            N'<td class="label">Período:</td><td>' + ISNULL(CONVERT(VARCHAR, @dt_inicio_viagem, 103), '') + N' a ' +
                 ISNULL(CONVERT(VARCHAR, @dt_fim_viagem, 103), '') + N'</td>' +
             N'<td class="label" style="text-align:right;">Local:</td><td style="text-align:right;">' + ISNULL(@nm_local_viagem, '') + N'</td>' +
             N'</tr>' +
             N'<tr>' +
             N'<td class="label">Assunto:</td><td>' + ISNULL(@nm_assunto_viagem, '') + N'</td>' +
-            N'<td class="label" style="text-align:right;">CartÃ£o de CrÃ©dito:</td><td style="text-align:right;">' + ISNULL(@nm_cartao_credito, '') + N'</td>' +
+            N'<td class="label" style="text-align:right;">Cartão de Crédito:</td><td style="text-align:right;">' + ISNULL(@nm_cartao_credito, '') + N'</td>' +
             N'</tr>' +
             N'</table>' +
             N'</td></tr>' +
@@ -438,18 +438,18 @@ BEGIN
             N'<tr><td class="section">Importante</td></tr>' +
             N'<tr><td style="padding:4px 6px;"></td></tr>' +
 
-            N'<tr><td class="bar">DiscriminaÃ§Ã£o das Despesas</td></tr>' +
+            N'<tr><td class="bar">Discriminação das Despesas</td></tr>' +
             N'<tr><td>' +
             N'<table class="table" cellpadding="0" cellspacing="0">' +
             N'<tr>' +
             N'<th>Item</th>' +
             N'<th>Despesa</th>' +
-            N'<th>NÂº Doc</th>' +
+            N'<th>Nº Doc</th>' +
             N'<th>Qtd.</th>' +
-            N'<th>Vl. UnitÃ¡rio</th>' +
+            N'<th>Vl. Unitário</th>' +
             N'<th>Valor Total</th>' +
             N'<th>Cliente/Finalidade</th>' +
-            N'<th>ObservaÃ§Ã£o</th>' +
+            N'<th>Observação</th>' +
             N'<th>C.C.</th>' +
             N'</tr>' +
             ISNULL(@html_itens, '') +
@@ -462,7 +462,7 @@ BEGIN
             N'</body></html>';
 
         /*-----------------------------------------------------------------------------------------
-          7) Retorno do relatÃ³rio
+          7) Retorno do relatório
         -----------------------------------------------------------------------------------------*/
         SELECT ISNULL(@html, '') AS RelatorioHTML;
     END TRY
@@ -476,3 +476,7 @@ BEGIN
     END CATCH
 END;
 GO
+
+--select * from prestacao_conta 988
+
+--exec pr_egis_relatorio_prestacao_conta '[{"cd_prestacao": 988}]'

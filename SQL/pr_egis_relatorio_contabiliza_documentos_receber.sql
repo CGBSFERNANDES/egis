@@ -514,8 +514,8 @@ LinhasHTML AS (
             <td>'+ISNULL(Documento,'')+'</td>
             <td>'+ISNULL(Cliente,'')+'</td>
             <td>'+ISNULL(dbo.fn_data_string(DataContabilizacao),'')+'</td>
-            <td style="text-align:right;">'+isnull(dbo.fn_formata_valor(Debito),0)+'</td>
-            <td style="text-align:right;">'+isnull(dbo.fn_formata_valor(Credito),0)+'</td>
+            <td style="text-align:right;">'+cast(isnull(Debito,0) as varchar(20))+'</td>
+            <td style="text-align:right;">'+cast(isnull(Credito,0) as varchar(20))+'</td>
             <td style="text-align:right;">'+isnull(dbo.fn_formata_valor(Valor),0)+'</td>
             <td>'+ISNULL(Historico,'')+' ('+cast(isnull(CodHis,0)as varchar(20))+')</td>
 			<td>'+ISNULL(HistoricoContabil,'')+'</td>

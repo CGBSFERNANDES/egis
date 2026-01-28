@@ -10,18 +10,18 @@ GO
   Stored Procedure : Microsoft SQL Server 2016
   Autor(es)        : Codex (assistente)
   Banco de Dados   : Egissql - Banco do Cliente
-  Objetivo         : Relat√≥rio HTML - Contabiliza√ß√£o de Entradas (cd_relatorio = 440)
+  Objetivo         : RelatÛrio HTML - ContabilizaÁ„o de Entradas (cd_relatorio = 440)
 
   Requisitos:
-    - Somente 1 par√¢metro de entrada (@json)
+    - Somente 1 par‚metro de entrada (@json)
     - SET NOCOUNT ON / TRY...CATCH
     - Sem cursor
     - Performance para grandes volumes
-    - C√≥digo comentado
+    - CÛdigo comentado
 
-  Observa√ß√µes:
+  ObservaÁıes:
     - Entrada: @json = '[{"dt_inicial": "2025-01-01", "dt_final": "2025-01-31", "cd_usuario": 1, "cd_relatorio": 440}]'
-    - Retorna HTML no padr√£o RelatorioHTML
+    - Retorna HTML no padr„o RelatorioHTML
 -------------------------------------------------------------------------------------------------*/
 CREATE PROCEDURE dbo.pr_egis_contabilizacao_entrada_recebimento
     @json NVARCHAR(MAX) = NULL
@@ -36,7 +36,7 @@ BEGIN
         @cd_usuario               INT           = 0,
         @dt_inicial               DATETIME      = NULL,
         @dt_final                 DATETIME      = NULL,
-        @titulo                   VARCHAR(200)  = 'Contabiliza√ß√£o de Entradas',
+        @titulo                   VARCHAR(200)  = 'ContabilizaÁ„o de Entradas',
         @logo                     VARCHAR(400)  = 'logo_gbstec_sistema.jpg',
         @nm_cor_empresa           VARCHAR(20)   = '#1976D2',
         @nm_endereco_empresa      VARCHAR(200)  = '',
@@ -61,12 +61,12 @@ BEGIN
 
     BEGIN TRY
         /*-----------------------------------------------------------------------------------------
-          1) Normaliza JSON (entrada obrigat√≥ria) e extrai par√¢metros
+          1) Normaliza JSON (entrada obrigatÛria) e extrai par‚metros
         -----------------------------------------------------------------------------------------*/
         SET @json = ISNULL(@json, N'');
 
         IF @json = N''
-            THROW 50001, 'Payload JSON inv√°lido ou vazio em @json.', 1;
+            THROW 50001, 'Payload JSON inv·lido ou vazio em @json.', 1;
 
         SELECT
             1                                                    AS id_registro,
@@ -94,7 +94,7 @@ BEGIN
         WHERE campo = 'cd_relatorio';
 
         /*-----------------------------------------------------------------------------------------
-          2) Dados do relat√≥rio e par√¢metros padr√£o
+          2) Dados do relatÛrio e par‚metros padr„o
         -----------------------------------------------------------------------------------------*/
         SELECT
             @titulo = ISNULL(r.nm_titulo_relatorio, r.nm_relatorio)
@@ -144,7 +144,7 @@ BEGIN
         WHERE e.cd_empresa = @cd_empresa;
 
         /*-----------------------------------------------------------------------------------------
-          4) Contas padr√£o para entrada e tributos
+          4) Contas padr„o para entrada e tributos
         -----------------------------------------------------------------------------------------*/
         DECLARE
             @cd_lancamento_padrao_entrada INT = 0,
@@ -315,8 +315,8 @@ BEGIN
             MAX(pc.cd_conta)         AS cd_conta_credito,
             MAX(pc.cd_mascara_conta) AS cd_mascara_conta_credito,
             MAX(pc.nm_conta)         AS nm_conta_credito,
-            SUM(ISNULL(i.vl_icms_item, 0)) AS vl_debito,
-            SUM(ISNULL(i.vl_icms_item, 0)) AS vl_credito,
+            SUM(ISNULL(i.vl_icms_nota_entrada, 0)) AS vl_debito,
+            SUM(ISNULL(i.vl_icms_nota_entrada, 0)) AS vl_credito,
             MAX('ICMS')              AS nm_tipo_contabilizacao
         INTO #ContabilizaICMS
         FROM nota_entrada AS n WITH (NOLOCK)
@@ -346,8 +346,8 @@ BEGIN
             MAX(pc.cd_conta)         AS cd_conta_credito,
             MAX(pc.cd_mascara_conta) AS cd_mascara_conta_credito,
             MAX(pc.nm_conta)         AS nm_conta_credito,
-            SUM(ISNULL(i.vl_ipi_item, 0)) AS vl_debito,
-            SUM(ISNULL(i.vl_ipi_item, 0)) AS vl_credito,
+            SUM(ISNULL(i.vl_ipi_nota_entrada, 0)) AS vl_debito,
+            SUM(ISNULL(i.vl_ipi_nota_entrada, 0)) AS vl_credito,
             MAX('IPI')               AS nm_tipo_contabilizacao
         INTO #ContabilizaIPI
         FROM nota_entrada AS n WITH (NOLOCK)
@@ -377,8 +377,8 @@ BEGIN
             MAX(pc.cd_conta)         AS cd_conta_credito,
             MAX(pc.cd_mascara_conta) AS cd_mascara_conta_credito,
             MAX(pc.nm_conta)         AS nm_conta_credito,
-            SUM(ISNULL(i.vl_ibs_item, 0)) AS vl_debito,
-            SUM(ISNULL(i.vl_ibs_item, 0)) AS vl_credito,
+            SUM(ISNULL(0.00, 0)) AS vl_debito,
+            SUM(ISNULL(0.00, 0)) AS vl_credito,
             MAX('IBS')               AS nm_tipo_contabilizacao
         INTO #ContabilizaIBS
         FROM nota_entrada AS n WITH (NOLOCK)
@@ -408,8 +408,8 @@ BEGIN
             MAX(pc.cd_conta)         AS cd_conta_credito,
             MAX(pc.cd_mascara_conta) AS cd_mascara_conta_credito,
             MAX(pc.nm_conta)         AS nm_conta_credito,
-            SUM(ISNULL(i.vl_cbs_item, 0)) AS vl_debito,
-            SUM(ISNULL(i.vl_cbs_item, 0)) AS vl_credito,
+            SUM(ISNULL(0.00, 0)) AS vl_debito,
+            SUM(ISNULL(0.00, 0)) AS vl_credito,
             MAX('CBS')               AS nm_tipo_contabilizacao
         INTO #ContabilizaCBS
         FROM nota_entrada AS n WITH (NOLOCK)
@@ -429,7 +429,7 @@ BEGIN
         GROUP BY n.dt_receb_nota_entrada;
 
         /*-----------------------------------------------------------------------------------------
-          12) Consolida para impress√£o
+          12) Consolida para impress„o
         -----------------------------------------------------------------------------------------*/
         SELECT *
         INTO #Resultado
@@ -467,7 +467,7 @@ BEGIN
             '<table style="width:100%; font-family: Arial; font-size:13px; border-collapse:collapse;">' +
             '<tr>' +
             '  <td style="text-align:left; font-weight:bold;">' + @titulo + '</td>' +
-            '  <td style="text-align:right;">Per√≠odo: ' + CONVERT(VARCHAR(10), @dt_inicial, 103) + ' at√© ' + CONVERT(VARCHAR(10), @dt_final, 103) + '</td>' +
+            '  <td style="text-align:right;">PerÌodo: ' + CONVERT(VARCHAR(10), @dt_inicial, 103) + ' atÈ ' + CONVERT(VARCHAR(10), @dt_final, 103) + '</td>' +
             '</tr>' +
             '</table>';
 
@@ -476,8 +476,8 @@ BEGIN
             '<thead style="background:#f0f0f0;">' +
             '  <tr>' +
             '    <th style="width:12%;">Data</th>' +
-            '    <th>D√©bito</th>' +
-            '    <th>Cr√©dito</th>' +
+            '    <th>DÈbito</th>' +
+            '    <th>CrÈdito</th>' +
             '    <th style="width:12%;">Valor</th>' +
             '    <th style="width:12%;">Tipo</th>' +
             '  </tr>' +
@@ -499,7 +499,7 @@ BEGIN
 
         IF ISNULL(@html_detalhe, '') = ''
         BEGIN
-            SET @html_detalhe = '<tr><td colspan="5" style="text-align:center;">Sem registros no per√≠odo.</td></tr>';
+            SET @html_detalhe = '<tr><td colspan="5" style="text-align:center;">Sem registros no perÌodo.</td></tr>';
         END
 
         DECLARE
@@ -517,10 +517,10 @@ BEGIN
             '<br /><table style="width:100%; border-collapse:collapse; font-family: Arial; font-size:12px;" border="1">' +
             '<thead style="background:#f0f0f0;">' +
             '  <tr>' +
-            '    <th>D√©bito</th>' +
-            '    <th>Cr√©dito</th>' +
+            '    <th>DÈbito</th>' +
+            '    <th>CrÈdito</th>' +
             '    <th>Valor</th>' +
-            '    <th>Tipo de Contabiliza√ß√£o</th>' +
+            '    <th>Tipo de ContabilizaÁ„o</th>' +
             '  </tr>' +
             '</thead><tbody>' +
             ISNULL((
@@ -540,9 +540,9 @@ BEGIN
         SET @html_totais =
             '<br /><table style="width:100%; border-collapse:collapse; font-family: Arial; font-size:12px;" border="1">' +
             '<tr>' +
-            '  <td style="text-align:right;"><strong>Total D√©bito</strong></td>' +
+            '  <td style="text-align:right;"><strong>Total DÈbito</strong></td>' +
             '  <td style="text-align:right;">' + CAST(ISNULL(dbo.fn_formata_valor(@vl_total_debito), 0) AS NVARCHAR(20)) + '</td>' +
-            '  <td style="text-align:right;"><strong>Total Cr√©dito</strong></td>' +
+            '  <td style="text-align:right;"><strong>Total CrÈdito</strong></td>' +
             '  <td style="text-align:right;">' + CAST(ISNULL(dbo.fn_formata_valor(@vl_total_credito), 0) AS NVARCHAR(20)) + '</td>' +
             '</tr>' +
             '</table>';
@@ -586,7 +586,19 @@ BEGIN
         IF OBJECT_ID('tempdb..#ContabilizaCBS') IS NOT NULL DROP TABLE #ContabilizaCBS;
         IF OBJECT_ID('tempdb..#json') IS NOT NULL DROP TABLE #json;
 
-        SELECT '<html><body><h3>Erro ao gerar relat√≥rio.</h3><p>' + @msg + '</p></body></html>' AS RelatorioHTML;
+        SELECT '<html><body><h3>Erro ao gerar relatÛrio.</h3><p>' + @msg + '</p></body></html>' AS RelatorioHTML;
     END CATCH
 END
 GO
+
+--use egissql_359
+
+--Geracao a integraÁ„o Contabil---
+
+
+--exec pr_egis_contabilizacao_entrada_recebimento @json = '[{"dt_inicial":"2025-01-01","dt_final":"2027-01-31","cd_usuario":1,"cd_relatorio":439}]'
+
+
+--
+
+
