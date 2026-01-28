@@ -342,10 +342,55 @@ SET @html_empresa = '
 			font-size:14px;
             text-align: center;
         }
+
+        @media print {
+            @page {
+                size: A4;
+                margin: 10mm;
+            }
+
+            * {
+                box-sizing: border-box;
+            }
+
+            html,
+            body {
+                width: 210mm;
+                margin: 0;
+            }
+
+            body {
+                padding: 10mm;
+            }
+
+            table {
+                table-layout: fixed;
+            }
+
+            th,
+            td {
+                word-wrap: break-word;
+            }
+
+            img {
+                max-width: 100%;
+                height: auto;
+            }
+
+            .report-wrapper {
+                width: 100%;
+                max-width: 190mm;
+                margin: 0 auto;
+            }
+
+            body {
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+        }
     </style>
 </head>
 <body>
-   
     <div style="display: flex; justify-content: space-between; align-items:center">
 		<div style="width:35%; margin-right:20px">
 			<img src="'+@logo+'" alt="Logo da Empresa">
