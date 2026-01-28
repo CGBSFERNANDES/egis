@@ -120,7 +120,7 @@
     />
 
     <UnicoFormEspecial
-      v-if="this.cd_rota == 187 && this.cd_form == 0"
+      v-if="this.cd_rota == 187 && this.cd_form == 0 && this.cd_modal == 0"
       @click="fechaPopup()"
     />
 
@@ -138,88 +138,90 @@
       @sucesso="fechaPopup()"
     />
 
-    <div
-      v-if="
-        this.cd_documento > 0 &&
-          this.cd_form == 0 &&
-          this.cd_rota == 0 &&
-          this.cd_menu !== 7303
-      "
-    >
-      <!--<div class="row" style="float:right; display:block; width:100vw">
-        <q-btn
-          round
-          style="float:right;display:block"
-          color="orange-9"
-          icon="event"
-          @click="popData = true"
-        />
-      </div>-->
+    <div v-if="this.cd_modal == 0">
+      <div
+        v-if="
+          this.cd_documento > 0 &&
+            this.cd_form == 0 &&
+            this.cd_rota == 0 &&
+            this.cd_menu !== 7303
+        "
+      >
+        <!--<div class="row" style="float:right; display:block; width:100vw">
+          <q-btn
+            round
+            style="float:right;display:block"
+            color="orange-9"
+            icon="event"
+            @click="popData = true"
+          />
+        </div>-->
 
-      <div class="row" style="display: block" v-if="mostra_grid">
-        <grid
-          v-if="
-            this.cd_documento > 0 &&
-              this.cd_form == 0 &&
-              this.cd_rota == 0 &&
-              this.cd_menu !== 7303
-          "
-          :cd_menuID="this.cd_menu"
-          :cd_apiID="this.cd_api"
-          :cd_identificacaoID="0"
-          :cd_parametroID="this.cd_parametro"
-          :cd_tipo_consultaID="this.cd_tipo_consultaID"
-          :cd_usuarioID="0"
-          :cd_consulta="0"
-          :nm_json="this.nm_jsonp"
-          @dadosgrid="onDataSource($event)"
-          ref="grid_c"
-        >
-        </grid>
+        <div class="row" style="display: block" v-if="mostra_grid">
+          <grid
+            v-if="
+              this.cd_documento > 0 &&
+                this.cd_form == 0 &&
+                this.cd_rota == 0 &&
+                this.cd_menu !== 7303
+            "
+            :cd_menuID="this.cd_menu"
+            :cd_apiID="this.cd_api"
+            :cd_identificacaoID="0"
+            :cd_parametroID="this.cd_parametro"
+            :cd_tipo_consultaID="this.cd_tipo_consultaID"
+            :cd_usuarioID="0"
+            :cd_consulta="0"
+            :nm_json="this.nm_jsonp"
+            @dadosgrid="onDataSource($event)"
+            ref="grid_c"
+          >
+          </grid>
+        </div>
       </div>
-    </div>
 
-    <!-- 
+      <!-- 
           kelvin, continuar aqui o desenvolvimento de gravar e gerar qualquer
           crud e form aqui conforme a pr do ccf ( que já está pronta)
          -->
-    <formEspecial
-      v-if="cd_form !== 0"
-      @click="fechaPopup($event)"
-      :cd_formID="this.cd_form"
-      :cd_documentoID="this.cd_documento"
-      :cd_item_documentoID="this.cd_item_documento"
-      :prop_form="this.xprop_form"
-    />
+      <formEspecial
+        v-if="cd_form !== 0"
+        @click="fechaPopup($event)"
+        :cd_formID="this.cd_form"
+        :cd_documentoID="this.cd_documento"
+        :cd_item_documentoID="this.cd_item_documento"
+        :prop_form="this.xprop_form"
+      />
 
-    <q-dialog v-model="popData" persistent>
-      <q-card>
-        <q-card-section class="row items-center q-pb-none">
-          <div class="text-h6">Seleção de Data</div>
-          <q-space />
-          <q-btn
-            icon="close"
-            @click="CarregaGrids()"
-            flat
-            round
-            dense
-            v-close-popup
+      <q-dialog v-model="popData" persistent>
+        <q-card>
+          <q-card-section class="row items-center q-pb-none">
+            <div class="text-h6">Seleção de Data</div>
+            <q-space />
+            <q-btn
+              icon="close"
+              @click="CarregaGrids()"
+              flat
+              round
+              dense
+              v-close-popup
+            />
+          </q-card-section>
+          <date
+            v-if="
+              this.cd_menu == 6981 ||
+                cd_menu == 6986 ||
+                cd_menu == 6993 ||
+                cd_menu == 6994 ||
+                cd_menu == 7108 ||
+                cd_menu == 7112 ||
+                cd_menu == 7116
+            "
+            style="margin: 0.7vw 1vw"
           />
-        </q-card-section>
-        <date
-          v-if="
-            this.cd_menu == 6981 ||
-              cd_menu == 6986 ||
-              cd_menu == 6993 ||
-              cd_menu == 6994 ||
-              cd_menu == 7108 ||
-              cd_menu == 7112 ||
-              cd_menu == 7116
-          "
-          style="margin: 0.7vw 1vw"
-        />
-      </q-card>
-    </q-dialog>
+        </q-card>
+      </q-dialog>
+    </div>
   </div>
 </template>
 <script>
