@@ -127,9 +127,9 @@
     <div
       v-if="
         this.cd_documento > 0 &&
-        this.cd_form == 0 &&
-        this.cd_rota == 0 &&
-        this.cd_menu !== 7303
+          this.cd_form == 0 &&
+          this.cd_rota == 0 &&
+          this.cd_menu !== 7303
       "
     >
       <!--<div class="row" style="float:right; display:block; width:100vw">
@@ -146,9 +146,9 @@
         <grid
           v-if="
             this.cd_documento > 0 &&
-            this.cd_form == 0 &&
-            this.cd_rota == 0 &&
-            this.cd_menu !== 7303
+              this.cd_form == 0 &&
+              this.cd_rota == 0 &&
+              this.cd_menu !== 7303
           "
           :cd_menuID="this.cd_menu"
           :cd_apiID="this.cd_api"
@@ -195,12 +195,12 @@
         <date
           v-if="
             this.cd_menu == 6981 ||
-            cd_menu == 6986 ||
-            cd_menu == 6993 ||
-            cd_menu == 6994 ||
-            cd_menu == 7108 ||
-            cd_menu == 7112 ||
-            cd_menu == 7116
+              cd_menu == 6986 ||
+              cd_menu == 6993 ||
+              cd_menu == 6994 ||
+              cd_menu == 7108 ||
+              cd_menu == 7112 ||
+              cd_menu == 7116
           "
           style="margin: 0.7vw 1vw"
         />
@@ -239,6 +239,7 @@ export default {
         return {};
       },
     },
+    cd_modalID: { type: Number, default: 0 },
 
     // titulo_menu    : { type: String, default: ''}
   },
@@ -303,7 +304,7 @@ export default {
     },
 
     sleep(ms) {
-      return new Promise((resolve) => setTimeout(resolve, ms));
+      return new Promise(resolve => setTimeout(resolve, ms));
     },
 
     onDataSource(e) {
@@ -316,6 +317,7 @@ export default {
     this.cd_parametro = this.cd_parametroID;
     this.cd_rota = this.cd_rotaID;
     this.cd_form = this.cd_formID;
+    this.cd_modal = this.cd_modalID;
     this.cd_api = this.cd_apiID;
     this.cd_menu = this.cd_menuID;
     this.cd_documento = this.cd_documentoID;
@@ -342,6 +344,7 @@ export default {
     this.cd_menu = this.cd_menuID;
     this.cd_documento = this.cd_documentoID;
     this.cd_item_documento = this.cd_item_documentoID;
+    this.cd_modal = this.cd_modalID;
 
     if (this.cd_form > 0) {
       localStorage.cd_parametro = this.cd_form;
