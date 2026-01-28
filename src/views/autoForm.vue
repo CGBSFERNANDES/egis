@@ -120,92 +120,108 @@
     />
 
     <UnicoFormEspecial
-      v-if="this.cd_rota == 187 && this.cd_form == 0"
+      v-if="this.cd_rota == 187 && this.cd_form == 0 && this.cd_modal == 0"
       @click="fechaPopup()"
     />
 
-    <div
-      v-if="
-        this.cd_documento > 0 &&
-          this.cd_form == 0 &&
-          this.cd_rota == 0 &&
-          this.cd_menu !== 7303
-      "
-    >
-      <!--<div class="row" style="float:right; display:block; width:100vw">
-        <q-btn
-          round
-          style="float:right;display:block"
-          color="orange-9"
-          icon="event"
-          @click="popData = true"
-        />
-      </div>-->
+    <modal-composicao
+      v-if="this.cd_modal > 0 && this.ic_grid_modal !== 'S'"
+      v-model="dialogModalComposicao"
+      :cd-modal="this.cd_modal"
+      @sucesso="fechaPopup()"
+    />
 
-      <div class="row" style="display: block" v-if="mostra_grid">
-        <grid
-          v-if="
-            this.cd_documento > 0 &&
-              this.cd_form == 0 &&
-              this.cd_rota == 0 &&
-              this.cd_menu !== 7303
-          "
-          :cd_menuID="this.cd_menu"
-          :cd_apiID="this.cd_api"
-          :cd_identificacaoID="0"
-          :cd_parametroID="this.cd_parametro"
-          :cd_tipo_consultaID="this.cd_tipo_consultaID"
-          :cd_usuarioID="0"
-          :cd_consulta="0"
-          :nm_json="this.nm_jsonp"
-          @dadosgrid="onDataSource($event)"
-          ref="grid_c"
-        >
-        </grid>
+    <modal-grid-composicao
+      v-if="this.cd_modal > 0 && this.ic_grid_modal === 'S'"
+      v-model="dialogModalGridComposicao"
+      :cd-modal="this.cd_modal"
+      @sucesso="fechaPopup()"
+    />
+
+    <div v-if="this.cd_modal == 0">
+      <div
+        v-if="
+          this.cd_documento > 0 &&
+            this.cd_form == 0 &&
+            this.cd_rota == 0 &&
+            this.cd_menu !== 7303
+        "
+      >
+        <!--<div class="row" style="float:right; display:block; width:100vw">
+          <q-btn
+            round
+            style="float:right;display:block"
+            color="orange-9"
+            icon="event"
+            @click="popData = true"
+          />
+        </div>-->
+
+        <div class="row" style="display: block" v-if="mostra_grid">
+          <grid
+            v-if="
+              this.cd_documento > 0 &&
+                this.cd_form == 0 &&
+                this.cd_rota == 0 &&
+                this.cd_menu !== 7303
+            "
+            :cd_menuID="this.cd_menu"
+            :cd_apiID="this.cd_api"
+            :cd_identificacaoID="0"
+            :cd_parametroID="this.cd_parametro"
+            :cd_tipo_consultaID="this.cd_tipo_consultaID"
+            :cd_usuarioID="0"
+            :cd_consulta="0"
+            :nm_json="this.nm_jsonp"
+            @dadosgrid="onDataSource($event)"
+            ref="grid_c"
+          >
+          </grid>
+        </div>
       </div>
-    </div>
 
-    <!-- 
+      <!-- 
           kelvin, continuar aqui o desenvolvimento de gravar e gerar qualquer
           crud e form aqui conforme a pr do ccf ( que já está pronta)
          -->
-    <formEspecial
-      v-if="cd_form !== 0"
-      @click="fechaPopup($event)"
-      :cd_formID="this.cd_form"
-      :cd_documentoID="this.cd_documento"
-      :cd_item_documentoID="this.cd_item_documento"
-      :prop_form="this.xprop_form"
-    />
+      <formEspecial
+        v-if="cd_form !== 0"
+        @click="fechaPopup($event)"
+        :cd_formID="this.cd_form"
+        :cd_documentoID="this.cd_documento"
+        :cd_item_documentoID="this.cd_item_documento"
+        :prop_form="this.xprop_form"
+      />
 
-    <q-dialog v-model="popData" persistent>
-      <q-card>
-        <q-card-section class="row items-center q-pb-none">
-          <div class="text-h6">Seleção de Data</div>
-          <q-space />
-          <q-btn
-            icon="close"
-            @click="CarregaGrids()"
-            flat
-            round
-            dense
-            v-close-popup
+      <q-dialog v-model="popData" persistent>
+        <q-card>
+          <q-card-section class="row items-center q-pb-none">
+            <div class="text-h6">Seleção de Data</div>
+            <q-space />
+            <q-btn
+              icon="close"
+              @click="CarregaGrids()"
+              flat
+              round
+              dense
+              v-close-popup
+            />
+          </q-card-section>
+          <date
+            v-if="
+              this.cd_menu == 6981 ||
+                cd_menu == 6986 ||
+                cd_menu == 6993 ||
+                cd_menu == 6994 ||
+                cd_menu == 7108 ||
+                cd_menu == 7112 ||
+                cd_menu == 7116
+            "
+            style="margin: 0.7vw 1vw"
           />
-        </q-card-section>
-        <date
-          v-if="
-            this.cd_menu == 6981 ||
-              cd_menu == 6986 ||
-              cd_menu == 6993 ||
-              cd_menu == 6994 ||
-              cd_menu == 7108 ||
-              cd_menu == 7112 ||
-              cd_menu == 7116
-          "
-          style="margin: 0.7vw 1vw"
-        />
-      </q-card>
-    </q-dialog>
+        </q-card>
+      </q-dialog>
+    </div>
   </div>
 </template>
 <script>
@@ -222,6 +238,8 @@ import listagem from "../views/listagem-contrato";
 import campanha from "../views/campanha.vue";
 import date from "../components/pesquisa-data.vue";
 import FichaVenda from "../views/contratoFichaVenda.vue";
+import ModalComposicao from "@/components/ModalComposicao.vue";
+import ModalGridComposicao from "@/components/ModalGridComposicao.vue";
 
 export default {
   props: {
@@ -265,6 +283,8 @@ export default {
     fechamento: () => import("../components/fechamentoParcial.vue"),
     documentosCRUD: () => import("../components/documentosCRUD.vue"),
     UnicoFormEspecial: () => import("./unicoFormEspecialBackup.vue"),
+    ModalComposicao,
+    ModalGridComposicao,
     aprovaUsuario: () => import("../views/aprovaUsuario.vue"),
     produto: () => import("../views/produto.vue"),
     atividadeModulo: () => import("../views/atividadeModulo.vue"),
@@ -280,6 +300,7 @@ export default {
       cd_parametro: 0,
       cd_rota: 0,
       cd_form: 0,
+      cd_modal: 0,
       hoje: "",
       maximizedToggle: true,
       cd_api: 0,
@@ -290,9 +311,41 @@ export default {
       xprop_form: {},
       mostra_grid: false,
       popData: false,
+      dialogModalComposicao: false,
+      dialogModalGridComposicao: false,
+      ic_grid_modal: "N",
     };
   },
+  watch: {
+    cd_modalID(novoValor) {
+      this.cd_modal = novoValor;
+      if (this.cd_modal > 0) {
+        this.abrirModalComposicao();
+      }
+    },
+    prop_form: {
+      handler(novoValor) {
+        this.xprop_form = novoValor || {};
+        this.ic_grid_modal = this.xprop_form.ic_grid_modal || "N";
+        if (this.cd_modal > 0) {
+          this.abrirModalComposicao();
+        }
+      },
+      deep: true,
+    },
+  },
   methods: {
+    abrirModalComposicao() {
+      this.dialogModalComposicao = false;
+      this.dialogModalGridComposicao = false;
+      this.$nextTick(() => {
+        if (this.ic_grid_modal === "S") {
+          this.dialogModalGridComposicao = true;
+          return;
+        }
+        this.dialogModalComposicao = true;
+      });
+    },
     async CarregaGrids() {
       this.mostra_grid = false;
       await this.sleep(1000);
@@ -327,6 +380,10 @@ export default {
     if (this.prop_form != {}) {
       this.xprop_form = this.prop_form;
     }
+    this.ic_grid_modal = this.xprop_form.ic_grid_modal || "N";
+    if (this.cd_modal > 0) {
+      this.abrirModalComposicao();
+    }
     if (this.cd_form > 0) {
       //localStorage.cd_menu = 0;
       localStorage.cd_api = 585;
@@ -345,6 +402,10 @@ export default {
     this.cd_documento = this.cd_documentoID;
     this.cd_item_documento = this.cd_item_documentoID;
     this.cd_modal = this.cd_modalID;
+    this.ic_grid_modal = this.xprop_form.ic_grid_modal || "N";
+    if (this.cd_modal > 0) {
+      this.abrirModalComposicao();
+    }
 
     if (this.cd_form > 0) {
       localStorage.cd_parametro = this.cd_form;

@@ -1632,6 +1632,7 @@
                   :cd_apiID="this.cd_api"
                   :cd_menuID="this.cd_menu"
                   :cd_documentoID="this.cd_documento"
+                  :cd_modalID="this.cd_modal"
                   @click="fechaPopBtnSuperior()"
                   @dadosgrid="onDataSource($event, undefined, undefined)"
                   :prop_form="this.props_oportunidade"
@@ -1912,6 +1913,7 @@
                   :cd_apiID="this.cd_api"
                   :cd_menuID="this.cd_menu"
                   :cd_documentoID="this.cd_documento"
+                  :cd_modalID="this.cd_modal"
                   @click="fechaPopVisible()"
                   @dadosgrid="onDataSource($event, undefined, undefined)"
                   :cd_item_documentoID="this.cd_item_documento"
@@ -2194,6 +2196,7 @@
             :cd_menuID="this.cd_menu"
             :cd_documentoID="this.cd_documento"
             :cd_item_documentoID="this.cd_item_documento"
+            :cd_modalID="this.cd_modal"
             @click="fechaPop()"
             :prop_form="this.props_oportunidade"
           >
@@ -2876,6 +2879,7 @@ export default {
       cd_etapa: 0,
       cd_rota: 0,
       cd_form: 0,
+      cd_modal: 0,
       api: "",
       inotifica: 0,
       dados_pipeline: [],
@@ -3632,6 +3636,8 @@ export default {
     onBotaoModulo(btn_barra) {
       this.cd_rota = btn_barra.cd_rota_menu;
       this.cd_form = btn_barra.cd_form;
+      this.cd_modal =
+        btn_barra.cd_modal || btn_barra.cd_modalID || btn_barra.cd_ModalID || 0;
       this.props_oportunidade = btn_barra;
       this.props_oportunidade.nm_caminho_pagina = btn_barra.nm_caminho_pagina;
       this.props_oportunidade.nm_endereco_pagina = btn_barra.nm_endereco_pagina;
@@ -3898,6 +3904,7 @@ export default {
       this.cd_etapa = e.cd_etapa ? e.cd_etapa : d.cd_etapa;
       this.cd_rota = 0;
       this.cd_form = 0;
+      this.cd_modal = 0;
       this.cd_api = e.cd_api ? e.cd_api : d.cd_api;
       this.cd_menu = e.cd_menu ? e.cd_menu : d.cd_menu;
       this.cd_documento = d.cd_documento;
@@ -3950,10 +3957,11 @@ export default {
           dt_usuario: formataData.AnoMesDia(new Date()),
         };
         try {
-          let [result] = await Incluir.incluirRegistro(
+          const retorno = await Incluir.incluirRegistro(
             "921/1431",
             json_salvar_processo
           ); //pr_api_geracao_processo_sistema
+          const result = Array.isArray(retorno) ? retorno[0] || {} : retorno;
           if (result.Msg !== "") {
             notify(result.Msg);
           } else {
@@ -3978,6 +3986,7 @@ export default {
     onDashboard(e) {
       this.cd_rota = 0;
       this.cd_form = e.cd_form;
+      this.cd_modal = 0;
       this.setConfig(4); //this.pop_auto
     },
 
@@ -4001,6 +4010,25 @@ export default {
       //Ele perguntara a senha uma vez e após isso não mais
       //Se quiser que pergunte a senha sempre é só descomentar a linha abaixo
       //this.senhaAutorizada = false;
+      if (process.cd_modal > 0) {
+        this.props_oportunidade.cd_step = 3;
+        this.cd_rota = 0;
+        this.cd_form = 0;
+        this.cd_modal =
+          process.cd_modal || process.cd_modalID || process.cd_ModalID || 0;
+        this.props_oportunidade.cd_movimento = card.cd_movimento;
+        this.props_oportunidade.cd_documento = card.cd_documento;
+        this.props_oportunidade.cd_item_documento = card.cd_item_documento;
+        this.props_oportunidade.cd_etapa = card.cd_etapa;
+        this.props_oportunidade = card;
+        this.props_oportunidade.nm_caminho_pagina = process.nm_caminho_pagina;
+        this.props_oportunidade.nm_endereco_pagina = process.nm_endereco_pagina;
+        this.titulo_bar = `${localStorage.nm_modulo} - ${localStorage.fantasia}`;
+        this.cd_documento = card.cd_documento;
+        this.cd_item_documento = card.cd_item_documento;
+        this.setConfig(4); //this.pop_auto
+        return;
+      }
       if (process.cd_senha_processo && !this.senhaAutorizada) {
         this.card_movimento = card;
         this.item_movimento = e;
@@ -4024,10 +4052,11 @@ export default {
           dt_usuario: formataData.AnoMesDia(new Date()),
         };
         try {
-          let [result] = await Incluir.incluirRegistro(
+          const retorno = await Incluir.incluirRegistro(
             "921/1431",
             json_salvar_processo
           ); //pr_api_geracao_processo_sistema
+          const result = Array.isArray(retorno) ? retorno[0] || {} : retorno;
           if (result.Msg !== "") {
             notify(result.Msg);
           } else {
@@ -4045,6 +4074,8 @@ export default {
       this.props_oportunidade.cd_step = 3;
       this.cd_rota = process.cd_rota_menu ? process.cd_rota_menu : e.cd_rota;
       this.cd_form = process.cd_form;
+      this.cd_modal =
+        process.cd_modal || process.cd_modalID || process.cd_ModalID || 0;
 
       if (this.cd_rota == 103 || this.cd_rota == 125 || this.cd_rota == 137) {
         this.maximizedToggle = false;
@@ -4056,7 +4087,7 @@ export default {
         notify("Erro ao abrir o menu!");
         return;
       }
-      if (!this.cd_rota == 0 || !this.cd_form == 0) {
+      if (!this.cd_rota == 0 || !this.cd_form == 0 || this.cd_modal > 0) {
         this.props_oportunidade.cd_movimento = card.cd_movimento;
         this.props_oportunidade.cd_documento = card.cd_documento;
         this.props_oportunidade.cd_item_documento = card.cd_item_documento;
@@ -4076,6 +4107,7 @@ export default {
       this.cd_etapa = dados.cd_etapa;
       this.cd_rota = dados.cd_rota;
       this.cd_form = dados.cd_form;
+      this.cd_modal = dados.cd_modal || dados.cd_modalID || dados.cd_ModalID || 0;
       this.cd_api = dados.cd_api;
       this.cd_menu = dados.cd_menu;
       this.cd_documento = dados.cd_documento;
@@ -4122,8 +4154,10 @@ export default {
     onClickProcesso(dados) {
       this.props_oportunidade.cd_movimento = 0;
       this.props_oportunidade.cd_documento = undefined;
+      const cdModal =
+        dados.cd_modal || dados.cd_modalID || dados.cd_ModalID || 0;
       /////////////////////////////////////////
-      if (dados.cd_form != 0 || dados.cd_rota != 0) {
+      if (dados.cd_form != 0 || dados.cd_rota != 0 || cdModal > 0) {
         //Abre popup se tiver form ou rota
         this.setConfig(4); //this.pop_auto
       }
@@ -4135,13 +4169,14 @@ export default {
       this.cd_rota = dados.cd_rota;
       this.cp = 0;
       this.cd_form = dados.cd_form;
+      this.cd_modal = cdModal;
       this.cd_api = dados.cd_api;
       this.cd_menu = dados.cd_menu;
       this.props_oportunidade = dados;
       this.titulo_bar = `${localStorage.nm_modulo} - ${localStorage.fantasia}`;
       localStorage.cd_kan = this.cd_etapa;
 
-      if (!this.cd_rota == 0 || !this.cd_form == 0) {
+      if (!this.cd_rota == 0 || !this.cd_form == 0 || this.cd_modal > 0) {
         this.cp = 1;
       }
     },
@@ -4583,6 +4618,7 @@ export default {
         this.props_oportunidade.cd_cota_contrato = card.cd_interface;
         this.cd_rota = e.cd_rota;
         this.cd_form = e.cd_form;
+        this.cd_modal = 0;
 
         if (this.cd_rota == 103 || this.cd_rota == 125 || this.cd_rota == 137) {
           this.maximizedToggle = false;
@@ -4595,7 +4631,7 @@ export default {
           return;
         }
 
-        if (!this.cd_rota == 0 || !this.cd_form == 0) {
+        if (!this.cd_rota == 0 || !this.cd_form == 0 || this.cd_modal > 0) {
           this.props_oportunidade = card;
           this.titulo_bar = `${localStorage.nm_modulo} - ${localStorage.fantasia}`;
           this.cd_documento = card.cd_documento;
