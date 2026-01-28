@@ -298,6 +298,7 @@ export default {
       cd_parametro: 0,
       cd_rota: 0,
       cd_form: 0,
+      cd_modal: 0,
       hoje: "",
       maximizedToggle: true,
       cd_api: 0,
@@ -312,6 +313,24 @@ export default {
       dialogModalGridComposicao: false,
       ic_grid_modal: "N",
     };
+  },
+  watch: {
+    cd_modalID(novoValor) {
+      this.cd_modal = novoValor;
+      if (this.cd_modal > 0) {
+        this.abrirModalComposicao();
+      }
+    },
+    prop_form: {
+      handler(novoValor) {
+        this.xprop_form = novoValor || {};
+        this.ic_grid_modal = this.xprop_form.ic_grid_modal || "N";
+        if (this.cd_modal > 0) {
+          this.abrirModalComposicao();
+        }
+      },
+      deep: true,
+    },
   },
   methods: {
     abrirModalComposicao() {
