@@ -3957,10 +3957,11 @@ export default {
           dt_usuario: formataData.AnoMesDia(new Date()),
         };
         try {
-          let [result] = await Incluir.incluirRegistro(
+          const retorno = await Incluir.incluirRegistro(
             "921/1431",
             json_salvar_processo
           ); //pr_api_geracao_processo_sistema
+          const result = Array.isArray(retorno) ? retorno[0] || {} : retorno;
           if (result.Msg !== "") {
             notify(result.Msg);
           } else {
@@ -4009,6 +4010,25 @@ export default {
       //Ele perguntara a senha uma vez e após isso não mais
       //Se quiser que pergunte a senha sempre é só descomentar a linha abaixo
       //this.senhaAutorizada = false;
+      if (process.cd_modal > 0) {
+        this.props_oportunidade.cd_step = 3;
+        this.cd_rota = 0;
+        this.cd_form = 0;
+        this.cd_modal =
+          process.cd_modal || process.cd_modalID || process.cd_ModalID || 0;
+        this.props_oportunidade.cd_movimento = card.cd_movimento;
+        this.props_oportunidade.cd_documento = card.cd_documento;
+        this.props_oportunidade.cd_item_documento = card.cd_item_documento;
+        this.props_oportunidade.cd_etapa = card.cd_etapa;
+        this.props_oportunidade = card;
+        this.props_oportunidade.nm_caminho_pagina = process.nm_caminho_pagina;
+        this.props_oportunidade.nm_endereco_pagina = process.nm_endereco_pagina;
+        this.titulo_bar = `${localStorage.nm_modulo} - ${localStorage.fantasia}`;
+        this.cd_documento = card.cd_documento;
+        this.cd_item_documento = card.cd_item_documento;
+        this.setConfig(4); //this.pop_auto
+        return;
+      }
       if (process.cd_senha_processo && !this.senhaAutorizada) {
         this.card_movimento = card;
         this.item_movimento = e;
@@ -4032,10 +4052,11 @@ export default {
           dt_usuario: formataData.AnoMesDia(new Date()),
         };
         try {
-          let [result] = await Incluir.incluirRegistro(
+          const retorno = await Incluir.incluirRegistro(
             "921/1431",
             json_salvar_processo
           ); //pr_api_geracao_processo_sistema
+          const result = Array.isArray(retorno) ? retorno[0] || {} : retorno;
           if (result.Msg !== "") {
             notify(result.Msg);
           } else {
