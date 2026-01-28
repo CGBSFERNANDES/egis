@@ -714,9 +714,15 @@ export default {
     },
   },
 
+  watch: {
+    $route() {
+      this.atualizaModulo()
+    },
+  },
+
   async created() {
     this.empresa = localStorage.fantasia
-    this.modulo = localStorage.nm_modulo
+    this.atualizaModulo()
     this.caminho = localStorage.nm_caminho_logo_empresa
     if (this.$store._mutations.SET_Usuario.nm_cor_empresa) {
       document.documentElement.style.setProperty(
@@ -808,6 +814,19 @@ export default {
   },
 
   methods: {
+    atualizaModulo() {
+      const moduloAtual = localStorage.nm_modulo
+      const moduloSelecao = localStorage.nm_modulo_selecao
+      const moduloValido =
+        moduloAtual && moduloAtual !== 'undefined' && moduloAtual !== 'null' ? moduloAtual : ''
+      const moduloSelecaoValida =
+        moduloSelecao && moduloSelecao !== 'undefined' && moduloSelecao !== 'null'
+          ? moduloSelecao
+          : ''
+
+      this.modulo = moduloValido || moduloSelecaoValida || ''
+    },
+
     abrirSiteGBS () {
     try {
       window.open('https://gbsnet.com.br/', '_blank', 'noopener,noreferrer')
