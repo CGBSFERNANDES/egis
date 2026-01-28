@@ -124,6 +124,20 @@
       @click="fechaPopup()"
     />
 
+    <modal-composicao
+      v-if="this.cd_modal > 0 && this.ic_grid_modal !== 'S'"
+      v-model="dialogModalComposicao"
+      :cd-modal="this.cd_modal"
+      @sucesso="fechaPopup()"
+    />
+
+    <modal-grid-composicao
+      v-if="this.cd_modal > 0 && this.ic_grid_modal === 'S'"
+      v-model="dialogModalGridComposicao"
+      :cd-modal="this.cd_modal"
+      @sucesso="fechaPopup()"
+    />
+
     <div
       v-if="
         this.cd_documento > 0 &&
@@ -222,6 +236,8 @@ import listagem from "../views/listagem-contrato";
 import campanha from "../views/campanha.vue";
 import date from "../components/pesquisa-data.vue";
 import FichaVenda from "../views/contratoFichaVenda.vue";
+import ModalComposicao from "@/components/ModalComposicao.vue";
+import ModalGridComposicao from "@/components/ModalGridComposicao.vue";
 
 export default {
   props: {
@@ -265,6 +281,8 @@ export default {
     fechamento: () => import("../components/fechamentoParcial.vue"),
     documentosCRUD: () => import("../components/documentosCRUD.vue"),
     UnicoFormEspecial: () => import("./unicoFormEspecialBackup.vue"),
+    ModalComposicao,
+    ModalGridComposicao,
     aprovaUsuario: () => import("../views/aprovaUsuario.vue"),
     produto: () => import("../views/produto.vue"),
     atividadeModulo: () => import("../views/atividadeModulo.vue"),
@@ -280,6 +298,7 @@ export default {
       cd_parametro: 0,
       cd_rota: 0,
       cd_form: 0,
+      cd_modal: 0,
       hoje: "",
       maximizedToggle: true,
       cd_api: 0,
@@ -290,9 +309,39 @@ export default {
       xprop_form: {},
       mostra_grid: false,
       popData: false,
+      dialogModalComposicao: false,
+      dialogModalGridComposicao: false,
+      ic_grid_modal: "N",
     };
   },
+  watch: {
+    cd_modalID(novoValor) {
+      this.cd_modal = novoValor;
+      if (this.cd_modal > 0) {
+        this.abrirModalComposicao();
+      }
+    },
+    prop_form: {
+      handler(novoValor) {
+        this.xprop_form = novoValor || {};
+        this.ic_grid_modal = this.xprop_form.ic_grid_modal || "N";
+        if (this.cd_modal > 0) {
+          this.abrirModalComposicao();
+        }
+      },
+      deep: true,
+    },
+  },
   methods: {
+    abrirModalComposicao() {
+      this.dialogModalComposicao = false;
+      this.dialogModalGridComposicao = false;
+      if (this.ic_grid_modal === "S") {
+        this.dialogModalGridComposicao = true;
+        return;
+      }
+      this.dialogModalComposicao = true;
+    },
     async CarregaGrids() {
       this.mostra_grid = false;
       await this.sleep(1000);
@@ -327,6 +376,10 @@ export default {
     if (this.prop_form != {}) {
       this.xprop_form = this.prop_form;
     }
+    this.ic_grid_modal = this.xprop_form.ic_grid_modal || "N";
+    if (this.cd_modal > 0) {
+      this.abrirModalComposicao();
+    }
     if (this.cd_form > 0) {
       //localStorage.cd_menu = 0;
       localStorage.cd_api = 585;
@@ -345,6 +398,10 @@ export default {
     this.cd_documento = this.cd_documentoID;
     this.cd_item_documento = this.cd_item_documentoID;
     this.cd_modal = this.cd_modalID;
+    this.ic_grid_modal = this.xprop_form.ic_grid_modal || "N";
+    if (this.cd_modal > 0) {
+      this.abrirModalComposicao();
+    }
 
     if (this.cd_form > 0) {
       localStorage.cd_parametro = this.cd_form;
