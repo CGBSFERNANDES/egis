@@ -3471,15 +3471,17 @@ export default {
         this.rows = rowsAntes;
         this.dashboardRows = rowsAntes;
         this.qt_registro = rowsAntes.length;
-
-        this.$nextTick(() => {
-          const inst = this.$refs?.grid?.instance;
-          if (inst) {
-            inst.option("dataSource", this.rows);
-            inst.refresh();
-          }
-        });
       }
+
+      this.$nextTick(() => {
+        const inst = this.$refs?.grid?.instance;
+        if (inst) {
+          inst.beginUpdate();
+          inst.option("dataSource", this.rows);
+          inst.endUpdate();
+          inst.refresh();
+        }
+      });
 
       // se estava em tab filha, tenta reabrir ela
       //this.limparSelecaoGrid();
