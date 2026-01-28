@@ -25,7 +25,7 @@
     }
 -------------------------------------------------------------------------------------------------*/
 CREATE OR ALTER PROCEDURE dbo.pr_egis_relatorio_contabil_estoque
-    @json NVARCHAR(MAX) = NULL
+    @json NVARCHAR(MAX) = ''
 AS
 BEGIN
     SET NOCOUNT ON;

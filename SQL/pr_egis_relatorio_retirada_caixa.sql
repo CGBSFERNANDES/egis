@@ -420,19 +420,21 @@ set @dt_hoje          = convert(datetime,left(convert(varchar,getdate(),121),10)
 	  max(m.nm_obs_movimento_caixa)                                      as nm_obs_movimento_caixa,
       sum( isnull(m.vl_movimento_caixa,0) - isnull(m.vl_desconto,0) )    as vl_total,
 	  count(distinct m.cd_movimento_caixa)                               as qt_venda,
-	  max( isnull(r.cd_cliente,0))                                       as cd_cliente
+	  max( isnull(r.cd_cliente,0))                                       as cd_cliente,
+	  max(dr.cd_identificacao)                                           as cd_identificacao,                       
+	  max(dr.vl_documento_receber)                                       as vl_documento_receber
 
-
-    into
-      #aux_retirada
+	  into 
+	  #aux_retirada
 
     from
       movimento_caixa m
    	  left outer join motivo_retirada_caixa r on r.cd_motivo_retirada_caixa = m.cd_motivo_retirada_caixa
 	  left outer join tipo_movimento_caixa tmc on m.cd_tipo_movimento_caixa = tmc.cd_tipo_movimento_caixa
+	  left outer join documento_receber dr      on dr.cd_movimento_caixa = m.cd_movimento_caixa
 	  left outer join tipo_despesa td on td.cd_tipo_despesa = m.cd_tipo_despesa
     where
-	  m.dt_movimento_caixa between @dt_inicial and @dt_final
+	  m.dt_movimento_caixa between '01/01/2026' and '01/31/2026'
 	  and
 	  tmc.ic_entrada_saida = 'S'
 	  and
@@ -440,8 +442,7 @@ set @dt_hoje          = convert(datetime,left(convert(varchar,getdate(),121),10)
 	  and
 	  isnull(m.cd_motivo_retirada_caixa,0)>0
 
-	  --select * from movimento_caixa where cd_tipo_movimento_caixa = 2
-
+	  
     group by
 	  m.cd_movimento_caixa,
       m.dt_movimento_caixa,
@@ -471,12 +472,14 @@ order by
 
 declare
 	@vl_movimento_caixa           float = 0, 
-	@qt_venda                     float = 0
+	@qt_venda                     float = 0,
+	@vl_documento_receber         float = 0
 
 select 
 
-@qt_venda            = sum(qt_venda),
-@vl_movimento_caixa  = sum(vl_movimento_caixa)
+@qt_venda             = sum(qt_venda),
+@vl_movimento_caixa   = sum(vl_movimento_caixa),
+@vl_documento_receber = sum(vl_documento_receber)
 
 from #Retirada_rel
 
@@ -487,10 +490,11 @@ set @html_geral = ' <div class="section-title">
     </div>
 	<table>
 	<tr style="text-align:center;">
-		<th>Código</th>
 		<th>Motivo</th>
 		<th>Data</th>
 		<th>Total Retirada</th>
+		<th>Boleto</th>
+		<th>Valor Boleto</th>
 	</tr>'
 		   
 --------------------------------------------------------------------------------------------------------------
@@ -501,11 +505,11 @@ begin
 
 		@id                          = cd_controle,
 	    @html_geral  = @html_geral + '<tr class="tamanho">
-									<td>'+cast(isnull(cd_movimento_caixa,0) as varchar(20))+'</td>
-									<td>'+isnull(nm_motivo_retirada,'')+'</td>
-									<td>'+isnull(dbo.fn_data_string(dt_retirada),0)+'</td>									
+									<td>'+isnull(dbo.fn_data_string(dt_retirada),0)+'</td>	
 									<td>'+cast(isnull(dbo.fn_formata_valor(vl_movimento_caixa),0)as nvarchar(20))+'</td>
-															
+									<td>'+isnull(nm_motivo_retirada,'')+'</td>
+									<td>'+isnull(cd_identificacao,'')+'</td>					
+									<td>'+cast(isnull(dbo.fn_formata_valor(vl_documento_receber),0)as nvarchar(20))+'</td>															
 								  </tr>'
 
      from #Retirada_rel
@@ -520,7 +524,8 @@ set @html_rodape =
 		<td></td>
 		<td>'+cast(isnull(dbo.fn_formata_valor(@qt_venda),0)as nvarchar(20))+'</td>
 		<td>'+cast(isnull(dbo.fn_formata_valor(@vl_movimento_caixa),0)as nvarchar(20))+'</td>
-																				
+		<td></td>		
+		<td>'+cast(isnull(dbo.fn_formata_valor(@vl_documento_receber),0)as nvarchar(20))+'</td>
      </tr>
 	</table>
 	<div class="report-date-time">

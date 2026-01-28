@@ -10,19 +10,19 @@ GO
   Stored Procedure : Microsoft SQL Server 2016
   Autor(es)        : Codex (assistente)
   Banco de Dados   : Egissql - Banco do Cliente
-  Objetivo         : Gerar o relat√≥rio HTML da Ordem de Servi√ßo Gr√°fica (cd_relatorio = 433)
+  Objetivo         : Gerar o relatÛrio HTML da Ordem de ServiÁo Gr·fica (cd_relatorio = 433)
 
-  Par√¢metro √∫nico de entrada (JSON):
+  Par‚metro ˙nico de entrada (JSON):
     @json NVARCHAR(MAX) --> [{ "cd_ordem_servico": 0, "dt_inicial": "", "dt_final": "", "cd_usuario": 0, "cd_usuario_impressao": 0 }]
 
-  Requisitos T√©cnicos:
+  Requisitos TÈcnicos:
     - SET NOCOUNT ON
     - TRY...CATCH
     - Sem cursor
     - Performance voltada para grandes volumes
-    - C√≥digo comentado
+    - CÛdigo comentado
 
-  Observa√ß√µes:
+  ObservaÁıes:
     - Dados da empresa devem vir de egisadmin.dbo.Empresa
     - Quando cd_ordem_servico = 0, utiliza dt_inicial/dt_final para filtragem
 -------------------------------------------------------------------------------------------------*/
@@ -35,7 +35,7 @@ BEGIN
 
     BEGIN TRY
         -------------------------------------------------------------------------------------------------
-        -- 1) Declara√ß√µes e normaliza√ß√£o do JSON
+        -- 1) DeclaraÁıes e normalizaÁ„o do JSON
         -------------------------------------------------------------------------------------------------
         DECLARE
             @cd_relatorio         INT = 433,
@@ -47,7 +47,7 @@ BEGIN
             @dt_final             DATETIME = NULL;
 
         DECLARE
-            @titulo               VARCHAR(200) = 'Ordem de Servi√ßo',
+            @titulo               VARCHAR(200) = 'Ordem de ServiÁo',
             @nm_titulo_relatorio  VARCHAR(200) = NULL,
             @ds_relatorio         VARCHAR(8000) = '',
             @logo                 VARCHAR(400) = 'logo_gbstec_sistema.jpg',
@@ -67,24 +67,46 @@ BEGIN
             SET @json = N'{}';
 
         IF ISJSON(@json) = 0
-            THROW 50001, 'JSON de entrada inv√°lido ou mal formatado.', 1;
+            THROW 50001, 'JSON de entrada inv·lido ou mal formatado.', 1;
 
-        IF JSON_VALUE(@json, '$[0]') IS NOT NULL
-            SET @json = JSON_QUERY(@json, '$[0]');
+        --IF JSON_VALUE(@json, '$[0]') IS NOT NULL
+           --SET @json = JSON_QUERY(@json, '$[0]');
 
-        SELECT
-            @cd_ordem_servico     = TRY_CAST(JSON_VALUE(@json, '$.cd_ordem_servico') AS INT),
-            @dt_inicial           = TRY_CAST(JSON_VALUE(@json, '$.dt_inicial') AS DATETIME),
-            @dt_final             = TRY_CAST(JSON_VALUE(@json, '$.dt_final') AS DATETIME),
-            @cd_usuario           = TRY_CAST(JSON_VALUE(@json, '$.cd_usuario') AS INT),
-            @cd_usuario_impressao = TRY_CAST(JSON_VALUE(@json, '$.cd_usuario_impressao') AS INT);
+           --select @json
+
+        
+        select                     
+
+         1                                                    as id_registro,
+         IDENTITY(int,1,1)                                    as id,
+         valores.[key]  COLLATE SQL_Latin1_General_CP1_CI_AI† as campo,                     
+         valores.[value]                                      as valor                    
+                    
+         into #json                    
+         from                
+           openjson(@json)root                    
+           cross apply openjson(root.value) as valores      
+
+        --select * from #json
+
+        select @cd_ordem_servico              = valor from #json where campo = 'cd_documento_form'      
+        
+        --SELECT
+        --    @cd_ordem_servico     = TRY_CAST(JSON_VALUE(@json, '$.cd_ordem_servico') AS INT),
+        --    @dt_inicial           = TRY_CAST(JSON_VALUE(@json, '$.dt_inicial') AS DATETIME),
+        --    @dt_final             = TRY_CAST(JSON_VALUE(@json, '$.dt_final') AS DATETIME),
+        --    @cd_usuario           = TRY_CAST(JSON_VALUE(@json, '$.cd_usuario') AS INT),
+        --    @cd_usuario_impressao = TRY_CAST(JSON_VALUE(@json, '$.cd_usuario_impressao') AS INT);
 
         SET @cd_empresa = dbo.fn_empresa();
         SET @cd_ordem_servico = ISNULL(@cd_ordem_servico, 0);
         SET @cd_usuario_impressao = ISNULL(@cd_usuario_impressao, @cd_usuario);
 
+        --select @cd_ordem_servico
+        --return
+
         -------------------------------------------------------------------------------------------------
-        -- 2) Datas padr√£o (Parametro_Relatorio ou m√™s atual)
+        -- 2) Datas padr„o (Parametro_Relatorio ou mÍs atual)
         -------------------------------------------------------------------------------------------------
         IF @cd_ordem_servico = 0
         BEGIN
@@ -103,7 +125,7 @@ BEGIN
         END
 
         -------------------------------------------------------------------------------------------------
-        -- 3) Dados do relat√≥rio e empresa
+        -- 3) Dados do relatÛrio e empresa
         -------------------------------------------------------------------------------------------------
         SELECT
             @titulo              = ISNULL(r.nm_relatorio, @titulo),
@@ -134,7 +156,7 @@ BEGIN
         WHERE e.cd_empresa = @cd_empresa;
 
         -------------------------------------------------------------------------------------------------
-        -- 4) Dados da ordem de servi√ßo (capa)
+        -- 4) Dados da ordem de serviÁo (capa)
         -------------------------------------------------------------------------------------------------
         SELECT
             osg.cd_ordem_servico,
@@ -237,10 +259,10 @@ BEGIN
             AND osg.cd_ordem_servico = CASE WHEN @cd_ordem_servico = 0 THEN osg.cd_ordem_servico ELSE @cd_ordem_servico END;
 
         IF NOT EXISTS (SELECT 1 FROM #OrdemServico)
-            THROW 50002, 'Nenhuma ordem de servi√ßo encontrada para os par√¢metros informados.', 1;
+            THROW 50002, 'Nenhuma ordem de serviÁo encontrada para os par‚metros informados.', 1;
 
         -------------------------------------------------------------------------------------------------
-        -- 5) Itens da ordem de servi√ßo (produtos)
+        -- 5) Itens da ordem de serviÁo (produtos)
         -------------------------------------------------------------------------------------------------
         DECLARE @cd_fase_produto INT = 0;
 
@@ -269,7 +291,7 @@ BEGIN
         WHERE os.cd_ordem_servico IN (SELECT cd_ordem_servico FROM #OrdemServico);
 
         -------------------------------------------------------------------------------------------------
-        -- 6) Captura campos do cabe√ßalho
+        -- 6) Captura campos do cabeÁalho
         -------------------------------------------------------------------------------------------------
         DECLARE
             @os_numero              VARCHAR(30) = '',
@@ -313,7 +335,7 @@ BEGIN
         FROM #OrdemServico;
 
         -------------------------------------------------------------------------------------------------
-        -- 7) Montagem do HTML (cabe√ßalho + tabela de itens din√¢mica)
+        -- 7) Montagem do HTML (cabeÁalho + tabela de itens din‚mica)
         -------------------------------------------------------------------------------------------------
         DECLARE
             @html_header NVARCHAR(MAX) = '',
@@ -329,7 +351,7 @@ BEGIN
             '<html>' +
             '<head>' +
             '  <meta charset="UTF-8">' +
-            '  <title>' + ISNULL(@titulo_exibir, 'Relat√≥rio') + '</title>' +
+            '  <title>' + ISNULL(@titulo_exibir, 'RelatÛrio') + '</title>' +
             '  <style>' +
             '    body { font-family: Arial, sans-serif; color: #333; padding: 20px; }' +
             '    h1 { color: ' + @nm_cor_empresa + '; margin-bottom: 4px; }' +
@@ -346,7 +368,7 @@ BEGIN
             '    <div style="width:30%; padding-right:20px;"><img src="' + @logo + '" alt="Logo" style="max-width: 220px;"></div>' +
             '    <div style="width:70%; padding-left:10px;">' +
             '      <h1>' + ISNULL(@titulo_exibir, '') + '</h1>' +
-            '      <h3>Ordem de Servi√ßo Gr√°fica</h3>' +
+            '      <h3>Ordem de ServiÁo Gr·fica</h3>' +
             '      <p><strong>' + @nm_fantasia_empresa + '</strong></p>' +
             '      <p>' + @nm_endereco_empresa + ', ' + @cd_numero_endereco + ' - ' + @cd_cep_empresa + ' - ' + @nm_cidade_empresa + ' - ' + @sg_estado_empresa + ' - ' + @nm_pais_empresa + '</p>' +
             '      <p><strong>Fone: </strong>' + @cd_telefone_empresa + ' | <strong>Email: </strong>' + @nm_email_empresa + '</p>' +
@@ -355,22 +377,22 @@ BEGIN
             '  <div style="text-align:right; font-size:11px; margin-top:10px;">Gerado em: ' + @data_hora_atual + '</div>' +
             '  <div class="section">' +
             '    <p><span class="label">OS:</span> ' + @os_numero + ' &nbsp; <span class="label">Data:</span> ' + @os_data + '</p>' +
-            '    <p><span class="label">Cliente:</span> ' + @os_cliente + ' &nbsp; <span class="label">Raz√£o Social:</span> ' + @os_cliente_razao + '</p>' +
+            '    <p><span class="label">Cliente:</span> ' + @os_cliente + ' &nbsp; <span class="label">Raz„o Social:</span> ' + @os_cliente_razao + '</p>' +
             '    <p><span class="label">CNPJ:</span> ' + @os_cnpj_cliente + '</p>' +
             '    <p><span class="label">Vendedor:</span> ' + @os_vendedor + ' &nbsp; <span class="label">Vendedor Interno:</span> ' + @os_vendedor_interno + '</p>' +
-            '    <p><span class="label">Condi√ß√£o:</span> ' + @os_condicao_pagamento + ' &nbsp; <span class="label">Tipo M√≠dia:</span> ' + @os_tipo_midia + '</p>' +
+            '    <p><span class="label">CondiÁ„o:</span> ' + @os_condicao_pagamento + ' &nbsp; <span class="label">Tipo MÌdia:</span> ' + @os_tipo_midia + '</p>' +
             '    <p><span class="label">Transportadora:</span> ' + @os_transportadora + '</p>' +
             '    <p><span class="label">Contato:</span> ' + @os_contato + ' &nbsp; <span class="label">Telefone:</span> ' + @os_contato_telefone + ' &nbsp; <span class="label">Email:</span> ' + @os_contato_email + '</p>' +
             '    <p><span class="label">Local Entrega:</span> ' + @os_local_entrega + '</p>' +
             '    <p><span class="label">Status:</span> ' + @os_status + ' &nbsp; <span class="label">Prioridade:</span> ' + @os_prioridade + '</p>' +
-            '    <p><span class="label">Usu√°rio Impress√£o:</span> ' + @os_usuario_impressao + '</p>' +
-            '    <p><span class="label">Observa√ß√µes:</span> ' + @os_obs + '</p>' +
+            '    <p><span class="label">Usu·rio Impress„o:</span> ' + @os_usuario_impressao + '</p>' +
+            '    <p><span class="label">ObservaÁıes:</span> ' + @os_obs + '</p>' +
             '  </div>' +
             '  <div class="section">' + ISNULL(@ds_relatorio, '') + '</div>' +
             '  <div class="section"><h3>Itens</h3></div>';
 
         -------------------------------------------------------------------------------------------------
-        -- 8) Cabe√ßalho din√¢mico de itens
+        -- 8) CabeÁalho din‚mico de itens
         -------------------------------------------------------------------------------------------------
         DECLARE @cols TABLE (colname SYSNAME, colorder INT);
 
@@ -391,7 +413,7 @@ BEGIN
             ).value('.', 'nvarchar(max)'), 1, 0, '');
 
         -------------------------------------------------------------------------------------------------
-        -- 9) Linhas din√¢micas de itens
+        -- 9) Linhas din‚micas de itens
         -------------------------------------------------------------------------------------------------
         DECLARE @rowExpr NVARCHAR(MAX) = '';
 
@@ -423,7 +445,10 @@ BEGIN
             ERROR_LINE()
         );
 
-        THROW ERROR_NUMBER(), @errMsg, ERROR_STATE();
+        --THROW ERROR_NUMBER(), @errMsg, ERROR_STATE();
     END CATCH
 END;
 GO
+
+
+EXEC pr_egis_relatorio_ordem_servico_grafica '[{ "cd_ordem_servico": 116006 }]'
