@@ -2484,6 +2484,7 @@ export default {
       cd_chave_pesquisa: 0,
       cd_chave_registro_local: Number(this.cd_chave_registro || 0),
       _preservarRowsNoRefresh: false,
+      _rowsSnapshotModal: null,
       menuTabs: [], // tabs vindas do sqlTabs
       activeMenuTab: "principal", // 'principal' = grid principal
       returnTo: null,
@@ -3455,27 +3456,12 @@ export default {
       const estavaFilha = this._estavaEmTabFilha === true;
 
       this._preservarRowsNoRefresh = true;
+      this._rowsSnapshotModal = rowsAntes;
       try {
         await this.onRefreshConsulta();
       } finally {
         this._preservarRowsNoRefresh = false;
-      }
-
-      if (
-        rowsAntes.length > 0 &&
-        (!Array.isArray(this.rows) || this.rows.length === 0)
-      ) {
-        this.rows = rowsAntes;
-        this.dashboardRows = rowsAntes;
-        this.qt_registro = rowsAntes.length;
-
-        this.$nextTick(() => {
-          const inst = this.$refs?.grid?.instance;
-          if (inst) {
-            inst.option("dataSource", this.rows);
-            inst.refresh();
-          }
-        });
+        this._rowsSnapshotModal = null;
       }
 
       if (
@@ -12765,7 +12751,14 @@ if (descGenerica) {
         const devePreservarRows =
           this._preservarRowsNoRefresh && dadosNormalizados.length === 0;
 
-        if (!devePreservarRows) {
+        if (devePreservarRows) {
+          const snapshot = Array.isArray(this._rowsSnapshotModal)
+            ? [...this._rowsSnapshotModal]
+            : Array.isArray(this.rows)
+            ? [...this.rows]
+            : [];
+          this.rows = snapshot;
+        } else {
           this.rows = dadosNormalizados;
         }
         //
