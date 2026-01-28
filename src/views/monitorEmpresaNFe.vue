@@ -129,25 +129,37 @@
       keep-color
     />
 
-    <q-btn
+    <q-chip
       dense
-      outline
+      rounded
       color="red-7"
-      icon="report_problem"
-      label="Rejeições"
+      class="q-mt-sm q-ml-sm"
+      size="16px"
+      text-color="white"
+      clickable
       :disable="loading"
       @click="abrirGridRejeicoes"
-    />
+    >
+      <q-icon name="report_problem" size="xs" class="q-mr-xs" />
+      REJEIÇÕES
+      <q-tooltip>Ver todas as rejeições</q-tooltip>
+    </q-chip>
 
-    <q-btn
+    <q-chip
       dense
-      outline
+      rounded
       color="deep-purple-7"
-      icon="queue"
-      label="Fila Validação"
+      class="q-mt-sm q-ml-sm"
+      size="16px"
+      text-color="white"
+      clickable
       :disable="loading"
       @click="abrirGridFilaValidacao"
-    />
+    >
+      <q-icon name="queue" size="xs" class="q-mr-xs" />
+      FILA VALIDAÇÃO
+      <q-tooltip>Ver fila de validação</q-tooltip>
+    </q-chip>
   </div>
 </div>
 
@@ -243,33 +255,22 @@
   </div>
 </div>
 
-<div class="row q-col-gutter-sm q-mt-sm items-end">
-  <div class="col-6 col-sm-3">
-    <div class="text-caption text-grey-7">Qtd. Notas (Hoje)</div>
-    <div class="text-subtitle2 text-weight-bold text-deep-orange-6">
-      {{ formatarInteiro(item.QtdNotasHoje) }}
-    </div>
+<div class="metricas-card q-mt-sm">
+  <div class="metrica-item">
+    <div class="metrica-label">Qtd. Notas (Hoje)</div>
+    <div class="metrica-valor text-deep-orange-6">{{ formatarInteiro(item.QtdNotasHoje) }}</div>
   </div>
-
-  <div class="col-6 col-sm-3">
-    <div class="text-caption text-grey-7">Qtd. Filas (Hoje)</div>
-    <div class="text-subtitle2 text-weight-bold text-indigo-7">
-      {{ formatarInteiro(item.QtdFilaHoje) }}
-    </div>
+  <div class="metrica-item">
+    <div class="metrica-label">Qtd. Filas (Hoje)</div>
+    <div class="metrica-valor text-indigo-7">{{ formatarInteiro(item.QtdFilaHoje) }}</div>
   </div>
-
-  <div class="col-6 col-sm-3">
-    <div class="text-caption text-grey-7">Qtd. Rejeições (Hoje)</div>
-    <div class="text-subtitle2 text-weight-bold text-red-7">
-      {{ formatarInteiro(item.QtdRejeicaoHoje) }}
-    </div>
+  <div class="metrica-item">
+    <div class="metrica-label">Qtd. Rejeições (Hoje)</div>
+    <div class="metrica-valor text-red-7">{{ formatarInteiro(item.QtdRejeicaoHoje) }}</div>
   </div>
-
-  <div class="col-6 col-sm-3">
-    <div class="text-caption text-grey-7">Valor Total (Hoje)</div>
-    <div class="text-subtitle2 text-weight-bold text-cyan-7 valor-direita">
-      {{ formatarMoeda(item.VlTotalHoje) }}
-    </div>
+  <div class="metrica-item">
+    <div class="metrica-label">Valor Total (Hoje)</div>
+    <div class="metrica-valor text-cyan-7">{{ formatarMoeda(item.VlTotalHoje) }}</div>
   </div>
 </div>
 
@@ -691,10 +692,163 @@ formatarMoeda(valor) {
       return null;
     },
 
-    selecionarCard(item) {
+    async selecionarCard(item) {
       this.cardSelecionado = item || null;
-      // neste modelo não inventamos navegação/processos;
-      // se o backend retornar grids dependentes do card, dá para chamar outro cd_parametro aqui.
+      
+      // Se a empresa tem rejeições, carrega as rejeições específicas dela
+      if (item && Number(item.QtdRejeicaoHoje || 0) > 0) {
+        await this.carregarRejeicoesEmpresa(item);
+      } else if (item && Number(item.QtdFilaHoje || 0) > 0) {
+        // Se tem fila, carrega a fila específica da empresa
+        await this.carregarFilaEmpresa(item);
+      } else {
+        // Limpa grids se não há rejeições nem fila
+        this.grids = [];
+      }
+    },
+
+    async carregarRejeicoesEmpresa(empresa) {
+      this.loading = true;
+      try {
+        // Busca TODAS as rejeições primeiro (a API não filtra por empresa)
+        const payload = [
+          {
+            ic_json_parametro: "S",
+            cd_parametro: 700, // Rejeições
+            cd_usuario: Number(localStorage.cd_usuario || 0),
+            cd_empresa: Number(localStorage.cd_empresa || 0),
+            dt_inicial: this.dt_inicial,
+            dt_final: this.dt_final,
+          },
+        ];
+
+        const resp = await api.post(PROC, payload);
+        const data = resp?.data ?? resp;
+
+        const recordsets = data?.recordsets;
+        let rows = [];
+
+        if (Array.isArray(recordsets) && recordsets.length) {
+          rows = this.stripStatusRows(recordsets[0] || []);
+        } else {
+          rows = this.stripStatusRows(
+            (data?.recordset) || (data?.rows) || (Array.isArray(data) ? data : [])
+          );
+        }
+
+        // FILTRAR LOCALMENTE pela empresa selecionada
+        const cdEmpresaFiltro = Number(empresa.cd_empresa || 0);
+        const nmBancoFiltro = (empresa.nm_banco_empresa || "").toLowerCase().trim();
+        const nmFantasiaFiltro = (empresa.nm_fantasia_empresa || "").toLowerCase().trim();
+        const nmEmpresaFiltro = (empresa.nm_empresa || "").toLowerCase().trim();
+
+        if (rows.length > 0) {
+          rows = rows.filter(r => {
+            // Tenta diferentes campos que podem identificar a empresa
+            const cdEmpresaRow = Number(r.cd_empresa || r.cd_empresa_nota || r.CdEmpresa || r.cd_emp || 0);
+            const nmBancoRow = (r.nm_banco_empresa || r.nm_banco || r.NmBancoEmpresa || r.banco || "").toLowerCase().trim();
+            const nmFantasiaRow = (r.nm_fantasia_empresa || r.nm_fantasia || r.NmFantasia || "").toLowerCase().trim();
+            const nmEmpresaRow = (r.nm_empresa || r.NmEmpresa || r.razao_social || "").toLowerCase().trim();
+            
+            // Filtra por qualquer campo que bata
+            if (cdEmpresaFiltro > 0 && cdEmpresaRow === cdEmpresaFiltro) return true;
+            if (nmBancoFiltro && nmBancoRow === nmBancoFiltro) return true;
+            if (nmFantasiaFiltro && nmFantasiaRow.includes(nmFantasiaFiltro)) return true;
+            if (nmEmpresaFiltro && nmEmpresaRow.includes(nmEmpresaFiltro)) return true;
+            
+            return false;
+          });
+        }
+
+        const chaves = Object.keys(rows[0] || {});
+        const mapa = chaves.length ? await this.obterMapaCaption(chaves) : {};
+        const columns = this.montarColumnsPorChaves(rows, mapa);
+
+        this.grids = [
+          {
+            titulo: `Rejeições - ${empresa.nm_fantasia_empresa || empresa.nm_empresa}`,
+            rows,
+            columns,
+          },
+        ];
+      } catch (e) {
+        console.error("Erro ao carregar rejeições da empresa:", e);
+        this.grids = [];
+      } finally {
+        this.loading = false;
+      }
+    },
+
+    async carregarFilaEmpresa(empresa) {
+      this.loading = true;
+      try {
+        // Busca TODAS as filas primeiro (a API não filtra por empresa)
+        const payload = [
+          {
+            ic_json_parametro: "S",
+            cd_parametro: 800, // Fila de Validação
+            cd_usuario: Number(localStorage.cd_usuario || 0),
+            cd_empresa: Number(localStorage.cd_empresa || 0),
+            dt_inicial: this.dt_inicial,
+            dt_final: this.dt_final,
+          },
+        ];
+
+        const resp = await api.post(PROC, payload);
+        const data = resp?.data ?? resp;
+
+        const recordsets = data?.recordsets;
+        let rows = [];
+
+        if (Array.isArray(recordsets) && recordsets.length) {
+          rows = this.stripStatusRows(recordsets[0] || []);
+        } else {
+          rows = this.stripStatusRows(
+            (data?.recordset) || (data?.rows) || (Array.isArray(data) ? data : [])
+          );
+        }
+
+        // FILTRAR LOCALMENTE pela empresa selecionada
+        const cdEmpresaFiltro = Number(empresa.cd_empresa || 0);
+        const nmBancoFiltro = (empresa.nm_banco_empresa || "").toLowerCase().trim();
+        const nmFantasiaFiltro = (empresa.nm_fantasia_empresa || "").toLowerCase().trim();
+        const nmEmpresaFiltro = (empresa.nm_empresa || "").toLowerCase().trim();
+
+        if (rows.length > 0) {
+          rows = rows.filter(r => {
+            // Tenta diferentes campos que podem identificar a empresa
+            const cdEmpresaRow = Number(r.cd_empresa || r.cd_empresa_nota || r.CdEmpresa || r.cd_emp || 0);
+            const nmBancoRow = (r.nm_banco_empresa || r.nm_banco || r.NmBancoEmpresa || r.banco || "").toLowerCase().trim();
+            const nmFantasiaRow = (r.nm_fantasia_empresa || r.nm_fantasia || r.NmFantasia || "").toLowerCase().trim();
+            const nmEmpresaRow = (r.nm_empresa || r.NmEmpresa || r.razao_social || "").toLowerCase().trim();
+            
+            // Filtra por qualquer campo que bata
+            if (cdEmpresaFiltro > 0 && cdEmpresaRow === cdEmpresaFiltro) return true;
+            if (nmBancoFiltro && nmBancoRow === nmBancoFiltro) return true;
+            if (nmFantasiaFiltro && nmFantasiaRow.includes(nmFantasiaFiltro)) return true;
+            if (nmEmpresaFiltro && nmEmpresaRow.includes(nmEmpresaFiltro)) return true;
+            
+            return false;
+          });
+        }
+
+        const chaves = Object.keys(rows[0] || {});
+        const mapa = chaves.length ? await this.obterMapaCaption(chaves) : {};
+        const columns = this.montarColumnsPorChaves(rows, mapa);
+
+        this.grids = [
+          {
+            titulo: `Fila de Validação - ${empresa.nm_fantasia_empresa || empresa.nm_empresa}`,
+            rows,
+            columns,
+          },
+        ];
+      } catch (e) {
+        console.error("Erro ao carregar fila da empresa:", e);
+        this.grids = [];
+      } finally {
+        this.loading = false;
+      }
     },
 
     onDblClickCard(e) {
@@ -805,16 +959,35 @@ formatarMoeda(valor) {
 <style scoped>
 .cards-wrapper {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-  gap: 14px;
+  grid-template-columns: repeat(4, 1fr); /* Força exatamente 4 colunas */
+  gap: 12px;
+}
+
+/* Responsivo: menos colunas em telas menores */
+@media (max-width: 1400px) {
+  .cards-wrapper {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+@media (max-width: 1024px) {
+  .cards-wrapper {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+@media (max-width: 600px) {
+  .cards-wrapper {
+    grid-template-columns: 1fr;
+  }
 }
 
 .monitor-card {
   border: 1px solid rgba(0,0,0,0.08);
   border-radius: 12px;
-  padding: 14px;
+  padding: 12px;
   background: #fff;
   transition: transform 0.12s ease, box-shadow 0.12s ease;
+  min-width: 0; /* Permite que o card encolha se necessário */
+  overflow: hidden;
 }
 
 .monitor-card:hover {
@@ -878,6 +1051,34 @@ formatarMoeda(valor) {
 .card-fila {
   background: #f3e5f5 !important; /* roxo bem leve */
   border: 1px solid rgba(156, 39, 176, 0.25);
+}
+
+/* Layout de métricas em grid 2x2 */
+.metricas-card {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px 12px;
+}
+
+.metrica-item {
+  min-width: 0;
+  overflow: hidden;
+}
+
+.metrica-label {
+  font-size: 11px;
+  color: #757575;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.metrica-valor {
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 </style>
