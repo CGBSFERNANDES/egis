@@ -505,8 +505,8 @@ export default {
       );
 
       //console.log('Selecao de Módulo --> ', dados)
-      localStorage.cd_modulo = dados[0].cd_modulo;
-      localStorage.nm_modulo = dados[0].nm_modulo;
+      localStorage.cd_modulo = this.linha.cd_modulo;
+      localStorage.nm_modulo = this.linha.nm_modulo;
       localStorage.cd_api = dados[0].cd_api;
       localStorage.nm_identificacao_api = dados[0].nm_identificacao_api;
 
