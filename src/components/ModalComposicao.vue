@@ -343,6 +343,8 @@ export default {
   methods: {
     fechar() {
       this.internalVisible = false;
+      this.showUnicoEspecial = false;
+      this.campoUnicoAtivo = null;
     },
 
     abrirUnicoEspecial(campo) {
@@ -1099,8 +1101,11 @@ export default {
         const body = [
           {
             ic_json_parametro: "S",
+            cd_chave_modal: Number(localStorage.cd_chave_modal || 0),
             cd_parametro: cdCargaParametro,
             cd_usuario: this.cd_usuario,
+            dt_inicial: localStorage.dt_inicial,
+            dt_final: localStorage.dt_final,
             cd_modal: this.cdModal,
             dados_registro: docsSelecionados,
           },
@@ -1112,25 +1117,53 @@ export default {
         const rows = Array.isArray(data) ? data : data ? [data] : [];
         if (!rows.length) return;
 
-        const origem = rows[0] || {};
+        const payload = rows[0] || {};
+        const origem =
+          (payload && typeof payload === "object" && payload.dados_modal) ||
+          payload ||
+          {};
 
-        Object.keys(this.valores).forEach(atributoModal => {
-          if (Object.prototype.hasOwnProperty.call(origem, atributoModal)) {
-            const valorDados = origem[atributoModal];
-            const atual = this.valores[atributoModal];
+        const mapaDados = {};
+        Object.keys(origem || {}).forEach(k => {
+          mapaDados[this.normaliza(k)] = origem[k];
+        });
 
-            if (
-              atual === null ||
-              atual === "" ||
-              typeof atual === "undefined"
-            ) {
-              this.$set(this.valores, atributoModal, valorDados);
+        (this.meta || []).forEach(campo => {
+          if (!campo || !campo.nm_atributo) return;
+
+          const candidatos = [
+            campo.nm_atributo,
+            campo.nm_atributo_consulta,
+            campo.nm_atributo_lookup,
+            campo.nm_titulo_menu_atributo,
+            campo.ds_atributo,
+          ].filter(Boolean);
+
+          let valorEncontrado;
+
+          for (const c of candidatos) {
+            const key = this.normaliza(c);
+            if (mapaDados[key] !== undefined) {
+              valorEncontrado = mapaDados[key];
+              break;
             }
+          }
+
+          if (valorEncontrado !== undefined) {
+            this.$set(this.valores, campo.nm_atributo, valorEncontrado);
           }
         });
       } catch (e) {
         console.warn("[carregarDadosIniciais] erro ao carregar dados:", e);
       }
+    },
+
+    normaliza(s) {
+      return String(s || "")
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^a-z0-9]/g, "");
     },
   },
 };
