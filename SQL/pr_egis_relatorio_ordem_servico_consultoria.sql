@@ -10,19 +10,19 @@ GO
   Stored Procedure : Microsoft SQL Server 2016
   Autor(es)        : Codex (assistente)
   Banco de Dados   : Egissql - Banco do Cliente
-  Objetivo         : Gerar o relat√≥rio HTML da Ordem de Servi√ßo Consultoria (cd_relatorio = 434)
+  Objetivo         : Gerar o relatÛrio HTML da Ordem de ServiÁo Consultoria (cd_relatorio = 434)
 
-  Par√¢metro √∫nico de entrada (JSON):
+  Par‚metro ˙nico de entrada (JSON):
     @json NVARCHAR(MAX) --> [{ "cd_ordem_servico": 0 }]
 
-  Requisitos T√©cnicos:
+  Requisitos TÈcnicos:
     - SET NOCOUNT ON
     - TRY...CATCH
     - Sem cursor
     - Performance voltada para grandes volumes
-    - C√≥digo comentado
+    - CÛdigo comentado
 
-  Observa√ß√µes:
+  ObservaÁıes:
     - Dados da empresa devem vir de egisadmin.dbo.Empresa
 -------------------------------------------------------------------------------------------------*/
 CREATE PROCEDURE dbo.pr_egis_relatorio_ordem_servico_consultoria
@@ -34,7 +34,7 @@ BEGIN
 
     BEGIN TRY
         -------------------------------------------------------------------------------------------------
-        -- 1) Declara√ß√µes e normaliza√ß√£o do JSON
+        -- 1) DeclaraÁıes e normalizaÁ„o do JSON
         -------------------------------------------------------------------------------------------------
         DECLARE
             @cd_relatorio         INT = 434,
@@ -44,7 +44,7 @@ BEGIN
             @dt_usuario           DATETIME = GETDATE();
 
         DECLARE
-            @titulo               VARCHAR(200) = 'Ordem de Servi√ßo - Consultoria',
+            @titulo               VARCHAR(200) = 'Ordem de ServiÁo - Consultoria',
             @nm_titulo_relatorio  VARCHAR(200) = NULL,
             @ds_relatorio         VARCHAR(8000) = '',
             @logo                 VARCHAR(400) = 'logo_gbstec_sistema.jpg',
@@ -84,7 +84,7 @@ BEGIN
             SET @json = N'[{}]';
 
         -------------------------------------------------------------------------------------------------
-        -- 2) Extra√ß√£o do JSON conforme contrato obrigat√≥rio
+        -- 2) ExtraÁ„o do JSON conforme contrato obrigatÛrio
         -------------------------------------------------------------------------------------------------
         SELECT
             1                                                    AS id_registro,
@@ -103,10 +103,10 @@ BEGIN
         SET @cd_ordem_servico = ISNULL(@cd_ordem_servico, 0);
 
         IF @cd_ordem_servico = 0
-            THROW 50001, 'Par√¢metro cd_ordem_servico n√£o informado ou inv√°lido.', 1;
+            THROW 50001, 'Par‚metro cd_ordem_servico n„o informado ou inv·lido.', 1;
 
         -------------------------------------------------------------------------------------------------
-        -- 3) Dados gerais do relat√≥rio e empresa
+        -- 3) Dados gerais do relatÛrio e empresa
         -------------------------------------------------------------------------------------------------
         SET @cd_empresa = dbo.fn_empresa();
 
@@ -139,7 +139,7 @@ BEGIN
         WHERE e.cd_empresa = @cd_empresa;
 
         -------------------------------------------------------------------------------------------------
-        -- 4) Dados da ordem de servi√ßo (capa)
+        -- 4) Dados da ordem de serviÁo (capa)
         -------------------------------------------------------------------------------------------------
         SELECT
             osa.cd_ordem_servico,
@@ -178,10 +178,10 @@ BEGIN
         WHERE osa.cd_ordem_servico = @cd_ordem_servico;
 
         IF NOT EXISTS (SELECT 1 FROM #OrdemServico)
-            THROW 50002, 'Nenhuma ordem de servi√ßo encontrada para os par√¢metros informados.', 1;
+            THROW 50002, 'Nenhuma ordem de serviÁo encontrada para os par‚metros informados.', 1;
 
         -------------------------------------------------------------------------------------------------
-        -- 5) Itens da ordem de servi√ßo
+        -- 5) Itens da ordem de serviÁo
         -------------------------------------------------------------------------------------------------
         SELECT
             i.*,
@@ -216,7 +216,7 @@ BEGIN
         WHERE i.cd_ordem_servico = @cd_ordem_servico;
 
         -------------------------------------------------------------------------------------------------
-        -- 6) Despesas da ordem de servi√ßo
+        -- 6) Despesas da ordem de serviÁo
         -------------------------------------------------------------------------------------------------
         SELECT
             osad.*,
@@ -228,7 +228,7 @@ BEGIN
         WHERE osad.cd_ordem_servico = @cd_ordem_servico;
 
         -------------------------------------------------------------------------------------------------
-        -- 7) Totais e dados de cabe√ßalho
+        -- 7) Totais e dados de cabeÁalho
         -------------------------------------------------------------------------------------------------
         SELECT
             @os_dt_ordem = CONVERT(VARCHAR(10), dt_ordem_servico, 103),
@@ -282,7 +282,7 @@ BEGIN
         SET @vl_total_geral = ISNULL(@vl_total_servico, 0) + ISNULL(@vl_total_despesa, 0);
 
         -------------------------------------------------------------------------------------------------
-        -- 8) Montagem do HTML (cabe√ßalho + tabs)
+        -- 8) Montagem do HTML (cabeÁalho + tabs)
         -------------------------------------------------------------------------------------------------
         DECLARE
             @html_header          NVARCHAR(MAX) = '',
@@ -338,7 +338,7 @@ BEGIN
             '    </tr>' +
             '    <tr>' +
             '      <td><span class="label">Cliente:</span> ' + @os_cliente + '</td>' +
-            '      <td><span class="label">Raz√£o Social:</span> ' + @os_razao_social + '</td>' +
+            '      <td><span class="label">Raz„o Social:</span> ' + @os_razao_social + '</td>' +
             '      <td><span class="label">Contato:</span> ' + @os_contato + '</td>' +
             '    </tr>' +
             '    <tr>' +
@@ -348,11 +348,11 @@ BEGIN
             '    </tr>' +
             '    <tr>' +
             '      <td><span class="label">Tipo Treinamento:</span> ' + @os_tipo_treinamento + '</td>' +
-            '      <td><span class="label">Usu√°rio Libera√ß√£o:</span> ' + @os_usuario + '</td>' +
+            '      <td><span class="label">Usu·rio LiberaÁ„o:</span> ' + @os_usuario + '</td>' +
             '      <td><span class="label">Horas Totais:</span> ' + @os_total_horas + '</td>' +
             '    </tr>' +
             '    <tr>' +
-            '      <td colspan="3"><span class="label">Observa√ß√£o:</span> ' + @os_observacao + '</td>' +
+            '      <td colspan="3"><span class="label">ObservaÁ„o:</span> ' + @os_observacao + '</td>' +
             '    </tr>' +
             '  </table>' +
             '</div>' +
@@ -360,7 +360,7 @@ BEGIN
             '<div class="section">' +
             '  <table class="info-grid">' +
             '    <tr>' +
-            '      <td><span class="label">Total Servi√ßos:</span> ' + CONVERT(VARCHAR(30), @vl_total_servico) + '</td>' +
+            '      <td><span class="label">Total ServiÁos:</span> ' + CONVERT(VARCHAR(30), @vl_total_servico) + '</td>' +
             '      <td><span class="label">Total Despesas:</span> ' + CONVERT(VARCHAR(30), @vl_total_despesa) + '</td>' +
             '      <td><span class="label">Total Geral:</span> ' + CONVERT(VARCHAR(30), @vl_total_geral) + '</td>' +
             '    </tr>' +
@@ -368,12 +368,12 @@ BEGIN
             '</div>' +
             '<div class="tabs">' +
             '  <input type="radio" id="tab-servicos" name="tabs" checked>' +
-            '  <label for="tab-servicos">Servi√ßos</label>' +
+            '  <label for="tab-servicos">ServiÁos</label>' +
             '  <input type="radio" id="tab-despesas" name="tabs">' +
             '  <label for="tab-despesas">Despesas</label>';
 
         -------------------------------------------------------------------------------------------------
-        -- 9) Montagem din√¢mica da tabela de itens
+        -- 9) Montagem din‚mica da tabela de itens
         -------------------------------------------------------------------------------------------------
         DECLARE @colsItens TABLE (colname SYSNAME, colorder INT);
 
@@ -410,7 +410,7 @@ BEGIN
             '</table>';
 
         -------------------------------------------------------------------------------------------------
-        -- 10) Montagem din√¢mica da tabela de despesas
+        -- 10) Montagem din‚mica da tabela de despesas
         -------------------------------------------------------------------------------------------------
         DECLARE @colsDesp TABLE (colname SYSNAME, colorder INT);
 
@@ -466,7 +466,10 @@ BEGIN
             ERROR_LINE()
         );
 
-        THROW ERROR_NUMBER(), @errMsg, ERROR_STATE();
+        --THROW ERROR_NUMBER(), @errMsg, ERROR_STATE();
+
     END CATCH
 END;
 GO
+
+EXEC pr_egis_relatorio_ordem_servico_consultoria @json = '[{ "cd_ordem_servico" : 7416 }]'

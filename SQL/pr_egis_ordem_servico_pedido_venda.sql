@@ -10,21 +10,21 @@ GO
   Stored Procedure : Microsoft SQL Server 2016
   Autor(es)        : Codex (assistente)
   Banco de Dados   : Egissql - Banco do Cliente
-  Objetivo         : Gerar o relatÃ³rio HTML da Ordem de ServiÃ§o por Pedido (cd_relatorio = 436)
+  Objetivo         : Gerar o relatório HTML da Ordem de Serviço por Pedido (cd_relatorio = 436)
 
-  ParÃ¢metro Ãºnico de entrada (JSON):
+  Parâmetro único de entrada (JSON):
     @json NVARCHAR(MAX) --> [{ "cd_ordem_servico": 0, "cd_pedido_venda": 0, "cd_pedido_inicio": 0, "cd_pedido_fim": 0 }]
 
-  Requisitos TÃ©cnicos:
+  Requisitos Técnicos:
     - SET NOCOUNT ON
     - TRY...CATCH
     - Sem cursor
     - Performance voltada para grandes volumes
-    - CÃ³digo comentado
+    - Código comentado
 
-  ObservaÃ§Ãµes:
+  Observações:
     - Dados da empresa devem vir de egisadmin.dbo.Empresa
-    - Utiliza o contrato obrigatÃ³rio de extraÃ§Ã£o do JSON via OPENJSON
+    - Utiliza o contrato obrigatório de extração do JSON via OPENJSON
 -------------------------------------------------------------------------------------------------*/
 CREATE PROCEDURE dbo.pr_egis_ordem_servico_pedido_venda
     @json NVARCHAR(MAX) = NULL
@@ -35,7 +35,7 @@ BEGIN
 
     BEGIN TRY
         -------------------------------------------------------------------------------------------------
-        -- 1) DeclaraÃ§Ãµes e normalizaÃ§Ã£o do JSON
+        -- 1) Declarações e normalização do JSON
         -------------------------------------------------------------------------------------------------
         DECLARE
             @cd_relatorio                INT = 436,
@@ -48,7 +48,7 @@ BEGIN
             @ic_codigo_produto_rel_pedido CHAR(1) = 'N';
 
         DECLARE
-            @titulo               VARCHAR(200) = 'Ordem de ServiÃ§o por Pedido',
+            @titulo               VARCHAR(200) = 'Ordem de Serviço por Pedido',
             @nm_titulo_relatorio  VARCHAR(200) = NULL,
             @ds_relatorio         VARCHAR(8000) = '',
             @logo                 VARCHAR(400) = 'logo_gbstec_sistema.jpg',
@@ -91,7 +91,7 @@ BEGIN
             SET @json = N'[{}]';
 
         -------------------------------------------------------------------------------------------------
-        -- 2) ExtraÃ§Ã£o do JSON conforme contrato obrigatÃ³rio
+        -- 2) Extração do JSON conforme contrato obrigatório
         -------------------------------------------------------------------------------------------------
         SELECT
             1                                                  AS id_registro,
@@ -133,7 +133,7 @@ BEGIN
             THROW 50001, 'Informe cd_pedido_venda, cd_pedido_inicio/cd_pedido_fim ou cd_ordem_servico.', 1;
 
         -------------------------------------------------------------------------------------------------
-        -- 3) Dados gerais do relatÃ³rio e empresa
+        -- 3) Dados gerais do relatório e empresa
         -------------------------------------------------------------------------------------------------
         SET @cd_empresa = dbo.fn_empresa();
 
@@ -243,7 +243,7 @@ BEGIN
             AND os.nm_status_os = 'Ativa';
 
         -------------------------------------------------------------------------------------------------
-        -- 5) CabeÃ§alho (informaÃ§Ãµes principais)
+        -- 5) Cabeçalho (informações principais)
         -------------------------------------------------------------------------------------------------
         SELECT TOP (1)
             @os_numero          = CONVERT(VARCHAR(20), cd_ordem_servico),
@@ -264,7 +264,7 @@ BEGIN
         ORDER BY cd_ordem_servico;
 
         -------------------------------------------------------------------------------------------------
-        -- 6) Tabelas auxiliares de produtos e serviÃ§os
+        -- 6) Tabelas auxiliares de produtos e serviços
         -------------------------------------------------------------------------------------------------
         SELECT DISTINCT
             cd_item_ordem_servico,
@@ -289,7 +289,7 @@ BEGIN
         WHERE ISNULL(nm_item_servico, '') <> '';
 
         -------------------------------------------------------------------------------------------------
-        -- 7) Montagem do HTML do relatÃ³rio
+        -- 7) Montagem do HTML do relatório
         -------------------------------------------------------------------------------------------------
         SET @html_header =
             '<html><head><meta charset="utf-8" />' +
@@ -319,11 +319,11 @@ BEGIN
             '</div>' +
             '<div class="section">' +
             '  <p><span class="label">OS:</span> ' + @os_numero + ' &nbsp; <span class="label">Data:</span> ' + @os_data + ' &nbsp; <span class="label">Pedido:</span> ' + @os_pedido + '</p>' +
-            '  <p><span class="label">Cliente:</span> ' + @os_cliente + ' &nbsp; <span class="label">RazÃ£o Social:</span> ' + @os_cliente_razao + '</p>' +
+            '  <p><span class="label">Cliente:</span> ' + @os_cliente + ' &nbsp; <span class="label">Razão Social:</span> ' + @os_cliente_razao + '</p>' +
             '  <p><span class="label">CNPJ:</span> ' + @os_cnpj_cliente + ' &nbsp; <span class="label">Email:</span> ' + @os_email_cliente + '</p>' +
             '  <p><span class="label">Contato:</span> ' + @os_contato + ' &nbsp; <span class="label">Telefone:</span> ' + @os_telefone_cliente + '</p>' +
-            '  <p><span class="label">Status:</span> ' + @os_status + ' &nbsp; <span class="label">CondiÃ§Ã£o:</span> ' + @os_condicao_pag + '</p>' +
-            '  <p><span class="label">UsuÃ¡rio:</span> ' + @os_usuario + ' &nbsp; <span class="label">Fechamento:</span> ' + @os_data_fechamento + '</p>' +
+            '  <p><span class="label">Status:</span> ' + @os_status + ' &nbsp; <span class="label">Condição:</span> ' + @os_condicao_pag + '</p>' +
+            '  <p><span class="label">Usuário:</span> ' + @os_usuario + ' &nbsp; <span class="label">Fechamento:</span> ' + @os_data_fechamento + '</p>' +
             '  <p><span class="label">Obs. Fechamento:</span> ' + @os_obs_fechamento + '</p>' +
             '</div>' +
             '<div class="section">' + ISNULL(@ds_relatorio, '') + '</div>';
@@ -366,18 +366,18 @@ BEGIN
             '  <table>' +
             '    <thead>' +
             '      <tr>' +
-            '        <th>Item</th><th>Produto</th><th>DescriÃ§Ã£o</th><th>Obs.</th><th>Qtde</th><th>Vl. Unit.</th><th>Vl. Total</th>' +
+            '        <th>Item</th><th>Produto</th><th>Descrição</th><th>Obs.</th><th>Qtde</th><th>Vl. Unit.</th><th>Vl. Total</th>' +
             '      </tr>' +
             '    </thead>' +
             '    <tbody>' + ISNULL(@produto_rows, '') + '</tbody>' +
             '  </table>' +
             '</div>' +
             '<div class="section">' +
-            '  <h3>ServiÃ§os</h3>' +
+            '  <h3>Serviços</h3>' +
             '  <table>' +
             '    <thead>' +
             '      <tr>' +
-            '        <th>ServiÃ§o</th><th>Qtde</th><th>Vl. Unit.</th><th>Vl. Total</th>' +
+            '        <th>Serviço</th><th>Qtde</th><th>Vl. Unit.</th><th>Vl. Total</th>' +
             '      </tr>' +
             '    </thead>' +
             '    <tbody>' + ISNULL(@servico_rows, '') + '</tbody>' +
@@ -396,7 +396,14 @@ BEGIN
             ERROR_LINE()
         );
 
-        THROW ERROR_NUMBER(), @errMsg, ERROR_STATE();
+        --THROW ERROR_NUMBER(), @errMsg, ERROR_STATE();
+
+
     END CATCH
+
+
 END;
 GO
+
+
+--exec pr_egis_ordem_servico_pedido_venda '[{"cd_pedido_venda":1726}]'

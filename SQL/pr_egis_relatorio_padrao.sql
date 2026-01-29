@@ -163,97 +163,6 @@ end
 if isnull(@cd_relatorio_form,0)>0
    set @cd_relatorio = @cd_relatorio_form
 
---Canhoto de Entrega--------------------------------------------------------------------------------------
-if @cd_relatorio = 428
-begin
-	exec pr_egis_canhoto_entrega_nota_saida @json = @json
-	return
-end
-
---Contabilização das Receitas/Faturamento Caixa--------------------------------------------------------------------------------------
-if @cd_relatorio = 439
-begin
-	exec pr_egis_contabilizacao_receitas_faturamento_caixa @json = @json
-	return
-end
-
---Contabilização de Entradas--------------------------------------------------------------------------------------
-if @cd_relatorio = 440
-begin
-	exec pr_egis_contabilizacao_entrada_recebimento @json = @json
-	return
-end
-
---Contabilização do CMV - Custo Mercadoria Vendida----------------------------------------------------------------------------------
-if @cd_relatorio = 441
-begin
-	exec pr_egis_contabilizacao_custo_mercadoria_caixa @json = @json
-	return
-end
-
---Baixa do Bem----------------------------------------------------------------------------------
-if @cd_relatorio = 443
-begin
-	exec pr_egis_relatorio_baixa_bem @json = @json
-	return
-end
-
---Inventário do Bem do Ativo----------------------------------------------------------------------------------
-if @cd_relatorio = 445
-begin
-	exec pr_egis_relatorio_inventario_ativo_periodo @json = @json
-	return
-end
-
---Ordem de Servio Grfica----------------------------------------------------------------------------------
-if @cd_relatorio = 433
-begin
-	exec pr_egis_relatorio_ordem_servico_grafica @json = @json
-	return
-end
-
---Ordem de Servico Consultoria----------------------------------------------------------------------------------
-if @cd_relatorio = 434
-begin
-	exec pr_egis_relatorio_ordem_servico_consultoria @json = @json
-	return
-end
-
---Nota Débito----------------------------------------------------------------------------------
-if @cd_relatorio = 435
-begin
-	exec pr_egis_relatorio_nota_debito @json = @json
-	return
-end
-
---Ordem de Servico por Pedido--------------------------------------------------------------------------
-if @cd_relatorio = 436
-begin
-	exec pr_egis_ordem_servico_pedido_venda @json = @json
-	return
-end
-
---Resumo de Comissão por Vendedor----------------------------------------------------------------------------
-if @cd_relatorio = 427
-begin
-	exec pr_egis_pr_egis_resumo_comissao_vendedor_volume_nota @json = @json
-	return
-end
-
---Etiqueta de Volume---
-
-if @cd_relatorio = 425
-begin
-	exec pr_egis_etiqueta_volume_nota @json = @json
-	return
-end--Ordem de Separação por Categoria--------------------------------------------------------------------------------------
-if @cd_relatorio = 424
-begin
-	exec pr_egis_relatorio_ordem_separacao_categoria @json = @json
-	return
-end
-
-
 --Remessa de Documentos------------------------------------------------------------------------------------------------
 if @cd_relatorio = 423
 begin
@@ -266,6 +175,13 @@ end
 if @cd_relatorio = 422
 begin
 	exec pr_egis_relatorio_contrato_servico @json = @json
+	return
+end
+
+--Canhoto de Entrega--------------------------------------------------------------------------------------
+if @cd_relatorio = 428
+begin
+	exec pr_egis_canhoto_entrega_nota_saida @json = @json
 	return
 end
 
@@ -748,6 +664,7 @@ begin
   exec pr_egis_relatorio_pedido_compra_modelo_01 @cd_relatorio, @json
   return
 end
+
 --Parcelas do Contrato a Pagar no Periodo-------------------------------------------------------------------------------------------------------------------------------   
 if @cd_relatorio = 432
 begin
@@ -1027,14 +944,7 @@ end
 
 if @cd_relatorio = 264
 begin
-   if @cd_empresa = 357
-   begin
-     exec pr_egis_relatorio_ordem_separacao_categoria @json = @json
-   end
-   else
-   begin
-     exec pr_egis_relatorio_ordem_separacao @cd_relatorio,@cd_parametro,@json
-   end
+   exec pr_egis_relatorio_ordem_separacao @cd_relatorio,@cd_parametro,@json
    return
 
 end
@@ -1565,7 +1475,6 @@ begin
    return
 
 end
-
 --Preparação de Carga--------------------------------------------------------------------
 
 if @cd_relatorio = 235

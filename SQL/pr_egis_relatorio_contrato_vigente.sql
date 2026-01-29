@@ -10,14 +10,14 @@ GO
   Stored Procedure : Microsoft SQL Server 2016
   Autor(es)        : Codex (assistente)
   Banco de Dados   : Egissql - Banco do Cliente
-  Objetivo         : Relat√≥rio HTML - Contratos Vigentes em Aberto (cd_relatorio = 431)
+  Objetivo         : RelatÛrio HTML - Contratos Vigentes em Aberto (cd_relatorio = 431)
 
   Requisitos:
-    - Somente 1 par√¢metro de entrada (@json)
+    - Somente 1 par‚metro de entrada (@json)
     - SET NOCOUNT ON / TRY...CATCH
     - Sem cursor
     - Performance para grandes volumes
-    - C√≥digo comentado
+    - CÛdigo comentado
 
   Entradas esperadas em @json:
     {
@@ -27,12 +27,12 @@ GO
       "cd_usuario": 10
     }
 
-  Observa√ß√µes:
-    - Se dt_inicial/dt_final n√£o forem informadas, tenta Parametro_Relatorio;
-    - Caso Parametro_Relatorio n√£o exista, usa o m√™s corrente.
+  ObservaÁıes:
+    - Se dt_inicial/dt_final n„o forem informadas, tenta Parametro_Relatorio;
+    - Caso Parametro_Relatorio n„o exista, usa o mÍs corrente.
 -------------------------------------------------------------------------------------------------*/
 CREATE PROCEDURE dbo.pr_egis_relatorio_contrato_vigente
-    @json NVARCHAR(MAX) = NULL
+    @json NVARCHAR(MAX) = ''
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -40,7 +40,7 @@ BEGIN
 
     BEGIN TRY
         /*-----------------------------------------------------------------------------------------
-          1) Vari√°veis de trabalho
+          1) Vari·veis de trabalho
         -----------------------------------------------------------------------------------------*/
         DECLARE
             @cd_relatorio       INT           = 431,
@@ -70,10 +70,10 @@ BEGIN
         DECLARE @dt_fim_str NVARCHAR(50) = NULL;
 
         /*-----------------------------------------------------------------------------------------
-          2) Valida√ß√£o e normaliza√ß√£o do JSON (aceita array [ { ... } ])
+          2) ValidaÁ„o e normalizaÁ„o do JSON (aceita array [ { ... } ])
         -----------------------------------------------------------------------------------------*/
         IF NULLIF(LTRIM(RTRIM(@json)), N'') IS NOT NULL AND ISJSON(@json) = 0
-            THROW 50001, 'Payload JSON inv√°lido em @json.', 1;
+            THROW 50001, 'Payload JSON inv·lido em @json.', 1;
 
         IF NULLIF(LTRIM(RTRIM(@json)), N'') IS NOT NULL AND ISJSON(@json) = 1
         BEGIN
@@ -87,7 +87,7 @@ BEGIN
             SET @cd_usuario = TRY_CAST(JSON_VALUE(@json, '$.cd_usuario') AS INT);
 
             /*-------------------------------------------------------------------------------------
-              Parse da data inicial (suporte a m√∫ltiplos formatos)
+              Parse da data inicial (suporte a m˙ltiplos formatos)
             -------------------------------------------------------------------------------------*/
             IF @dt_ini_str IS NOT NULL AND LEN(LTRIM(RTRIM(@dt_ini_str))) > 0
             BEGIN
@@ -101,7 +101,7 @@ BEGIN
             END
 
             /*-------------------------------------------------------------------------------------
-              Parse da data final (suporte a m√∫ltiplos formatos)
+              Parse da data final (suporte a m˙ltiplos formatos)
             -------------------------------------------------------------------------------------*/
             IF @dt_fim_str IS NOT NULL AND LEN(LTRIM(RTRIM(@dt_fim_str))) > 0
             BEGIN
@@ -116,7 +116,7 @@ BEGIN
         END
 
         /*-----------------------------------------------------------------------------------------
-          3) Datas padr√£o: tenta Parametro_Relatorio e cai no m√™s corrente
+          3) Datas padr„o: tenta Parametro_Relatorio e cai no mÍs corrente
         -----------------------------------------------------------------------------------------*/
         IF @dt_inicial IS NULL OR @dt_final IS NULL
         BEGIN
@@ -138,7 +138,7 @@ BEGIN
         SET @cd_empresa = ISNULL(NULLIF(@cd_empresa, 0), dbo.fn_empresa());
 
         /*-----------------------------------------------------------------------------------------
-          4) Cabe√ßalho do relat√≥rio (relatorio + empresa)
+          4) CabeÁalho do relatÛrio (relatorio + empresa)
         -----------------------------------------------------------------------------------------*/
         SELECT
             @titulo              = ISNULL(r.nm_relatorio, @titulo),
@@ -166,7 +166,7 @@ BEGIN
         WHERE e.cd_empresa = @cd_empresa;
 
         /*-----------------------------------------------------------------------------------------
-          5) Base do relat√≥rio (Contratos Vigentes em Aberto)
+          5) Base do relatÛrio (Contratos Vigentes em Aberto)
         -----------------------------------------------------------------------------------------*/
         SELECT
             cs.cd_contrato_pagar,
@@ -182,17 +182,18 @@ BEGIN
             tco.nm_tipo_contrato
         INTO #contratos
         FROM Contrato_Pagar AS cs WITH (NOLOCK)
-        LEFT JOIN Fornecedor AS f WITH (NOLOCK)
-            ON f.cd_fornecedor = cs.cd_fornecedor
-        LEFT JOIN Tipo_Conta_Pagar AS tcpp WITH (NOLOCK)
-            ON tcpp.cd_tipo_conta_pagar = cs.cd_tipo_conta_pagar
-        LEFT JOIN Tipo_Contrato AS tco WITH (NOLOCK)
-            ON tco.cd_tipo_contrato = cs.cd_tipo_contrato
-        LEFT JOIN Status_Contrato AS sc WITH (NOLOCK)
-            ON sc.cd_status_contrato = cs.cd_status_contrato
-        WHERE cs.dt_emissao_contrato >= @dt_inicial
-          AND cs.dt_emissao_contrato <= @dt_final_limit
-          AND UPPER(ISNULL(sc.nm_status_contrato, '')) IN ('VIGENTE', 'ABERTO')
+        LEFT JOIN Fornecedor AS f WITH (NOLOCK) ON f.cd_fornecedor = cs.cd_fornecedor
+        LEFT JOIN Tipo_Conta_Pagar AS tcpp WITH (NOLOCK) ON tcpp.cd_tipo_conta_pagar = cs.cd_tipo_conta_pagar
+        LEFT JOIN Tipo_Contrato AS tco WITH (NOLOCK) ON tco.cd_tipo_contrato = cs.cd_tipo_contrato
+        LEFT JOIN Status_Contrato AS sc WITH (NOLOCK) ON sc.cd_status_contrato = cs.cd_status_contrato
+       
+	   WHERE 
+			cs.dt_emissao_contrato >= @dt_inicial
+          AND 
+		  cs.dt_emissao_contrato <= @dt_final_limit
+          AND 
+		  
+		  UPPER(ISNULL(sc.nm_status_contrato, '')) IN ('VIGENTE', 'ABERTO', 'ATIVO')
         ORDER BY cs.dt_emissao_contrato, cs.cd_contrato_pagar;
 
         /*-----------------------------------------------------------------------------------------
@@ -200,7 +201,11 @@ BEGIN
         -----------------------------------------------------------------------------------------*/
         DECLARE @html NVARCHAR(MAX) = N'';
         DECLARE @style NVARCHAR(MAX) =
-N'<style>
+'<html>
+            <head>
+            <meta charset="UTF-8">
+            <title>Contrato Vigente</title>
+            <style>
     body { font-family: ''Segoe UI'', Arial, sans-serif; color: #222; margin: 0; padding: 0; }
     .report { padding: 24px; }
     .header { display: flex; align-items: center; justify-content: space-between; border-bottom: 3px solid ' + @nm_cor_empresa + N'; padding-bottom: 12px; margin-bottom: 20px; }
@@ -210,8 +215,16 @@ N'<style>
     .header__title span { display: block; font-size: 12px; color: #666; }
     .company { font-size: 12px; color: #444; margin-bottom: 12px; }
     .company strong { color: #111; }
+    .section-title {
+            background-color: #1976D2;
+            color: white;
+            padding: 5px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            font-size: 120%;
+        } 
     .period { font-size: 12px; color: #555; margin-bottom: 16px; }
-    .section-title { font-size: 14px; font-weight: 700; margin: 16px 0 8px; color: ' + @nm_cor_empresa + N'; }
+    
     table { width: 100%; border-collapse: collapse; font-size: 12px; }
     th, td { border: 1px solid #ddd; padding: 6px 8px; text-align: left; vertical-align: top; }
     th { background: #f6f6f6; }
@@ -224,7 +237,7 @@ N'<style>
                     N'<div class="header__logo"><img src="' + @logo + N'" alt="Logo" /></div>' +
                     N'<div class="header__title">' +
                         N'<h1>' + ISNULL(@nm_titulo_relatorio, @titulo) + N'</h1>' +
-                        N'<span>Emiss√£o: ' + @data_hora_atual + N'</span>' +
+                        N'<span>Emiss„o: ' + @data_hora_atual + N'</span>' +
                     N'</div>' +
                 N'</div>' +
                 N'<div class="company">' +
@@ -233,21 +246,23 @@ N'<style>
                     ISNULL(@nm_bairro_empresa, '') + N' - ' + ISNULL(@nm_cidade_empresa, '') + N'/' + ISNULL(@sg_estado_empresa, '') + N' - ' + ISNULL(@cd_cep_empresa, '') + N'<br />' +
                     N'CNPJ: ' + ISNULL(@cd_cnpj_empresa, '') + N' | Fone: ' + ISNULL(@cd_telefone_empresa, '') + N' | Email: ' + ISNULL(@nm_email_internet, '') +
                 N'</div>' +
-                N'<div class="period">Per√≠odo: ' + dbo.fn_data_string(@dt_inicial) + N' at√© ' + dbo.fn_data_string(@dt_final) + N'</div>' +
-                N'<div class="section-title">Contratos</div>' +
+                N' <div class="section-title">' +
+       N' <p style="display: inline;">Periodo: '+isnull(dbo.fn_data_string(@dt_inicial),'')+' · '+isnull(dbo.fn_data_string(@dt_final),'')+'</p>'+ 
+      N' <p style="display: inline; text-align: center; padding: 25%;">Contratos Vigentes</p>' +
+        N' </div>' +
                 N'<table>' +
                     N'<thead>' +
                         N'<tr>' +
-                            N'<th>C√≥digo</th>' +
+                            N'<th>CÛdigo</th>' +
                             N'<th>Contrato</th>' +
-                            N'<th>Emiss√£o</th>' +
+                            N'<th>Emiss„o</th>' +
                             N'<th>Vencimento</th>' +
                             N'<th>Fornecedor</th>' +
                             N'<th class="text-right">Total Contrato R$</th>' +
                             N'<th class="text-right">Parcelas</th>' +
                             N'<th class="text-right">Parcela Fixa</th>' +
-                            N'<th>T√©rmino</th>' +
-                            N'<th>Classifica√ß√£o</th>' +
+                            N'<th>TÈrmino</th>' +
+                            N'<th>ClassificaÁ„o</th>' +
                             N'<th>Tipo de Contrato</th>' +
                         N'</tr>' +
                     N'</thead>' +
@@ -283,19 +298,21 @@ N'<style>
         END
         ELSE
         BEGIN
-            SET @html = @html + N'<tr><td colspan="11">Nenhum contrato encontrado no per√≠odo informado.</td></tr>';
+            SET @html = @html + N'<tr><td colspan="11">Nenhum contrato encontrado no perÌodo informado.</td></tr>';
         END
 
         SET @html = @html +
                     N'</tbody>' +
                 N'</table>' +
-            N'</div>';
+            N'</div>'+
+			'</body>' +
+            '</html>';
 
         SELECT ISNULL(@html, N'') AS RelatorioHTML;
 
         /*-----------------------------------------------------------------------------------------
-          7) Integra√ß√£o com tabela de log (quando aplic√°vel)
-             - Caso exista uma tabela de log padr√£o no ambiente, registrar aqui.
+          7) IntegraÁ„o com tabela de log (quando aplic·vel)
+             - Caso exista uma tabela de log padr„o no ambiente, registrar aqui.
         -----------------------------------------------------------------------------------------*/
 
     END TRY
@@ -305,3 +322,26 @@ N'<style>
     END CATCH;
 END;
 GO
+--exec pr_egis_relatorio_contrato_vigente '[{
+--    "cd_empresa": "368",
+--    "cd_modulo": "377",
+--    "cd_menu": "8325",
+--    "cd_relatorio_form": 431,
+--    "cd_processo": "",
+--    "cd_form": 91,
+--    "cd_documento_form": 18,
+--    "cd_parametro_form": "2",
+--    "cd_usuario": "5034",
+--    "cd_cliente_form": "0",
+--    "cd_contato_form": "5034",
+--    "cd_filtro_tabela": null,
+--    "dt_usuario": "2026-01-20",
+--    "lookup_formEspecial": {},
+--    "cd_parametro_relatorio": "18",
+--    "cd_relatorio": "432",
+--    "dt_inicial": "2025-01-01",
+--    "dt_final": "2027-01-20",
+--    "detalhe": [],
+--    "lote": [],
+--    "cd_documento": "18"
+--}]'

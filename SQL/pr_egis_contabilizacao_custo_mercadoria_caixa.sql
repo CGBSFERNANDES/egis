@@ -10,18 +10,18 @@ GO
   Stored Procedure : Microsoft SQL Server 2016
   Autor(es)        : Codex (assistente)
   Banco de Dados   : Egissql - Banco do Cliente
-  Objetivo         : Relat√≥rio HTML - Contabiliza√ß√£o do CMV - Custo Mercadoria Vendida (cd_relatorio = 441)
+  Objetivo         : RelatÛrio HTML - ContabilizaÁ„o do CMV - Custo Mercadoria Vendida (cd_relatorio = 441)
 
   Requisitos:
-    - Somente 1 par√¢metro de entrada (@json)
+    - Somente 1 par‚metro de entrada (@json)
     - SET NOCOUNT ON / TRY...CATCH
     - Sem cursor
     - Performance para grandes volumes
-    - C√≥digo comentado
+    - CÛdigo comentado
 
-  Observa√ß√µes:
+  ObservaÁıes:
     - Entrada: @json = '[{"dt_inicial": "2025-01-01", "dt_final": "2025-01-31", "cd_usuario": 1, "cd_relatorio": 441}]'
-    - Retorna HTML no padr√£o RelatorioHTML
+    - Retorna HTML no padr„o RelatorioHTML
 -------------------------------------------------------------------------------------------------*/
 CREATE PROCEDURE dbo.pr_egis_contabilizacao_custo_mercadoria_caixa
     @json NVARCHAR(MAX) = NULL
@@ -36,7 +36,7 @@ BEGIN
         @cd_usuario               INT           = 0,
         @dt_inicial               DATETIME      = NULL,
         @dt_final                 DATETIME      = NULL,
-        @titulo                   VARCHAR(200)  = 'Contabiliza√ß√£o do CMV - Custo Mercadoria Vendida',
+        @titulo                   VARCHAR(200)  = 'ContabilizaÁ„o do CMV - Custo Mercadoria Vendida',
         @logo                     VARCHAR(400)  = 'logo_gbstec_sistema.jpg',
         @nm_cor_empresa           VARCHAR(20)   = '#1976D2',
         @nm_endereco_empresa      VARCHAR(200)  = '',
@@ -61,12 +61,12 @@ BEGIN
 
     BEGIN TRY
         /*-----------------------------------------------------------------------------------------
-          1) Normaliza JSON (entrada obrigat√≥ria) e extrai par√¢metros
+          1) Normaliza JSON (entrada obrigatÛria) e extrai par‚metros
         -----------------------------------------------------------------------------------------*/
         SET @json = ISNULL(@json, N'');
 
         IF @json = N''
-            THROW 50001, 'Payload JSON inv√°lido ou vazio em @json.', 1;
+            THROW 50001, 'Payload JSON inv·lido ou vazio em @json.', 1;
 
         SELECT
             1                                                    AS id_registro,
@@ -94,7 +94,7 @@ BEGIN
         WHERE campo = 'cd_relatorio';
 
         /*-----------------------------------------------------------------------------------------
-          2) Dados do relat√≥rio e par√¢metros padr√£o
+          2) Dados do relatÛrio e par‚metros padr„o
         -----------------------------------------------------------------------------------------*/
         SELECT
             @titulo = ISNULL(r.nm_titulo_relatorio, r.nm_relatorio)
@@ -144,7 +144,7 @@ BEGIN
         WHERE e.cd_empresa = @cd_empresa;
 
         /*-----------------------------------------------------------------------------------------
-          4) Conta padr√£o de estoque para CMV
+          4) Conta padr„o de estoque para CMV
         -----------------------------------------------------------------------------------------*/
         DECLARE
             @cd_lancamento_padrao_estoque INT = 40,
@@ -187,7 +187,7 @@ BEGIN
         GROUP BY n.dt_produto_fechamento;
 
         /*-----------------------------------------------------------------------------------------
-          6) Consolida para impress√£o
+          6) Consolida para impress„o
         -----------------------------------------------------------------------------------------*/
         SELECT *
         INTO #Resultado
@@ -213,8 +213,8 @@ BEGIN
         SET @html_titulo =
             '<div style="width:100%; text-align:center; font-family: Arial;">' +
             '  <h2 style="margin:10px 0; color:' + @nm_cor_empresa + ';">' + ISNULL(@titulo, '') + '</h2>' +
-            '  <div style="font-size:12px;">Per√≠odo: ' + CONVERT(VARCHAR(10), @dt_inicial, 103) +
-            ' at√© ' + CONVERT(VARCHAR(10), @dt_final, 103) + '</div>' +
+            '  <div style="font-size:12px;">PerÌodo: ' + CONVERT(VARCHAR(10), @dt_inicial, 103) +
+            ' atÈ ' + CONVERT(VARCHAR(10), @dt_final, 103) + '</div>' +
             '</div>';
 
         SET @html_cab_det =
@@ -222,14 +222,14 @@ BEGIN
             '<thead style="background:#f0f0f0;">' +
             '  <tr>' +
             '    <th>Data</th>' +
-            '    <th>Conta D√©bito</th>' +
-            '    <th>M√°scara D√©bito</th>' +
-            '    <th>Nome D√©bito</th>' +
-            '    <th>Conta Cr√©dito</th>' +
-            '    <th>M√°scara Cr√©dito</th>' +
-            '    <th>Nome Cr√©dito</th>' +
-            '    <th>Vl. D√©bito</th>' +
-            '    <th>Vl. Cr√©dito</th>' +
+            '    <th>Conta DÈbito</th>' +
+            '    <th>M·scara DÈbito</th>' +
+            '    <th>Nome DÈbito</th>' +
+            '    <th>Conta CrÈdito</th>' +
+            '    <th>M·scara CrÈdito</th>' +
+            '    <th>Nome CrÈdito</th>' +
+            '    <th>Vl. DÈbito</th>' +
+            '    <th>Vl. CrÈdito</th>' +
             '    <th>Tipo</th>' +
             '  </tr>' +
             '</thead><tbody>';
@@ -256,7 +256,7 @@ BEGIN
 
         IF ISNULL(@html_detalhe, '') = ''
         BEGIN
-            SET @html_detalhe = '<tr><td colspan="10" style="text-align:center;">Sem registros no per√≠odo.</td></tr>';
+            SET @html_detalhe = '<tr><td colspan="10" style="text-align:center;">Sem registros no perÌodo.</td></tr>';
         END
 
         DECLARE
@@ -274,10 +274,10 @@ BEGIN
             '<br /><table style="width:100%; border-collapse:collapse; font-family: Arial; font-size:12px;" border="1">' +
             '<thead style="background:#f0f0f0;">' +
             '  <tr>' +
-            '    <th>D√©bito</th>' +
-            '    <th>Cr√©dito</th>' +
+            '    <th>DÈbito</th>' +
+            '    <th>CrÈdito</th>' +
             '    <th>Valor</th>' +
-            '    <th>Tipo de Contabiliza√ß√£o</th>' +
+            '    <th>Tipo de ContabilizaÁ„o</th>' +
             '  </tr>' +
             '</thead><tbody>' +
             ISNULL((
@@ -297,9 +297,9 @@ BEGIN
         SET @html_totais =
             '<br /><table style="width:100%; border-collapse:collapse; font-family: Arial; font-size:12px;" border="1">' +
             '<tr>' +
-            '  <td style="text-align:right;"><strong>Total D√©bito</strong></td>' +
+            '  <td style="text-align:right;"><strong>Total DÈbito</strong></td>' +
             '  <td style="text-align:right;">' + CAST(ISNULL(dbo.fn_formata_valor(@vl_total_debito), 0) AS NVARCHAR(20)) + '</td>' +
-            '  <td style="text-align:right;"><strong>Total Cr√©dito</strong></td>' +
+            '  <td style="text-align:right;"><strong>Total CrÈdito</strong></td>' +
             '  <td style="text-align:right;">' + CAST(ISNULL(dbo.fn_formata_valor(@vl_total_credito), 0) AS NVARCHAR(20)) + '</td>' +
             '</tr>' +
             '</table>';
@@ -331,9 +331,9 @@ BEGIN
         IF OBJECT_ID('tempdb..#Total') IS NOT NULL DROP TABLE #Total;
         IF OBJECT_ID('tempdb..#json') IS NOT NULL DROP TABLE #json;
 
-        SELECT '<html><body><h3>Erro ao gerar relat√≥rio.</h3><p>' + @msg + '</p></body></html>' AS RelatorioHTML;
+        SELECT '<html><body><h3>Erro ao gerar relatÛrio.</h3><p>' + @msg + '</p></body></html>' AS RelatorioHTML;
     END CATCH
 END;
 GO
 
---exec pr_egis_contabilizacao_custo_mercadoria_caixa @json = '[{"dt_inicial":"2025-01-01","dt_final":"2025-01-31","cd_usuario":1,"cd_relatorio":441}]'
+--exec pr_egis_contabilizacao_custo_mercadoria_caixa @json = '[{"dt_inicial":"2025-01-01","dt_final":"2025-12-31","cd_usuario":1,"cd_relatorio":441}]'
