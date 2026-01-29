@@ -121,7 +121,7 @@
       </q-card-actions>
     </q-card>
 
-    <q-dialog v-model="showUnicoEspecial" persistent>
+    <q-dialog v-if="showUnicoEspecial" v-model="showUnicoEspecial" persistent>
       <q-card style="min-width: 95vw; min-height: 90vh;">
         <UnicoFormEspecial
           :cd_menu_entrada="this.cd_menu_item_modal"
@@ -140,6 +140,33 @@
 import axios from "axios";
 //import UnicoFormEspecial from '@/views/unicoFormEspecial.vue'
 
+function safeStorageGet(storage, key, fallback = "") {
+  try {
+    if (!storage) return fallback;
+    if (typeof storage.getItem === "function") {
+      const value = storage.getItem(key);
+      return value != null ? value : fallback;
+    }
+    const value = storage[key];
+    return value != null ? value : fallback;
+  } catch (e) {
+    return fallback;
+  }
+}
+
+function safeStorageSet(storage, key, value) {
+  try {
+    if (!storage) return;
+    if (typeof storage.setItem === "function") {
+      storage.setItem(key, value);
+      return;
+    }
+    storage[key] = value;
+  } catch (e) {
+    // ignore
+  }
+}
+
 // Se você já tem um `api` global, pode importar de lá.
 // Aqui deixo um exemplo simples, igual ao estilo do UnicoFormEspecial.
 const api = axios.create({
@@ -149,7 +176,11 @@ const api = axios.create({
 });
 
 api.interceptors.request.use(cfg => {
-  const banco = localStorage.nm_banco_empresa || "";
+  const banco = safeStorageGet(
+    typeof localStorage !== "undefined" ? localStorage : null,
+    "nm_banco_empresa",
+    ""
+  );
   if (banco) cfg.headers["x-banco"] = banco;
   cfg.headers["Authorization"] = "Bearer superchave123";
   if (!cfg.headers["Content-Type"])
@@ -272,9 +303,21 @@ export default {
       valores: {}, // objeto com valores dos campos
       tituloModal: "",
       subTituloModal: "",
-      headerBanco: localStorage.nm_banco_empresa,
-      cd_usuario: localStorage.cd_usuario || 0,
-      cd_menu: localStorage.cd_menu || 0,
+      headerBanco: safeStorageGet(
+        typeof localStorage !== "undefined" ? localStorage : null,
+        "nm_banco_empresa",
+        ""
+      ),
+      cd_usuario: safeStorageGet(
+        typeof localStorage !== "undefined" ? localStorage : null,
+        "cd_usuario",
+        0
+      ),
+      cd_menu: safeStorageGet(
+        typeof localStorage !== "undefined" ? localStorage : null,
+        "cd_menu",
+        0
+      ),
       lookupOptions: {},
       nm_procedimento: "",
       cd_parametro_procedimento: 0,
@@ -285,7 +328,13 @@ export default {
       dragStartY: 0,
       showUnicoEspecial: false,
       campoUnicoAtivo: null, // guarda qual input chamou o unico
-      cdMenuAnterior: Number(localStorage.cd_menu || 0), // pra restaurar
+      cdMenuAnterior: Number(
+        safeStorageGet(
+          typeof localStorage !== "undefined" ? localStorage : null,
+          "cd_menu",
+          0
+        ) || 0
+      ), // pra restaurar
       cd_menu_item_modal: 0,
       tituloMenuUnico: "",
       cd_modal: 0,
@@ -311,7 +360,11 @@ export default {
         (m0 && (m0.cd_modal || m0.cd_menu)) ||
           this.cd_modal ||
           this.cd_menu ||
-          localStorage.cd_menu ||
+          safeStorageGet(
+            typeof localStorage !== "undefined" ? localStorage : null,
+            "cd_menu",
+            0
+          ) ||
           0
       );
     },
@@ -330,7 +383,11 @@ export default {
   },
 
   created() {
-    this.headerBanco = localStorage.nm_banco_empresa;
+    this.headerBanco = safeStorageGet(
+      typeof localStorage !== "undefined" ? localStorage : null,
+      "nm_banco_empresa",
+      ""
+    );
 
     if (this.value) {
       this.carregarMeta();
@@ -341,6 +398,8 @@ export default {
   methods: {
     fechar() {
       this.internalVisible = false;
+      this.showUnicoEspecial = false;
+      this.campoUnicoAtivo = null;
     },
 
     abrirUnicoEspecial(campo) {
@@ -350,10 +409,20 @@ export default {
       this.campoUnicoAtivo = campo;
 
       // salva o cd_menu atual pra restaurar na volta
-      this.cdMenuAnterior = Number(localStorage.cd_menu || 0);
+      this.cdMenuAnterior = Number(
+        safeStorageGet(
+          typeof localStorage !== "undefined" ? localStorage : null,
+          "cd_menu",
+          0
+        ) || 0
+      );
 
       // seta o cd_menu do meta no localStorage (o Unico usa isso)
-      localStorage.cd_menu = Number(campo.cd_menu);
+      safeStorageSet(
+        typeof localStorage !== "undefined" ? localStorage : null,
+        "cd_menu",
+        Number(campo.cd_menu)
+      );
       //
       this.cd_menu_item_modal = Number(campo.cd_menu || 0);
 
@@ -391,7 +460,11 @@ export default {
     lerMapaConsultaParaAtributo() {
       try {
         return JSON.parse(
-          sessionStorage.getItem("mapa_consulta_para_atributo") || "{}"
+          safeStorageGet(
+            typeof sessionStorage !== "undefined" ? sessionStorage : null,
+            "mapa_consulta_para_atributo",
+            "{}"
+          )
         );
       } catch (e) {
         return {};
@@ -416,7 +489,11 @@ export default {
       this.showUnicoEspecial = false;
 
       // restaura cd_menu anterior
-      localStorage.cd_menu = Number(this.cdMenuAnterior || 0);
+      safeStorageSet(
+        typeof localStorage !== "undefined" ? localStorage : null,
+        "cd_menu",
+        Number(this.cdMenuAnterior || 0)
+      );
 
       // tenta recuperar o registro selecionado que o Unico salva
       const cdMenuDoUnico = Number(this.campoUnicoAtivo?.cd_menu || 0);
@@ -428,10 +505,20 @@ export default {
         const key = cdMenuDoUnico
           ? `registro_selecionado_${cdMenuDoUnico}`
           : "registro_selecionado";
-        sel = JSON.parse(sessionStorage.getItem(key) || "null");
+        sel = JSON.parse(
+          safeStorageGet(
+            typeof sessionStorage !== "undefined" ? sessionStorage : null,
+            key,
+            "null"
+          )
+        );
         if (!sel)
           sel = JSON.parse(
-            sessionStorage.getItem("registro_selecionado") || "null"
+            safeStorageGet(
+              typeof sessionStorage !== "undefined" ? sessionStorage : null,
+              "registro_selecionado",
+              "null"
+            )
           );
       } catch (e) {
         sel = null;
@@ -554,7 +641,13 @@ export default {
 
         let meta = [];
         try {
-          meta = JSON.parse(sessionStorage.getItem("campos_grid_meta") || "[]");
+          meta = JSON.parse(
+            safeStorageGet(
+              typeof sessionStorage !== "undefined" ? sessionStorage : null,
+              "campos_grid_meta",
+              "[]"
+            )
+          );
         } catch (_) {
           meta = Array.isArray(this.gridMeta) ? this.gridMeta : [];
         }
@@ -854,12 +947,32 @@ export default {
 
       try {
         this.cd_usuario = Number(
-          localStorage.cd_usuario || sessionStorage.getItem("cd_usuario") || 0
+          safeStorageGet(
+            typeof localStorage !== "undefined" ? localStorage : null,
+            "cd_usuario",
+            0
+          ) ||
+            safeStorageGet(
+              typeof sessionStorage !== "undefined" ? sessionStorage : null,
+              "cd_usuario",
+              0
+            ) ||
+            0
         );
 
         this.cd_menu =
-          localStorage.cd_menu ||
-          Number(sessionStorage.getItem("cd_menu") || 0);
+          safeStorageGet(
+            typeof localStorage !== "undefined" ? localStorage : null,
+            "cd_menu",
+            0
+          ) ||
+          Number(
+            safeStorageGet(
+              typeof sessionStorage !== "undefined" ? sessionStorage : null,
+              "cd_menu",
+              0
+            ) || 0
+          );
 
         // Monta o payload no padrão ic_json_parametro = 'S'
         // igual o entradaXML.vue faz com outras procedures.
@@ -873,7 +986,12 @@ export default {
         ];
 
         const cfg =
-          this.headerBanco || localStorage.nm_banco_empresa
+          this.headerBanco ||
+          safeStorageGet(
+            typeof localStorage !== "undefined" ? localStorage : null,
+            "nm_banco_empresa",
+            ""
+          )
             ? { headers: { "x-banco": this.headerBanco } }
             : undefined;
 
@@ -894,7 +1012,8 @@ export default {
 
           this.cd_modal = first.cd_modal || 0;
           this.nm_procedimento = first.nm_procedimento;
-          this.cd_parametro_procedimento = first.cd_parametro;
+          this.cd_parametro_procedimento =
+            first.cd_carga_parametro || first.cd_parametro;
           //
           this.tituloModal =
             first.nm_titulo_form || first.nm_titulo || "Composição";
@@ -945,14 +1064,28 @@ export default {
           // 2) se ainda estiver vazio, tenta o sessionStorage
           if (!selecionados.length) {
             try {
-              const cdMenu = this.cd_menu || sessionStorage.getItem("cd_menu");
+              const cdMenu =
+                this.cd_menu ||
+                safeStorageGet(
+                  typeof sessionStorage !== "undefined" ? sessionStorage : null,
+                  "cd_menu",
+                  ""
+                );
               let raw = null;
 
               if (cdMenu) {
-                raw = sessionStorage.getItem(`registro_selecionado_${cdMenu}`);
+                raw = safeStorageGet(
+                  typeof sessionStorage !== "undefined" ? sessionStorage : null,
+                  `registro_selecionado_${cdMenu}`,
+                  null
+                );
               }
               if (!raw) {
-                raw = sessionStorage.getItem("registro_selecionado");
+                raw = safeStorageGet(
+                  typeof sessionStorage !== "undefined" ? sessionStorage : null,
+                  "registro_selecionado",
+                  null
+                );
               }
 
               if (raw) {
@@ -976,7 +1109,11 @@ export default {
           } else {
             // 3) pega o META da GRID e monta o objeto técnico (igual no confirmar)
             const metaGrid = JSON.parse(
-              sessionStorage.getItem("campos_grid_meta") || "[]"
+              safeStorageGet(
+                typeof sessionStorage !== "undefined" ? sessionStorage : null,
+                "campos_grid_meta",
+                "[]"
+              )
             );
 
             const docsSelecionados = selecionados.map(row =>
@@ -1015,6 +1152,7 @@ export default {
         }
 
         // 🔴 carrega opções dos lookups (Tipo Pagamento, Caixa, Conta Bancária)
+        await this.carregarDadosIniciais();
         await this.carregarLookupsDiretos();
         //
       } catch (e) {
@@ -1035,6 +1173,157 @@ export default {
       } finally {
         this.loading = false;
       }
+    },
+
+    async carregarDadosIniciais() {
+      try {
+        const m0 = (Array.isArray(this.meta) ? this.meta[0] : null) || {};
+        const nmProcDados = String(m0.nm_procedimento_dados || "").trim();
+        if (!nmProcDados) return;
+
+        const cdCargaParametro = Number(
+          m0.cd_carga_parametro ||
+            m0.cd_parametro_carga ||
+            m0.cd_carga_parametro_procedimento ||
+            0
+        );
+
+        const cfg = this.headerBanco
+          ? { headers: { "x-banco": this.headerBanco } }
+          : undefined;
+
+        let selecionados = Array.isArray(this.registrosSelecionados)
+          ? this.registrosSelecionados
+          : [];
+
+        if (!selecionados.length) {
+          try {
+            const cdMenu =
+              this.cd_menu ||
+              safeStorageGet(
+                typeof sessionStorage !== "undefined" ? sessionStorage : null,
+                "cd_menu",
+                ""
+              );
+            let raw = null;
+
+            if (cdMenu) {
+              raw = safeStorageGet(
+                typeof sessionStorage !== "undefined" ? sessionStorage : null,
+                `registro_selecionado_${cdMenu}`,
+                null
+              );
+            }
+            if (!raw) {
+              raw = safeStorageGet(
+                typeof sessionStorage !== "undefined" ? sessionStorage : null,
+                "registro_selecionado",
+                null
+              );
+            }
+
+            if (raw) {
+              const linha = JSON.parse(raw);
+              selecionados = [linha];
+            }
+          } catch (e) {
+            console.warn(
+              "[carregarDadosIniciais] erro ao ler registro_selecionado do sessionStorage:",
+              e
+            );
+          }
+        }
+
+        const metaGrid = JSON.parse(
+          safeStorageGet(
+            typeof sessionStorage !== "undefined" ? sessionStorage : null,
+            "campos_grid_meta",
+            "[]"
+          )
+        );
+
+        const docsSelecionados = selecionados.map(row =>
+          montaDadosTecnicos(row, metaGrid)
+        );
+
+        const body = [
+          {
+            ic_json_parametro: "S",
+            cd_chave_modal: Number(
+              safeStorageGet(
+                typeof localStorage !== "undefined" ? localStorage : null,
+                "cd_chave_modal",
+                0
+              ) || 0
+            ),
+            cd_parametro: cdCargaParametro,
+            cd_usuario: this.cd_usuario,
+            dt_inicial: safeStorageGet(
+              typeof localStorage !== "undefined" ? localStorage : null,
+              "dt_inicial",
+              ""
+            ),
+            dt_final: safeStorageGet(
+              typeof localStorage !== "undefined" ? localStorage : null,
+              "dt_final",
+              ""
+            ),
+            cd_modal: this.cdModal,
+            dados_registro: docsSelecionados,
+          },
+        ];
+
+        const { data } = await api.post(`/exec/${nmProcDados}`, body, cfg);
+        const rows = Array.isArray(data) ? data : data ? [data] : [];
+        if (!rows.length) return;
+
+        const payload = rows[0] || {};
+        const origem =
+          (payload && typeof payload === "object" && payload.dados_modal) ||
+          payload ||
+          {};
+
+        const mapaDados = {};
+        Object.keys(origem || {}).forEach(k => {
+          mapaDados[this.normaliza(k)] = origem[k];
+        });
+
+        (this.meta || []).forEach(campo => {
+          if (!campo || !campo.nm_atributo) return;
+
+          const candidatos = [
+            campo.nm_atributo,
+            campo.nm_atributo_consulta,
+            campo.nm_atributo_lookup,
+            campo.nm_titulo_menu_atributo,
+            campo.ds_atributo,
+          ].filter(Boolean);
+
+          let valorEncontrado;
+
+          for (const c of candidatos) {
+            const key = this.normaliza(c);
+            if (mapaDados[key] !== undefined) {
+              valorEncontrado = mapaDados[key];
+              break;
+            }
+          }
+
+          if (valorEncontrado !== undefined) {
+            this.$set(this.valores, campo.nm_atributo, valorEncontrado);
+          }
+        });
+      } catch (e) {
+        console.warn("[carregarDadosIniciais] erro ao carregar dados:", e);
+      }
+    },
+
+    normaliza(s) {
+      return String(s || "")
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^a-z0-9]/g, "");
     },
   },
 };
