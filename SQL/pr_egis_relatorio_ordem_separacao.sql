@@ -257,13 +257,13 @@ SET @html_empresa = '
         body {
             font-family: Arial, sans-serif;
             color: #333;
-			padding: 20px;
-            font-size: 12px;
+			padding: 12px;
+            font-size: 10px;
         }
 
         h2 {
             color: #333;
-            font-size: 18px;
+            font-size: 14px;
         }
 
         table {
@@ -280,7 +280,7 @@ SET @html_empresa = '
 
         th,
         td {
-            padding: 6px;
+            padding: 4px;
 			text-align: center;
         }
 
@@ -305,7 +305,7 @@ SET @html_empresa = '
 			padding: 5px;
 			margin-bottom: 10px;
 			border-radius: 5px;
-			font-size: 14px;
+			font-size: 12px;
 			margin-left: 0;
 			margin-right: 0;
 		}
@@ -327,7 +327,7 @@ SET @html_empresa = '
 
         .title {
             color: #1976D2;
-            font-size: 14px;
+            font-size: 12px;
         }
 
         .report-date-time {
@@ -337,7 +337,7 @@ SET @html_empresa = '
         }
 
         h1 {
-            font-size: 22px;
+            font-size: 18px;
         }
 
         p {
@@ -346,7 +346,7 @@ SET @html_empresa = '
         }
 
         .tamanhoTabela {
-			font-size:14px;
+			font-size:12px;
             text-align: center;
         }
 
